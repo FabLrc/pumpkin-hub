@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,38 +18,39 @@
       <span class="navbar-version">docs</span>
     </div>
     <div class="navbar-links">
-      <a href="index.html" class="navbar-link">Documentation</a>
-      <a href="getting-started.html" class="navbar-link">Démarrage</a>
+      <a href="index.html" class="navbar-link">Docs</a>
+      <a href="getting-started.html" class="navbar-link">Getting Started</a>
       <a href="architecture.html" class="navbar-link accent">Architecture</a>
       <a href="api.html" class="navbar-link">API</a>
       <a href="roadmap.html" class="navbar-link">Roadmap</a>
       <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+      <a href="fr/architecture.html" class="navbar-link" title="Français">FR</a>
     </div>
   </nav>
 
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-section">
-        <div class="sidebar-label">Général</div>
-        <a href="index.html" class="sidebar-link">Vue d'ensemble</a>
-        <a href="getting-started.html" class="sidebar-link">Démarrage rapide</a>
+        <div class="sidebar-label">General</div>
+        <a href="index.html" class="sidebar-link">Overview</a>
+        <a href="getting-started.html" class="sidebar-link">Getting Started</a>
         <a href="architecture.html" class="sidebar-link active">Architecture</a>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Référence</div>
+        <div class="sidebar-label">Reference</div>
         <a href="api.html" class="sidebar-link">API Reference</a>
         <a href="design-system.html" class="sidebar-link">Design System</a>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Projet</div>
+        <div class="sidebar-label">Project</div>
         <a href="roadmap.html" class="sidebar-link">Roadmap</a>
-        <a href="contributing.html" class="sidebar-link">Contribuer</a>
+        <a href="contributing.html" class="sidebar-link">Contributing</a>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Sur cette page</div>
-        <a href="#overview" class="sidebar-sublink">Vue d'ensemble</a>
-        <a href="#project-structure" class="sidebar-sublink">Structure du projet</a>
-        <a href="#backend" class="sidebar-sublink">Backend (API Rust)</a>
+        <div class="sidebar-label">On this page</div>
+        <a href="#overview" class="sidebar-sublink">Overview</a>
+        <a href="#project-structure" class="sidebar-sublink">Project Structure</a>
+        <a href="#backend" class="sidebar-sublink">Backend (Rust API)</a>
         <a href="#frontend" class="sidebar-sublink">Frontend (Next.js)</a>
         <a href="#infrastructure" class="sidebar-sublink">Infrastructure</a>
         <a href="#ci-cd" class="sidebar-sublink">CI/CD</a>
@@ -60,15 +61,15 @@
 
       <h1>Architecture</h1>
       <p style="color:#a3a3a3;margin-bottom:2rem;">
-        Organisation technique et principes architecturaux de Pumpkin Hub.
+        Technical organization and architectural principles of Pumpkin Hub.
       </p>
 
-      <!-- ── Vue d'ensemble ────────────────────────────────── -->
-      <h2 id="overview">Vue d'ensemble</h2>
+      <!-- ── Overview ──────────────────────────────────────── -->
+      <h2 id="overview">Overview</h2>
       <p>
-        Pumpkin Hub suit une architecture <strong>client-serveur classique</strong> avec une séparation
-        nette entre le frontend (Next.js) et le backend (API Rust/Axum). Les services communiquent
-        via des appels REST JSON sous le préfixe <code>/api/v1</code>.
+        Pumpkin Hub follows a classic <strong>client-server architecture</strong> with a clean
+        separation between the frontend (Next.js) and backend (Rust/Axum API). Services communicate
+        via REST JSON calls under the <code>/api/v1</code> prefix.
       </p>
 
       <pre><code>┌──────────────────────────────────────────────────────────┐
@@ -87,161 +88,159 @@
 │              │                      │                    │
 │  ┌───────────▼──────────┐  ┌───────▼────────────┐       │
 │  │  PostgreSQL 16       │  │  Meilisearch v1.7  │       │
-│  │  Données persistantes│  │  Recherche full-text│       │
+│  │  Persistent data     │  │  Full-text search  │       │
 │  └──────────────────────┘  └────────────────────┘       │
 └──────────────────────────────────────────────────────────┘</code></pre>
 
-      <!-- ── Structure du projet ───────────────────────────── -->
-      <h2 id="project-structure">Structure du projet</h2>
+      <!-- ── Project Structure ─────────────────────────────── -->
+      <h2 id="project-structure">Project Structure</h2>
 
       <pre><code>pumpkin-hub/
-├── api/                    # Backend Rust (Axum)
-│   ├── Cargo.toml          # Dépendances et métadonnées
-│   ├── Dockerfile.dev      # Conteneur de développement
+├── api/                    # Rust backend (Axum)
+│   ├── Cargo.toml          # Dependencies and metadata
+│   ├── Dockerfile.dev      # Development container
 │   └── src/
-│       ├── main.rs         # Point d'entrée, shutdown gracieux
-│       ├── lib.rs          # build_app() et middleware stack
-│       ├── config.rs       # Chargement configuration depuis ENV
-│       ├── error.rs        # Type d'erreur centralisé (AppError)
-│       ├── state.rs        # État partagé (AppState)
+│       ├── main.rs         # Entry point, graceful shutdown
+│       ├── lib.rs          # build_app() and middleware stack
+│       ├── config.rs       # Configuration from ENV
+│       ├── error.rs        # Centralized error type (AppError)
+│       ├── state.rs        # Shared state (AppState)
 │       └── routes/
-│           ├── mod.rs      # Assemblage des sous-routeurs
+│           ├── mod.rs      # Sub-router assembly
 │           └── health.rs   # GET /api/v1/health
 │
-├── frontend/               # Frontend Next.js
-│   ├── package.json        # Dépendances NPM
-│   ├── Dockerfile.dev      # Conteneur de développement
-│   ├── next.config.ts      # Configuration Next.js
-│   ├── tsconfig.json       # Configuration TypeScript
+├── frontend/               # Next.js frontend
+│   ├── package.json        # NPM dependencies
+│   ├── Dockerfile.dev      # Development container
+│   ├── next.config.ts      # Next.js configuration
+│   ├── tsconfig.json       # TypeScript configuration
 │   └── app/
-│       ├── layout.tsx      # Layout racine
-│       ├── page.tsx        # Page d'accueil
-│       └── globals.css     # Styles globaux Tailwind
+│       ├── layout.tsx      # Root layout
+│       ├── page.tsx        # Home page
+│       └── globals.css     # Tailwind global styles
 │
 ├── docs/                   # Documentation (GitHub Pages)
-│   └── mockup/             # Maquettes HTML du design system
+│   └── mockup/             # Design system HTML mockups
 │
-├── docker-compose.yml      # Orchestration dev (4 services)
+├── docker-compose.yml      # Dev orchestration (4 services)
 └── .github/
-    ├── workflows/ci.yml    # Pipeline CI GitHub Actions
-    └── instructions/       # Instructions Copilot/IA</code></pre>
+    ├── workflows/ci.yml    # CI GitHub Actions pipeline
+    └── instructions/       # Copilot/AI instructions</code></pre>
 
       <!-- ── Backend ───────────────────────────────────────── -->
-      <h2 id="backend">Backend — API Rust</h2>
+      <h2 id="backend">Backend — Rust API</h2>
 
-      <h3>Principes directeurs</h3>
+      <h3>Guiding Principles</h3>
       <ul>
-        <li><strong>Testabilité</strong> — <code>build_app(config)</code> dans <code>lib.rs</code> permet de construire l'app sans bind réseau, facilitant les tests d'intégration.</li>
-        <li><strong>Separation of Concerns</strong> — Configuration, état, erreurs et routes sont dans des modules distincts.</li>
-        <li><strong>Graceful Shutdown</strong> — Écoute CTRL+C et SIGTERM pour un arrêt propre des connexions.</li>
+        <li><strong>Testability</strong> — <code>build_app(config)</code> in <code>lib.rs</code> builds the app without network binding, enabling integration tests.</li>
+        <li><strong>Separation of Concerns</strong> — Configuration, state, errors and routes live in separate modules.</li>
+        <li><strong>Graceful Shutdown</strong> — Listens for CTRL+C and SIGTERM for clean connection teardown.</li>
       </ul>
 
-      <h3>Pile middleware (Tower)</h3>
-      <p>Les middlewares sont appliqués dans l'ordre suivant via <code>ServiceBuilder</code> :</p>
+      <h3>Middleware Stack (Tower)</h3>
+      <p>Middlewares are applied in the following order via <code>ServiceBuilder</code>:</p>
 
       <table>
         <thead>
-          <tr><th>Ordre</th><th>Middleware</th><th>Rôle</th></tr>
+          <tr><th>Order</th><th>Middleware</th><th>Role</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td><code>SetRequestIdLayer</code></td><td>Assigne un UUID unique (<code>x-request-id</code>) à chaque requête</td></tr>
-          <tr><td>2</td><td><code>TraceLayer</code></td><td>Traces structurées avec span par requête (tracing)</td></tr>
-          <tr><td>3</td><td><code>PropagateRequestIdLayer</code></td><td>Propage le request ID dans les headers de réponse</td></tr>
-          <tr><td>4</td><td><code>TimeoutLayer</code></td><td>Timeout global de 30s → 504 Gateway Timeout</td></tr>
-          <tr><td>5</td><td><code>CompressionLayer</code></td><td>Compression Gzip des réponses</td></tr>
-          <tr><td>6</td><td><code>CorsLayer</code></td><td>Politique CORS multi-origines configurable</td></tr>
+          <tr><td>1</td><td><code>SetRequestIdLayer</code></td><td>Assigns a unique UUID (<code>x-request-id</code>) to each request</td></tr>
+          <tr><td>2</td><td><code>TraceLayer</code></td><td>Structured tracing with per-request span</td></tr>
+          <tr><td>3</td><td><code>PropagateRequestIdLayer</code></td><td>Propagates request ID in response headers</td></tr>
+          <tr><td>4</td><td><code>TimeoutLayer</code></td><td>Global 30s timeout → 504 Gateway Timeout</td></tr>
+          <tr><td>5</td><td><code>CompressionLayer</code></td><td>Gzip response compression</td></tr>
+          <tr><td>6</td><td><code>CorsLayer</code></td><td>Configurable multi-origin CORS policy</td></tr>
         </tbody>
       </table>
 
-      <h3>Gestion de configuration</h3>
+      <h3>Configuration Management</h3>
       <p>
-        La struct <code>Config</code> est chargée depuis les variables d'environnement via
-        <code>Config::from_env()</code>. Un <code>ConfigError</code> typé est retourné pour les
-        variables manquantes ou invalides. L'API échoue au démarrage (fail-fast) si la configuration
-        est incorrecte.
+        The <code>Config</code> struct is loaded from environment variables via
+        <code>Config::from_env()</code>. A typed <code>ConfigError</code> is returned for
+        missing or invalid variables. The API fails at startup (fail-fast) if the configuration
+        is incorrect.
       </p>
 
-      <h3>Gestion d'erreurs</h3>
+      <h3>Error Handling</h3>
       <p>
-        Le type <code>AppError</code> unifie toutes les erreurs applicatives et implémente
-        <code>IntoResponse</code> d'Axum pour une conversion automatique en réponse HTTP JSON :
+        The <code>AppError</code> type unifies all application errors and implements Axum's
+        <code>IntoResponse</code> for automatic conversion to HTTP JSON responses:
       </p>
       <table>
         <thead>
-          <tr><th>Variante</th><th>HTTP Status</th><th>Comportement</th></tr>
+          <tr><th>Variant</th><th>HTTP Status</th><th>Behavior</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>NotFound</code></td><td>404</td><td>Ressource introuvable</td></tr>
-          <tr><td><code>UnprocessableEntity</code></td><td>422</td><td>Données invalides (message transmis au client)</td></tr>
-          <tr><td><code>Unauthorized</code></td><td>401</td><td>Accès non autorisé</td></tr>
-          <tr><td><code>Internal</code></td><td>500</td><td>Erreur interne (loguée côté serveur, jamais exposée)</td></tr>
+          <tr><td><code>NotFound</code></td><td>404</td><td>Resource not found</td></tr>
+          <tr><td><code>UnprocessableEntity</code></td><td>422</td><td>Invalid data (message forwarded to client)</td></tr>
+          <tr><td><code>Unauthorized</code></td><td>401</td><td>Unauthorized access</td></tr>
+          <tr><td><code>Internal</code></td><td>500</td><td>Internal error (logged server-side, never exposed)</td></tr>
         </tbody>
       </table>
 
-      <h3>Routage</h3>
+      <h3>Routing</h3>
       <p>
-        Les routes sont organisées en modules par fonctionnalité et assemblées dans
-        <code>routes/mod.rs</code> sous le préfixe <code>/api/v1</code>. Pour ajouter
-        une nouvelle fonctionnalité, créer un fichier <code>routes/{feature}.rs</code> et
-        le merger dans <code>v1_routes()</code>.
+        Routes are organized in feature modules and assembled in <code>routes/mod.rs</code>
+        under the <code>/api/v1</code> prefix. To add a new feature, create a
+        <code>routes/{feature}.rs</code> file and merge it into <code>v1_routes()</code>.
       </p>
 
       <!-- ── Frontend ──────────────────────────────────────── -->
       <h2 id="frontend">Frontend — Next.js</h2>
 
-      <h3>Structure App Router</h3>
+      <h3>App Router Structure</h3>
       <p>
-        Le frontend utilise le <strong>App Router</strong> de Next.js 16 avec React 19. Les styles
-        sont gérés par Tailwind CSS 4 avec le plugin PostCSS.
+        The frontend uses the <strong>App Router</strong> from Next.js 16 with React 19. Styles
+        are managed by Tailwind CSS 4 with the PostCSS plugin.
       </p>
 
-      <h3>Design System — Brutaliste Industrielle</h3>
-      <p>Le design system du projet suit ces principes :</p>
+      <h3>Design System — Brutalist Industrial</h3>
+      <p>The project's design system follows these principles:</p>
       <ul>
-        <li><strong>Typographie</strong> — Raleway (titres et corps) + JetBrains Mono (code et données techniques)</li>
-        <li><strong>Palette</strong> — Fond noir (#0a0a0a), texte neutre (#e5e5e5), accent orange (#f97316)</li>
-        <li><strong>Géométrie</strong> — Zéro arrondi (border-radius: 0), bordures fines neutres (#262626)</li>
-        <li><strong>Effets</strong> — Texture bruit (noise overlay), scanlines subtiles, glow orange sur focus</li>
+        <li><strong>Typography</strong> — Raleway (headings and body) + JetBrains Mono (code and technical data)</li>
+        <li><strong>Palette</strong> — Black background (#0a0a0a), neutral text (#e5e5e5), orange accent (#f97316)</li>
+        <li><strong>Geometry</strong> — Zero border-radius, thin neutral borders (#262626)</li>
+        <li><strong>Effects</strong> — Noise texture overlay, subtle scanlines, orange glow on focus</li>
       </ul>
 
-      <h3>Pages planifiées</h3>
+      <h3>Planned Pages</h3>
       <table>
         <thead>
           <tr><th>Page</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td>Landing</td><td><code>/</code></td><td>Accueil avec trending plugins et bento grid</td></tr>
-          <tr><td>Explorer</td><td><code>/explore</code></td><td>Catalogue avec filtres facettés et recherche</td></tr>
-          <tr><td>Plugin Detail</td><td><code>/plugin/[slug]</code></td><td>Page détaillée avec install panel et versions</td></tr>
-          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Espace auteur avec analytics et gestion</td></tr>
+          <tr><td>Landing</td><td><code>/</code></td><td>Homepage with trending plugins and bento grid</td></tr>
+          <tr><td>Explorer</td><td><code>/explore</code></td><td>Catalog with faceted filters and search</td></tr>
+          <tr><td>Plugin Detail</td><td><code>/plugin/[slug]</code></td><td>Detail page with install panel and versions</td></tr>
+          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Author space with analytics and management</td></tr>
         </tbody>
       </table>
 
       <!-- ── Infrastructure ────────────────────────────────── -->
-      <h2 id="infrastructure">Infrastructure Docker</h2>
+      <h2 id="infrastructure">Docker Infrastructure</h2>
 
       <p>
-        L'environnement de développement est orchestré par <code>docker-compose.yml</code> avec
-        4 services. Les données PostgreSQL et Meilisearch sont persistées via des volumes Docker.
-        Le cache Cargo est également monté en volume pour accélérer les recompilations.
+        The development environment is orchestrated by <code>docker-compose.yml</code> with
+        4 services. PostgreSQL and Meilisearch data are persisted via Docker volumes.
+        The Cargo cache is also mounted as a volume to speed up recompilations.
       </p>
 
       <div class="callout callout-warn">
-        <div class="callout-label">Attention</div>
-        Le fichier <code>docker-compose.yml</code> est destiné au développement local uniquement.
-        Les mots de passe et clés sont des valeurs par défaut qui ne doivent pas être utilisées
-        en production.
+        <div class="callout-label">Warning</div>
+        The <code>docker-compose.yml</code> file is intended for local development only.
+        Passwords and keys are default values that must not be used in production.
       </div>
 
-      <h3>Volumes persistés</h3>
+      <h3>Persisted Volumes</h3>
       <table>
         <thead>
-          <tr><th>Volume</th><th>Contenu</th></tr>
+          <tr><th>Volume</th><th>Content</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>db-data-dev</code></td><td>Données PostgreSQL</td></tr>
-          <tr><td><code>meili-data-dev</code></td><td>Index Meilisearch</td></tr>
-          <tr><td><code>cargo-cache</code></td><td>Registre et cache de compilation Cargo</td></tr>
+          <tr><td><code>db-data-dev</code></td><td>PostgreSQL data</td></tr>
+          <tr><td><code>meili-data-dev</code></td><td>Meilisearch indexes</td></tr>
+          <tr><td><code>cargo-cache</code></td><td>Cargo registry and build cache</td></tr>
         </tbody>
       </table>
 
@@ -249,9 +248,9 @@
       <h2 id="ci-cd">CI/CD — GitHub Actions</h2>
 
       <p>
-        Le workflow <code>ci.yml</code> s'exécute sur chaque push et pull request vers les
-        branches <code>master</code> et <code>develop</code>. Deux jobs parallèles valident
-        le frontend et le backend.
+        The <code>ci.yml</code> workflow runs on every push and pull request targeting the
+        <code>master</code> and <code>develop</code> branches. Two parallel jobs validate
+        the frontend and backend.
       </p>
 
       <h3>Frontend CI</h3>
@@ -263,22 +262,22 @@
 
       <h3>Backend CI</h3>
       <ol>
-        <li><strong>Formatage</strong> — <code>cargo fmt --all -- --check</code></li>
-        <li><strong>Analyse statique</strong> — <code>cargo clippy -- -D warnings</code></li>
+        <li><strong>Formatting</strong> — <code>cargo fmt --all -- --check</code></li>
+        <li><strong>Static Analysis</strong> — <code>cargo clippy -- -D warnings</code></li>
         <li><strong>Tests</strong> — <code>cargo test</code></li>
       </ol>
 
       <div class="callout">
-        <div class="callout-label">Optimisations</div>
-        Le cache NPM (<code>package-lock.json</code>) et le cache Rust (<code>Swatinem/rust-cache</code>)
-        sont activés pour réduire les temps de build CI.
+        <div class="callout-label">Optimizations</div>
+        NPM cache (<code>package-lock.json</code>) and Rust cache (<code>Swatinem/rust-cache</code>)
+        are enabled to reduce CI build times.
       </div>
 
     </main>
   </div>
 
   <footer class="footer">
-    Pumpkin Hub · Documentation · Open Source sous licence MIT
+    Pumpkin Hub · Documentation · Open Source under MIT License
   </footer>
 
 </body>

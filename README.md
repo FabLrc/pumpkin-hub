@@ -1,33 +1,37 @@
 # 🎃 Pumpkin Hub
 
-> **Le registre de plugins et ressources de nouvelle génération pour l'écosystème Pumpkin MC (Rust).**
+> **The next-generation plugin and resource registry for the [Pumpkin MC](https://github.com/Pumpkin-MC/Pumpkin) ecosystem (Rust).**
 
 [![Status: Active Development](https://img.shields.io/badge/Status-Active_Development-orange?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
 [![Built with: Rust & Next.js](https://img.shields.io/badge/Stack-Rust_%2F_Next.js-black?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
 
 ---
 
-## ⚡ À propos
+## ⚡ About
 
-**Pumpkin Hub** est la plateforme centrale dédiée à la distribution et à la découverte d'extensions pour le serveur Minecraft **Pumpkin**. Parce que Pumpkin redéfinit la performance serveur avec Rust, Pumpkin Hub redéfinit la gestion de contenu avec une interface minimaliste, une sécurité accrue des binaires et une expérience développeur (DX) sans friction.
+**Pumpkin Hub** is the central platform dedicated to distribution and discovery of extensions for the [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin) Minecraft server. Because [Pumpkin MC](https://github.com/Pumpkin-MC/Pumpkin) redefines server performance with Rust, Pumpkin Hub redefines content management with a minimalist interface, enhanced binary security, and a frictionless developer experience (DX).
 
 > [!IMPORTANT]
-> **Projet en développement soutenu :** Nous sommes actuellement en phase de construction intensive. Les fonctionnalités sont susceptibles d'évoluer rapidement.
+> **Active development:** We are currently in an intensive building phase. Features are likely to evolve rapidly.
 
-## ✨ Fonctionnalités clés
+## ✨ Key Features
 
-*   🔍 **Recherche Instantanée :** Propulsée par Meilisearch pour des résultats en millisecondes.
-*   📦 **Crate-Centric :** Gestion native des binaires compilés et des architectures CPU.
-*   🛡️ **Sécurité Native :** Signature SHA-256 systématique et vérification d'intégrité.
-*   ⚙️ **Dependency Graph :** Visualisation claire des dépendances entre les plugins.
-*   ⌨️ **Interface Brutaliste :** Design "No-Radius" optimisé pour la clarté technique.
+*   🔍 **Instant Search:** Powered by Meilisearch for millisecond results.
+*   📦 **Crate-Centric:** Native management of compiled binaries and CPU architectures.
+*   🛡️ **Native Security:** Systematic SHA-256 signing and integrity verification.
+*   ⚙️ **Dependency Graph:** Clear visualization of inter-plugin dependencies.
+*   ⌨️ **Brutalist Interface:** "No-Radius" design optimized for technical clarity.
 
-## 🏗️ Stack Technique
+## 🏗️ Tech Stack
 
-*   **Frontend :** Next.js 16+, Tailwind CSS, Shadcn UI.
-*   **Backend :** Rust (Axum), Meilisearch.
-*   **Infrastructure :** Cloudflare R2, PostgreSQL, Supabase Auth.
+*   **Frontend:** Next.js 16+, Tailwind CSS, Shadcn UI.
+*   **Backend:** Rust (Axum), Meilisearch.
+*   **Infrastructure:** Cloudflare R2, PostgreSQL, Supabase Auth.
 
-## 🛠️ Installation (Développement)
+## 📖 Documentation
 
-*Note : Les instructions détaillées de déploiement seront ajoutées au fur et à mesure de la stabilisation des versions.*
+Full documentation is available at [pumpkin-hub docs](https://fablrc.github.io/pumpkin-hub/) (English & French).
+
+## 🛠️ Installation (Development)
+
+*Note: Detailed deployment instructions will be added as versions stabilize.*

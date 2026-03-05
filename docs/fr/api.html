@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference — Pumpkin Hub</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <a href="index.html" style="display:flex;align-items:center;gap:0.75rem;color:inherit;">
+        <div class="navbar-logo-icon"><span>PH</span></div>
+        <span class="navbar-title">Pumpkin Hub</span>
+      </a>
+      <span class="navbar-version">docs</span>
+    </div>
+    <div class="navbar-links">
+      <a href="index.html" class="navbar-link">Documentation</a>
+      <a href="getting-started.html" class="navbar-link">Démarrage</a>
+      <a href="architecture.html" class="navbar-link">Architecture</a>
+      <a href="api.html" class="navbar-link accent">API</a>
+      <a href="roadmap.html" class="navbar-link">Roadmap</a>
+      <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+      <a href="../api.html" class="navbar-link" title="English">EN</a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Général</div>
+        <a href="index.html" class="sidebar-link">Vue d'ensemble</a>
+        <a href="getting-started.html" class="sidebar-link">Démarrage rapide</a>
+        <a href="architecture.html" class="sidebar-link">Architecture</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Référence</div>
+        <a href="api.html" class="sidebar-link active">API Reference</a>
+        <a href="design-system.html" class="sidebar-link">Design System</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Projet</div>
+        <a href="roadmap.html" class="sidebar-link">Roadmap</a>
+        <a href="contributing.html" class="sidebar-link">Contribuer</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sur cette page</div>
+        <a href="#base" class="sidebar-sublink">URL de base</a>
+        <a href="#health" class="sidebar-sublink">Health Check</a>
+        <a href="#errors" class="sidebar-sublink">Gestion d'erreurs</a>
+        <a href="#planned" class="sidebar-sublink">Endpoints planifiés</a>
+      </div>
+    </aside>
+
+    <main class="content">
+
+      <h1>API Reference</h1>
+      <p style="color:#a3a3a3;margin-bottom:2rem;">
+        Documentation de l'API REST de <a href="https://github.com/Pumpkin-MC/Pumpkin">Pumpkin</a> Hub.
+      </p>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">API en développement</div>
+        L'API est actuellement en Phase 1. Seul l'endpoint health check est implémenté.
+        Les endpoints ci-dessous marqués <span class="badge badge-blue">Planifié</span>
+        seront ajoutés dans les prochaines phases.
+      </div>
+
+      <!-- ── Base ──────────────────────────────────────────── -->
+      <h2 id="base">URL de base</h2>
+
+      <pre><code>http://localhost:8080/api/v1</code></pre>
+
+      <p>Toutes les routes sont préfixées par <code>/api/v1</code>. Le versioning est géré par le chemin d'URL.</p>
+
+      <h3>Headers communs</h3>
+      <table>
+        <thead>
+          <tr><th>Header</th><th>Valeur</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Content-Type</code></td><td><code>application/json</code></td><td>Format des corps de requête/réponse</td></tr>
+          <tr><td><code>x-request-id</code></td><td><em>auto-généré</em></td><td>ID unique de requête (traçabilité)</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Health ────────────────────────────────────────── -->
+      <h2 id="health">Health Check</h2>
+
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+        <span class="badge badge-green">GET</span>
+        <code style="font-size:1rem;">/api/v1/health</code>
+      </div>
+
+      <p>Vérifie que l'API est opérationnelle. Utilisé par Docker pour les health checks.</p>
+
+      <h3>Réponse <span class="badge badge-green">200 OK</span></h3>
+      <pre><code>{
+  "status": "healthy"
+}</code></pre>
+
+      <table>
+        <thead>
+          <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>status</code></td><td><code>string</code></td><td>État du service — toujours <code>"healthy"</code> si l'API répond</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Exemple cURL</h3>
+      <pre><code>curl -s http://localhost:8080/api/v1/health | jq</code></pre>
+
+      <!-- ── Erreurs ───────────────────────────────────────── -->
+      <h2 id="errors">Gestion d'erreurs</h2>
+
+      <p>
+        L'API retourne des erreurs structurées en JSON via le type centralisé <code>AppError</code>.
+        Chaque erreur inclut un code HTTP approprié et un message descriptif.
+      </p>
+
+      <h3>Format d'erreur</h3>
+      <pre><code>{
+  "error": {
+    "code": 404,
+    "message": "Plugin not found"
+  }
+}</code></pre>
+
+      <h3>Codes d'erreur</h3>
+      <table>
+        <thead>
+          <tr><th>Code</th><th>Signification</th><th>Cause typique</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>400</code></td><td>Bad Request</td><td>Corps de requête invalide, paramètres manquants</td></tr>
+          <tr><td><code>401</code></td><td>Unauthorized</td><td>Token manquant ou expiré</td></tr>
+          <tr><td><code>403</code></td><td>Forbidden</td><td>Permissions insuffisantes</td></tr>
+          <tr><td><code>404</code></td><td>Not Found</td><td>Ressource inexistante</td></tr>
+          <tr><td><code>422</code></td><td>Unprocessable Entity</td><td>Validation échouée</td></tr>
+          <tr><td><code>500</code></td><td>Internal Server Error</td><td>Erreur serveur inattendue</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Endpoints planifiés ───────────────────────────── -->
+      <h2 id="planned">Endpoints planifiés</h2>
+
+      <p>
+        Les endpoints suivants seront implémentés dans les prochaines phases.
+        Ils sont documentés ici à titre de référence anticipée.
+      </p>
+
+      <h3>Authentification <span class="badge badge-blue">Phase 1</span></h3>
+      <table>
+        <thead>
+          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/auth/github</code></td><td>Initier le flow OAuth GitHub</td></tr>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/auth/github/callback</code></td><td>Callback OAuth après autorisation</td></tr>
+          <tr><td><span class="badge badge-orange">POST</span></td><td><code>/auth/logout</code></td><td>Déconnexion (invalidation de session)</td></tr>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/auth/me</code></td><td>Profil de l'utilisateur connecté</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Plugins <span class="badge badge-blue">Phase 1</span></h3>
+      <table>
+        <thead>
+          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/plugins</code></td><td>Lister les plugins (pagination, filtres)</td></tr>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/plugins/:slug</code></td><td>Détails d'un plugin</td></tr>
+          <tr><td><span class="badge badge-orange">POST</span></td><td><code>/plugins</code></td><td>Créer un nouveau plugin</td></tr>
+          <tr><td><span class="badge badge-blue">PUT</span></td><td><code>/plugins/:slug</code></td><td>Mettre à jour un plugin</td></tr>
+          <tr><td><span class="badge" style="border-color:#f87171;color:#f87171;">DELETE</span></td><td><code>/plugins/:slug</code></td><td>Supprimer un plugin</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Versions <span class="badge badge-blue">Phase 2</span></h3>
+      <table>
+        <thead>
+          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/plugins/:slug/versions</code></td><td>Lister les versions d'un plugin</td></tr>
+          <tr><td><span class="badge badge-orange">POST</span></td><td><code>/plugins/:slug/versions</code></td><td>Publier une nouvelle version</td></tr>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/plugins/:slug/versions/:version</code></td><td>Détails d'une version</td></tr>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/plugins/:slug/versions/:version/download</code></td><td>Télécharger le binaire</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Recherche <span class="badge badge-blue">Phase 2</span></h3>
+      <table>
+        <thead>
+          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/search</code></td><td>Recherche full-text de plugins</td></tr>
+          <tr><td><span class="badge badge-green">GET</span></td><td><code>/search/suggest</code></td><td>Suggestions d'autocomplétion</td></tr>
+        </tbody>
+      </table>
+
+    </main>
+  </div>
+
+  <footer class="footer">
+    Pumpkin Hub · Documentation · Open Source sous licence MIT
+  </footer>
+
+</body>
+</html>

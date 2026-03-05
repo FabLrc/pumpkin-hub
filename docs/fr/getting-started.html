@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Démarrage rapide — Pumpkin Hub</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <a href="index.html" style="display:flex;align-items:center;gap:0.75rem;color:inherit;">
+        <div class="navbar-logo-icon"><span>PH</span></div>
+        <span class="navbar-title">Pumpkin Hub</span>
+      </a>
+      <span class="navbar-version">docs</span>
+    </div>
+    <div class="navbar-links">
+      <a href="index.html" class="navbar-link">Documentation</a>
+      <a href="getting-started.html" class="navbar-link accent">Démarrage</a>
+      <a href="architecture.html" class="navbar-link">Architecture</a>
+      <a href="api.html" class="navbar-link">API</a>
+      <a href="roadmap.html" class="navbar-link">Roadmap</a>
+      <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+      <a href="../getting-started.html" class="navbar-link" title="English">EN</a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Général</div>
+        <a href="index.html" class="sidebar-link">Vue d'ensemble</a>
+        <a href="getting-started.html" class="sidebar-link active">Démarrage rapide</a>
+        <a href="architecture.html" class="sidebar-link">Architecture</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Référence</div>
+        <a href="api.html" class="sidebar-link">API Reference</a>
+        <a href="design-system.html" class="sidebar-link">Design System</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Projet</div>
+        <a href="roadmap.html" class="sidebar-link">Roadmap</a>
+        <a href="contributing.html" class="sidebar-link">Contribuer</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sur cette page</div>
+        <a href="#prerequisites" class="sidebar-sublink">Prérequis</a>
+        <a href="#installation" class="sidebar-sublink">Installation</a>
+        <a href="#docker" class="sidebar-sublink">Lancement Docker</a>
+        <a href="#local" class="sidebar-sublink">Lancement local</a>
+        <a href="#env" class="sidebar-sublink">Variables d'environnement</a>
+        <a href="#verify" class="sidebar-sublink">Vérification</a>
+      </div>
+    </aside>
+
+    <main class="content">
+
+      <h1>Démarrage rapide</h1>
+      <p style="color:#a3a3a3;margin-bottom:2rem;">
+        Installer et lancer l'environnement de développement <a href="https://github.com/Pumpkin-MC/Pumpkin">Pumpkin</a> Hub en quelques minutes.
+      </p>
+
+      <!-- ── Prérequis ─────────────────────────────────────── -->
+      <h2 id="prerequisites">Prérequis</h2>
+
+      <table>
+        <thead>
+          <tr><th>Outil</th><th>Version minimale</th><th>Vérification</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Docker</strong></td><td>24.x</td><td><code>docker --version</code></td></tr>
+          <tr><td><strong>Docker Compose</strong></td><td>2.20+</td><td><code>docker compose version</code></td></tr>
+          <tr><td><strong>Git</strong></td><td>2.x</td><td><code>git --version</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <div class="callout-label">Optionnel</div>
+        Pour le développement local sans Docker : <strong>Rust 1.75+</strong>,
+        <strong>Node.js 20+</strong> et <strong>PostgreSQL 16</strong>.
+      </div>
+
+      <!-- ── Installation ──────────────────────────────────── -->
+      <h2 id="installation">Installation</h2>
+
+      <pre><code># Cloner le dépôt
+git clone https://github.com/FabLrc/pumpkin-hub.git
+cd pumpkin-hub</code></pre>
+
+      <!-- ── Docker ────────────────────────────────────────── -->
+      <h2 id="docker">Lancement avec Docker <span class="badge badge-green">Recommandé</span></h2>
+
+      <pre><code># Construire et lancer tous les services
+docker compose up --build</code></pre>
+
+      <p>Cette commande lance 4 services :</p>
+
+      <table>
+        <thead>
+          <tr><th>Service</th><th>Port</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>frontend</strong></td><td><code>3000</code></td><td>Next.js dev server avec hot-reload</td></tr>
+          <tr><td><strong>api</strong></td><td><code>8080</code></td><td>API Rust/Axum avec cargo-watch</td></tr>
+          <tr><td><strong>postgres</strong></td><td><code>5432</code></td><td>Base de données PostgreSQL 16</td></tr>
+          <tr><td><strong>meilisearch</strong></td><td><code>7700</code></td><td>Moteur de recherche full-text</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <div class="callout-label">Hot-reload</div>
+        L'API et le frontend sont configurés en mode développement avec rechargement
+        automatique à chaque modification de fichier source.
+      </div>
+
+      <!-- ── Local ─────────────────────────────────────────── -->
+      <h2 id="local">Lancement local (sans Docker)</h2>
+
+      <h3>API (Rust)</h3>
+      <pre><code>cd api
+cargo install cargo-watch
+cargo watch -x run</code></pre>
+
+      <h3>Frontend (Next.js)</h3>
+      <pre><code>cd frontend
+npm install
+npm run dev</code></pre>
+
+      <!-- ── Variables d'environnement ─────────────────────── -->
+      <h2 id="env">Variables d'environnement</h2>
+
+      <p>
+        La configuration de l'API est gérée par des variables d'environnement.
+        Les valeurs par défaut sont définies dans <code>docker-compose.yml</code> :
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Défaut</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>HOST</code></td><td><code>0.0.0.0</code></td><td>Adresse d'écoute de l'API</td></tr>
+          <tr><td><code>PORT</code></td><td><code>8080</code></td><td>Port de l'API</td></tr>
+          <tr><td><code>DATABASE_URL</code></td><td><code>postgres://...</code></td><td>Chaîne de connexion PostgreSQL</td></tr>
+          <tr><td><code>MEILISEARCH_URL</code></td><td><code>http://meilisearch:7700</code></td><td>URL du serveur Meilisearch</td></tr>
+          <tr><td><code>MEILISEARCH_KEY</code></td><td><code>dev_master_key</code></td><td>Clé master Meilisearch</td></tr>
+          <tr><td><code>RUST_LOG</code></td><td><code>debug</code></td><td>Niveau de log (trace, debug, info)</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Vérification ──────────────────────────────────── -->
+      <h2 id="verify">Vérification</h2>
+
+      <p>Une fois les services lancés, vérifier que tout fonctionne :</p>
+
+      <pre><code># Health check API
+curl http://localhost:8080/api/v1/health
+
+# Réponse attendue :
+# {"status":"healthy"}</code></pre>
+
+      <pre><code># Frontend
+# Ouvrir http://localhost:3000 dans le navigateur
+
+# Meilisearch
+curl http://localhost:7700/health
+
+# Réponse attendue :
+# {"status":"available"}</code></pre>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">Dépannage</div>
+        Si un service ne démarre pas, vérifier les logs avec
+        <code>docker compose logs {service}</code>. Les causes fréquentes sont un port
+        déjà occupé ou un volume corrompu (<code>docker compose down -v</code> pour réinitialiser).
+      </div>
+
+    </main>
+  </div>
+
+  <footer class="footer">
+    Pumpkin Hub · Documentation · Open Source sous licence MIT
+  </footer>
+
+</body>
+</html>

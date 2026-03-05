@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,41 +18,42 @@
       <span class="navbar-version">docs</span>
     </div>
     <div class="navbar-links">
-      <a href="index.html" class="navbar-link">Documentation</a>
-      <a href="getting-started.html" class="navbar-link">Démarrage</a>
+      <a href="index.html" class="navbar-link">Docs</a>
+      <a href="getting-started.html" class="navbar-link">Getting Started</a>
       <a href="architecture.html" class="navbar-link">Architecture</a>
       <a href="api.html" class="navbar-link accent">API</a>
       <a href="roadmap.html" class="navbar-link">Roadmap</a>
       <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+      <a href="fr/api.html" class="navbar-link" title="Français">FR</a>
     </div>
   </nav>
 
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-section">
-        <div class="sidebar-label">Général</div>
-        <a href="index.html" class="sidebar-link">Vue d'ensemble</a>
-        <a href="getting-started.html" class="sidebar-link">Démarrage rapide</a>
+        <div class="sidebar-label">General</div>
+        <a href="index.html" class="sidebar-link">Overview</a>
+        <a href="getting-started.html" class="sidebar-link">Getting Started</a>
         <a href="architecture.html" class="sidebar-link">Architecture</a>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Référence</div>
+        <div class="sidebar-label">Reference</div>
         <a href="api.html" class="sidebar-link active">API Reference</a>
         <a href="design-system.html" class="sidebar-link">Design System</a>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Projet</div>
+        <div class="sidebar-label">Project</div>
         <a href="roadmap.html" class="sidebar-link">Roadmap</a>
-        <a href="contributing.html" class="sidebar-link">Contribuer</a>
+        <a href="contributing.html" class="sidebar-link">Contributing</a>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Sur cette page</div>
+        <div class="sidebar-label">On this page</div>
         <a href="#base-url" class="sidebar-sublink">Base URL</a>
-        <a href="#headers" class="sidebar-sublink">Headers communs</a>
+        <a href="#headers" class="sidebar-sublink">Common Headers</a>
         <a href="#health" class="sidebar-sublink">Health Check</a>
-        <a href="#errors" class="sidebar-sublink">Gestion d'erreurs</a>
-        <a href="#cors" class="sidebar-sublink">Politique CORS</a>
-        <a href="#planned" class="sidebar-sublink">Endpoints à venir</a>
+        <a href="#errors" class="sidebar-sublink">Error Handling</a>
+        <a href="#cors" class="sidebar-sublink">CORS Policy</a>
+        <a href="#planned" class="sidebar-sublink">Planned Endpoints</a>
       </div>
     </aside>
 
@@ -60,13 +61,13 @@
 
       <h1>API Reference</h1>
       <p style="color:#a3a3a3;margin-bottom:2rem;">
-        Documentation technique de l'API REST Pumpkin Hub (Axum / Rust).
+        Technical documentation for the Pumpkin Hub REST API (Axum / Rust).
       </p>
 
       <div class="callout callout-warn">
         <div class="callout-label">Work in progress</div>
-        L'API est en phase initiale. Seul l'endpoint <code>/health</code> est actuellement
-        implémenté. Les endpoints listés "à venir" sont planifiés dans la roadmap.
+        The API is in its initial phase. Only the <code>/health</code> endpoint is currently
+        implemented. The "planned" endpoints listed below are scheduled in the roadmap.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -75,13 +76,13 @@
       <pre><code>http://localhost:8080/api/v1</code></pre>
 
       <p>
-        Tous les endpoints sont préfixés par <code>/api/v1</code>. Le versioning est géré
-        par nesting dans le routeur Axum, ce qui permet d'ajouter un <code>/api/v2</code>
-        sans impact sur les routes existantes.
+        All endpoints are prefixed with <code>/api/v1</code>. Versioning is handled by
+        nesting in the Axum router, allowing the addition of <code>/api/v2</code> without
+        impacting existing routes.
       </p>
 
       <!-- ── Headers ───────────────────────────────────────── -->
-      <h2 id="headers">Headers communs</h2>
+      <h2 id="headers">Common Headers</h2>
 
       <table>
         <thead>
@@ -89,9 +90,9 @@
         </thead>
         <tbody>
           <tr><td><code>Content-Type</code></td><td>Request / Response</td><td><code>application/json</code></td></tr>
-          <tr><td><code>x-request-id</code></td><td>Response</td><td>UUID unique attribué à chaque requête (traçabilité)</td></tr>
-          <tr><td><code>Content-Encoding</code></td><td>Response</td><td><code>gzip</code> si le client supporte la compression</td></tr>
-          <tr><td><code>Authorization</code></td><td>Request</td><td>Bearer token (pour les endpoints authentifiés, à venir)</td></tr>
+          <tr><td><code>x-request-id</code></td><td>Response</td><td>Unique UUID assigned to each request (traceability)</td></tr>
+          <tr><td><code>Content-Encoding</code></td><td>Response</td><td><code>gzip</code> if the client supports compression</td></tr>
+          <tr><td><code>Authorization</code></td><td>Request</td><td>Bearer token (for authenticated endpoints, coming soon)</td></tr>
         </tbody>
       </table>
 
@@ -101,14 +102,13 @@
       <h3><span class="badge badge-green">GET</span> &nbsp; <code>/api/v1/health</code></h3>
 
       <p>
-        Retourne le statut de liveness du service. Utilisé par les healthchecks Docker
-        et les load balancers.
+        Returns the service liveness status. Used by Docker healthchecks and load balancers.
       </p>
 
-      <h4>Requête</h4>
+      <h4>Request</h4>
       <pre><code>curl -X GET http://localhost:8080/api/v1/health</code></pre>
 
-      <h4>Réponse <span class="badge badge-green">200 OK</span></h4>
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
       <pre><code>{
   "status": "ok",
   "service": "pumpkin-hub-api",
@@ -117,135 +117,135 @@
 
       <table>
         <thead>
-          <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>status</code></td><td>string</td><td>État du service (<code>"ok"</code>)</td></tr>
-          <tr><td><code>service</code></td><td>string</td><td>Nom du service</td></tr>
-          <tr><td><code>version</code></td><td>string</td><td>Version du crate (depuis <code>Cargo.toml</code>)</td></tr>
+          <tr><td><code>status</code></td><td>string</td><td>Service state (<code>"ok"</code>)</td></tr>
+          <tr><td><code>service</code></td><td>string</td><td>Service name</td></tr>
+          <tr><td><code>version</code></td><td>string</td><td>Crate version (from <code>Cargo.toml</code>)</td></tr>
         </tbody>
       </table>
 
-      <!-- ── Gestion d'erreurs ─────────────────────────────── -->
-      <h2 id="errors">Gestion d'erreurs</h2>
+      <!-- ── Error Handling ────────────────────────────────── -->
+      <h2 id="errors">Error Handling</h2>
 
       <p>
-        Toutes les erreurs sont retournées au format JSON unifié, via le type centralisé
-        <code>AppError</code> :
+        All errors are returned in a unified JSON format, via the centralized
+        <code>AppError</code> type:
       </p>
 
       <pre><code>{
-  "error": "Description de l'erreur"
+  "error": "Error description"
 }</code></pre>
 
-      <h3>Codes d'erreur</h3>
+      <h3>Error Codes</h3>
       <table>
         <thead>
-          <tr><th>HTTP Status</th><th>Variante</th><th>Signification</th></tr>
+          <tr><th>HTTP Status</th><th>Variant</th><th>Meaning</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-yellow">401</span></td><td><code>Unauthorized</code></td><td>Authentification requise ou token invalide</td></tr>
-          <tr><td><span class="badge badge-yellow">404</span></td><td><code>NotFound</code></td><td>Ressource introuvable</td></tr>
-          <tr><td><span class="badge badge-yellow">422</span></td><td><code>UnprocessableEntity</code></td><td>Données invalides (détail dans le message)</td></tr>
-          <tr><td><span class="badge badge-red">500</span></td><td><code>Internal</code></td><td>Erreur interne (détails loggés côté serveur, jamais exposés au client)</td></tr>
-          <tr><td><span class="badge badge-red">504</span></td><td>Timeout</td><td>La requête a dépassé le timeout global de 30 secondes</td></tr>
+          <tr><td><span class="badge badge-yellow">401</span></td><td><code>Unauthorized</code></td><td>Authentication required or invalid token</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td><code>NotFound</code></td><td>Resource not found</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td><code>UnprocessableEntity</code></td><td>Invalid data (details in message)</td></tr>
+          <tr><td><span class="badge badge-red">500</span></td><td><code>Internal</code></td><td>Internal error (details logged server-side, never exposed to client)</td></tr>
+          <tr><td><span class="badge badge-red">504</span></td><td>Timeout</td><td>Request exceeded the 30-second global timeout</td></tr>
         </tbody>
       </table>
 
       <div class="callout callout-info">
-        <div class="callout-label">Sécurité</div>
-        Les erreurs internes (<code>500</code>) ne transmettent jamais la cause racine au client.
-        Le message est remplacé par <em>"An unexpected error occurred"</em> et la raison technique
-        est tracée côté serveur via <code>tracing::error!</code>.
+        <div class="callout-label">Security</div>
+        Internal errors (<code>500</code>) never transmit the root cause to the client.
+        The message is replaced by <em>"An unexpected error occurred"</em> and the technical
+        reason is traced server-side via <code>tracing::error!</code>.
       </div>
 
       <!-- ── CORS ──────────────────────────────────────────── -->
-      <h2 id="cors">Politique CORS</h2>
+      <h2 id="cors">CORS Policy</h2>
 
       <p>
-        La politique CORS est configurée via la variable d'environnement <code>ALLOWED_ORIGINS</code>
-        (valeurs séparées par virgules).
+        The CORS policy is configured via the <code>ALLOWED_ORIGINS</code> environment variable
+        (comma-separated values).
       </p>
 
       <table>
         <thead>
-          <tr><th>Paramètre</th><th>Valeur</th></tr>
+          <tr><th>Parameter</th><th>Value</th></tr>
         </thead>
         <tbody>
-          <tr><td>Origines autorisées</td><td>Configurable via <code>ALLOWED_ORIGINS</code></td></tr>
-          <tr><td>Méthodes</td><td><code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code></td></tr>
-          <tr><td>Headers autorisés</td><td><code>Content-Type</code>, <code>Authorization</code></td></tr>
-          <tr><td>Credentials</td><td>Activé (<code>allow_credentials: true</code>)</td></tr>
-          <tr><td>Max Age (preflight)</td><td>3600 secondes (1 heure)</td></tr>
+          <tr><td>Allowed Origins</td><td>Configurable via <code>ALLOWED_ORIGINS</code></td></tr>
+          <tr><td>Methods</td><td><code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code></td></tr>
+          <tr><td>Allowed Headers</td><td><code>Content-Type</code>, <code>Authorization</code></td></tr>
+          <tr><td>Credentials</td><td>Enabled (<code>allow_credentials: true</code>)</td></tr>
+          <tr><td>Max Age (preflight)</td><td>3600 seconds (1 hour)</td></tr>
         </tbody>
       </table>
 
-      <!-- ── Endpoints à venir ─────────────────────────────── -->
-      <h2 id="planned">Endpoints planifiés</h2>
+      <!-- ── Planned Endpoints ─────────────────────────────── -->
+      <h2 id="planned">Planned Endpoints</h2>
 
       <p>
-        Les endpoints suivants seront progressivement ajoutés. Voir la
-        <a href="roadmap.html">roadmap</a> pour le planning détaillé.
+        The following endpoints will be progressively added. See the
+        <a href="roadmap.html">roadmap</a> for the detailed schedule.
       </p>
 
-      <h3>Authentification</h3>
+      <h3>Authentication</h3>
       <table>
         <thead>
-          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/login</code></td><td>Authentification via GitHub OAuth</td></tr>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/refresh</code></td><td>Renouvellement du token</td></tr>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/logout</code></td><td>Déconnexion et révocation</td></tr>
+          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/login</code></td><td>Authentication via GitHub OAuth</td></tr>
+          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/refresh</code></td><td>Token renewal</td></tr>
+          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/logout</code></td><td>Logout and revocation</td></tr>
         </tbody>
       </table>
 
       <h3>Plugins</h3>
       <table>
         <thead>
-          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins</code></td><td>Liste paginée avec filtres</td></tr>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Détail d'un plugin</td></tr>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/plugins</code></td><td>Publication d'un nouveau plugin</td></tr>
-          <tr><td><span class="badge badge-orange">PUT</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Mise à jour des métadonnées</td></tr>
-          <tr><td><span class="badge badge-red">DELETE</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Suppression (soft-delete)</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins</code></td><td>Paginated list with filters</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Plugin details</td></tr>
+          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/plugins</code></td><td>Publish a new plugin</td></tr>
+          <tr><td><span class="badge badge-orange">PUT</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Update metadata</td></tr>
+          <tr><td><span class="badge badge-red">DELETE</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Deletion (soft-delete)</td></tr>
         </tbody>
       </table>
 
-      <h3>Versions &amp; Binaires</h3>
+      <h3>Versions &amp; Binaries</h3>
       <table>
         <thead>
-          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions</code></td><td>Historique des versions</td></tr>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/plugins/:slug/versions</code></td><td>Publication d'une nouvelle version</td></tr>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions/:ver/download</code></td><td>Téléchargement du binaire</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions</code></td><td>Version history</td></tr>
+          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/plugins/:slug/versions</code></td><td>Publish a new version</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions/:ver/download</code></td><td>Binary download</td></tr>
         </tbody>
       </table>
 
-      <h3>Recherche</h3>
+      <h3>Search</h3>
       <table>
         <thead>
-          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/search?q=...&amp;category=...&amp;arch=...</code></td><td>Recherche full-text Meilisearch avec filtres facettés</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/search?q=...&amp;category=...&amp;arch=...</code></td><td>Meilisearch full-text search with faceted filters</td></tr>
         </tbody>
       </table>
 
-      <h3>Utilisateurs</h3>
+      <h3>Users</h3>
       <table>
         <thead>
-          <tr><th>Méthode</th><th>Route</th><th>Description</th></tr>
+          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username</code></td><td>Profil public d'un auteur</td></tr>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username/plugins</code></td><td>Plugins publiés par l'auteur</td></tr>
-          <tr><td><span class="badge badge-orange">PATCH</span></td><td><code>/api/v1/me</code></td><td>Mise à jour du profil authentifié</td></tr>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/me/stats</code></td><td>Statistiques du dashboard auteur</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username</code></td><td>Author public profile</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username/plugins</code></td><td>Plugins published by the author</td></tr>
+          <tr><td><span class="badge badge-orange">PATCH</span></td><td><code>/api/v1/me</code></td><td>Update authenticated profile</td></tr>
+          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/me/stats</code></td><td>Author dashboard statistics</td></tr>
         </tbody>
       </table>
 
@@ -253,7 +253,7 @@
   </div>
 
   <footer class="footer">
-    Pumpkin Hub · Documentation · Open Source sous licence MIT
+    Pumpkin Hub · Documentation · Open Source under MIT License
   </footer>
 
 </body>
