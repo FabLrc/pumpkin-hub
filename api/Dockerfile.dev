@@ -1,0 +1,13 @@
+# DÉVELOPPEMENT UNIQUEMENT
+FROM rust:slim
+
+ENV RUST_ENV=development
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/* \
+    && cargo install cargo-watch
+
+EXPOSE 8080
+
+CMD ["cargo", "watch", "-x", "run"]

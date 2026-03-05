@@ -1,0 +1,75 @@
+# DÉVELOPPEMENT LOCAL UNIQUEMENT — Ne pas utiliser en production.
+
+services:
+  frontend-dev:
+    container_name: pumpkin-hub-frontend-dev
+    image: pumpkin-hub-frontend:dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+
+  api-dev:
+    container_name: pumpkin-hub-api-dev
+    image: pumpkin-hub-api:dev
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api:/app
+      - cargo-cache:/usr/local/cargo/registry
+    depends_on:
+      db-dev:
+        condition: service_healthy
+      meilisearch-dev:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://pumpkin_user:dev_password@db-dev:5432/pumpkin_hub_dev
+      - MEILISEARCH_URL=http://meilisearch-dev:7700
+      - MEILISEARCH_KEY=dev_master_key
+
+  db-dev:
+    container_name: pumpkin-hub-db-dev
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=pumpkin_user
+      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_DB=pumpkin_hub_dev
+    volumes:
+      - db-data-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pumpkin_user -d pumpkin_hub_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  meilisearch-dev:
+    container_name: pumpkin-hub-meilisearch-dev
+    image: getmeili/meilisearch:v1.7
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_ENV=development
+      - MEILI_MASTER_KEY=dev_master_key
+    volumes:
+      - meili-data-dev:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data-dev:
+  meili-data-dev:
+  cargo-cache:

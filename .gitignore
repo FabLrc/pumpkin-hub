@@ -1,0 +1,23 @@
+# ============================================================
+# Pumpkin Hub — Root .gitignore
+# Specifics for api/ and frontend/ are handled by their own .gitignore files
+# ============================================================
+
+# IDE
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Misc
+*.log
