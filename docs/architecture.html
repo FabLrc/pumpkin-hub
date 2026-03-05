@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Architecture — Pumpkin Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <a href="index.html" style="display:flex;align-items:center;gap:0.75rem;color:inherit;">
+        <div class="navbar-logo-icon"><span>PH</span></div>
+        <span class="navbar-title">Pumpkin Hub</span>
+      </a>
+      <span class="navbar-version">docs</span>
+    </div>
+    <div class="navbar-links">
+      <a href="index.html" class="navbar-link">Documentation</a>
+      <a href="getting-started.html" class="navbar-link">Démarrage</a>
+      <a href="architecture.html" class="navbar-link accent">Architecture</a>
+      <a href="api.html" class="navbar-link">API</a>
+      <a href="roadmap.html" class="navbar-link">Roadmap</a>
+      <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Général</div>
+        <a href="index.html" class="sidebar-link">Vue d'ensemble</a>
+        <a href="getting-started.html" class="sidebar-link">Démarrage rapide</a>
+        <a href="architecture.html" class="sidebar-link active">Architecture</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Référence</div>
+        <a href="api.html" class="sidebar-link">API Reference</a>
+        <a href="design-system.html" class="sidebar-link">Design System</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Projet</div>
+        <a href="roadmap.html" class="sidebar-link">Roadmap</a>
+        <a href="contributing.html" class="sidebar-link">Contribuer</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sur cette page</div>
+        <a href="#overview" class="sidebar-sublink">Vue d'ensemble</a>
+        <a href="#project-structure" class="sidebar-sublink">Structure du projet</a>
+        <a href="#backend" class="sidebar-sublink">Backend (API Rust)</a>
+        <a href="#frontend" class="sidebar-sublink">Frontend (Next.js)</a>
+        <a href="#infrastructure" class="sidebar-sublink">Infrastructure</a>
+        <a href="#ci-cd" class="sidebar-sublink">CI/CD</a>
+      </div>
+    </aside>
+
+    <main class="content">
+
+      <h1>Architecture</h1>
+      <p style="color:#a3a3a3;margin-bottom:2rem;">
+        Organisation technique et principes architecturaux de Pumpkin Hub.
+      </p>
+
+      <!-- ── Vue d'ensemble ────────────────────────────────── -->
+      <h2 id="overview">Vue d'ensemble</h2>
+      <p>
+        Pumpkin Hub suit une architecture <strong>client-serveur classique</strong> avec une séparation
+        nette entre le frontend (Next.js) et le backend (API Rust/Axum). Les services communiquent
+        via des appels REST JSON sous le préfixe <code>/api/v1</code>.
+      </p>
+
+      <pre><code>┌──────────────────────────────────────────────────────────┐
+│                      CLIENT (Browser)                    │
+└──────────────┬───────────────────────────────────────────┘
+               │ HTTPS
+┌──────────────▼───────────────────────────────────────────┐
+│             FRONTEND — Next.js 16 (SSR/SSG)              │
+│             Port 3000 · React 19 · Tailwind 4            │
+└──────────────┬───────────────────────────────────────────┘
+               │ REST JSON /api/v1/*
+┌──────────────▼───────────────────────────────────────────┐
+│             BACKEND — Axum 0.8 (Rust)                    │
+│             Port 8080 · Tokio · Tower Middlewares         │
+├──────────────┬──────────────────────┬────────────────────┤
+│              │                      │                    │
+│  ┌───────────▼──────────┐  ┌───────▼────────────┐       │
+│  │  PostgreSQL 16       │  │  Meilisearch v1.7  │       │
+│  │  Données persistantes│  │  Recherche full-text│       │
+│  └──────────────────────┘  └────────────────────┘       │
+└──────────────────────────────────────────────────────────┘</code></pre>
+
+      <!-- ── Structure du projet ───────────────────────────── -->
+      <h2 id="project-structure">Structure du projet</h2>
+
+      <pre><code>pumpkin-hub/
+├── api/                    # Backend Rust (Axum)
+│   ├── Cargo.toml          # Dépendances et métadonnées
+│   ├── Dockerfile.dev      # Conteneur de développement
+│   └── src/
+│       ├── main.rs         # Point d'entrée, shutdown gracieux
+│       ├── lib.rs          # build_app() et middleware stack
+│       ├── config.rs       # Chargement configuration depuis ENV
+│       ├── error.rs        # Type d'erreur centralisé (AppError)
+│       ├── state.rs        # État partagé (AppState)
+│       └── routes/
+│           ├── mod.rs      # Assemblage des sous-routeurs
+│           └── health.rs   # GET /api/v1/health
+│
+├── frontend/               # Frontend Next.js
+│   ├── package.json        # Dépendances NPM
+│   ├── Dockerfile.dev      # Conteneur de développement
+│   ├── next.config.ts      # Configuration Next.js
+│   ├── tsconfig.json       # Configuration TypeScript
+│   └── app/
+│       ├── layout.tsx      # Layout racine
+│       ├── page.tsx        # Page d'accueil
+│       └── globals.css     # Styles globaux Tailwind
+│
+├── docs/                   # Documentation (GitHub Pages)
+│   └── mockup/             # Maquettes HTML du design system
+│
+├── docker-compose.yml      # Orchestration dev (4 services)
+└── .github/
+    ├── workflows/ci.yml    # Pipeline CI GitHub Actions
+    └── instructions/       # Instructions Copilot/IA</code></pre>
+
+      <!-- ── Backend ───────────────────────────────────────── -->
+      <h2 id="backend">Backend — API Rust</h2>
+
+      <h3>Principes directeurs</h3>
+      <ul>
+        <li><strong>Testabilité</strong> — <code>build_app(config)</code> dans <code>lib.rs</code> permet de construire l'app sans bind réseau, facilitant les tests d'intégration.</li>
+        <li><strong>Separation of Concerns</strong> — Configuration, état, erreurs et routes sont dans des modules distincts.</li>
+        <li><strong>Graceful Shutdown</strong> — Écoute CTRL+C et SIGTERM pour un arrêt propre des connexions.</li>
+      </ul>
+
+      <h3>Pile middleware (Tower)</h3>
+      <p>Les middlewares sont appliqués dans l'ordre suivant via <code>ServiceBuilder</code> :</p>
+
+      <table>
+        <thead>
+          <tr><th>Ordre</th><th>Middleware</th><th>Rôle</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><code>SetRequestIdLayer</code></td><td>Assigne un UUID unique (<code>x-request-id</code>) à chaque requête</td></tr>
+          <tr><td>2</td><td><code>TraceLayer</code></td><td>Traces structurées avec span par requête (tracing)</td></tr>
+          <tr><td>3</td><td><code>PropagateRequestIdLayer</code></td><td>Propage le request ID dans les headers de réponse</td></tr>
+          <tr><td>4</td><td><code>TimeoutLayer</code></td><td>Timeout global de 30s → 504 Gateway Timeout</td></tr>
+          <tr><td>5</td><td><code>CompressionLayer</code></td><td>Compression Gzip des réponses</td></tr>
+          <tr><td>6</td><td><code>CorsLayer</code></td><td>Politique CORS multi-origines configurable</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Gestion de configuration</h3>
+      <p>
+        La struct <code>Config</code> est chargée depuis les variables d'environnement via
+        <code>Config::from_env()</code>. Un <code>ConfigError</code> typé est retourné pour les
+        variables manquantes ou invalides. L'API échoue au démarrage (fail-fast) si la configuration
+        est incorrecte.
+      </p>
+
+      <h3>Gestion d'erreurs</h3>
+      <p>
+        Le type <code>AppError</code> unifie toutes les erreurs applicatives et implémente
+        <code>IntoResponse</code> d'Axum pour une conversion automatique en réponse HTTP JSON :
+      </p>
+      <table>
+        <thead>
+          <tr><th>Variante</th><th>HTTP Status</th><th>Comportement</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>NotFound</code></td><td>404</td><td>Ressource introuvable</td></tr>
+          <tr><td><code>UnprocessableEntity</code></td><td>422</td><td>Données invalides (message transmis au client)</td></tr>
+          <tr><td><code>Unauthorized</code></td><td>401</td><td>Accès non autorisé</td></tr>
+          <tr><td><code>Internal</code></td><td>500</td><td>Erreur interne (loguée côté serveur, jamais exposée)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Routage</h3>
+      <p>
+        Les routes sont organisées en modules par fonctionnalité et assemblées dans
+        <code>routes/mod.rs</code> sous le préfixe <code>/api/v1</code>. Pour ajouter
+        une nouvelle fonctionnalité, créer un fichier <code>routes/{feature}.rs</code> et
+        le merger dans <code>v1_routes()</code>.
+      </p>
+
+      <!-- ── Frontend ──────────────────────────────────────── -->
+      <h2 id="frontend">Frontend — Next.js</h2>
+
+      <h3>Structure App Router</h3>
+      <p>
+        Le frontend utilise le <strong>App Router</strong> de Next.js 16 avec React 19. Les styles
+        sont gérés par Tailwind CSS 4 avec le plugin PostCSS.
+      </p>
+
+      <h3>Design System — Brutaliste Industrielle</h3>
+      <p>Le design system du projet suit ces principes :</p>
+      <ul>
+        <li><strong>Typographie</strong> — Raleway (titres et corps) + JetBrains Mono (code et données techniques)</li>
+        <li><strong>Palette</strong> — Fond noir (#0a0a0a), texte neutre (#e5e5e5), accent orange (#f97316)</li>
+        <li><strong>Géométrie</strong> — Zéro arrondi (border-radius: 0), bordures fines neutres (#262626)</li>
+        <li><strong>Effets</strong> — Texture bruit (noise overlay), scanlines subtiles, glow orange sur focus</li>
+      </ul>
+
+      <h3>Pages planifiées</h3>
+      <table>
+        <thead>
+          <tr><th>Page</th><th>Route</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Landing</td><td><code>/</code></td><td>Accueil avec trending plugins et bento grid</td></tr>
+          <tr><td>Explorer</td><td><code>/explore</code></td><td>Catalogue avec filtres facettés et recherche</td></tr>
+          <tr><td>Plugin Detail</td><td><code>/plugin/[slug]</code></td><td>Page détaillée avec install panel et versions</td></tr>
+          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Espace auteur avec analytics et gestion</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Infrastructure ────────────────────────────────── -->
+      <h2 id="infrastructure">Infrastructure Docker</h2>
+
+      <p>
+        L'environnement de développement est orchestré par <code>docker-compose.yml</code> avec
+        4 services. Les données PostgreSQL et Meilisearch sont persistées via des volumes Docker.
+        Le cache Cargo est également monté en volume pour accélérer les recompilations.
+      </p>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">Attention</div>
+        Le fichier <code>docker-compose.yml</code> est destiné au développement local uniquement.
+        Les mots de passe et clés sont des valeurs par défaut qui ne doivent pas être utilisées
+        en production.
+      </div>
+
+      <h3>Volumes persistés</h3>
+      <table>
+        <thead>
+          <tr><th>Volume</th><th>Contenu</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>db-data-dev</code></td><td>Données PostgreSQL</td></tr>
+          <tr><td><code>meili-data-dev</code></td><td>Index Meilisearch</td></tr>
+          <tr><td><code>cargo-cache</code></td><td>Registre et cache de compilation Cargo</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── CI/CD ─────────────────────────────────────────── -->
+      <h2 id="ci-cd">CI/CD — GitHub Actions</h2>
+
+      <p>
+        Le workflow <code>ci.yml</code> s'exécute sur chaque push et pull request vers les
+        branches <code>master</code> et <code>develop</code>. Deux jobs parallèles valident
+        le frontend et le backend.
+      </p>
+
+      <h3>Frontend CI</h3>
+      <ol>
+        <li><strong>Lint</strong> — <code>npm run lint</code> (ESLint)</li>
+        <li><strong>Type-check</strong> — <code>npx tsc --noEmit</code></li>
+        <li><strong>Build</strong> — <code>npm run build</code></li>
+      </ol>
+
+      <h3>Backend CI</h3>
+      <ol>
+        <li><strong>Formatage</strong> — <code>cargo fmt --all -- --check</code></li>
+        <li><strong>Analyse statique</strong> — <code>cargo clippy -- -D warnings</code></li>
+        <li><strong>Tests</strong> — <code>cargo test</code></li>
+      </ol>
+
+      <div class="callout">
+        <div class="callout-label">Optimisations</div>
+        Le cache NPM (<code>package-lock.json</code>) et le cache Rust (<code>Swatinem/rust-cache</code>)
+        sont activés pour réduire les temps de build CI.
+      </div>
+
+    </main>
+  </div>
+
+  <footer class="footer">
+    Pumpkin Hub · Documentation · Open Source sous licence MIT
+  </footer>
+
+</body>
+</html>

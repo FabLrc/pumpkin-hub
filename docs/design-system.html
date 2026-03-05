@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design System — Pumpkin Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <a href="index.html" style="display:flex;align-items:center;gap:0.75rem;color:inherit;">
+        <div class="navbar-logo-icon"><span>PH</span></div>
+        <span class="navbar-title">Pumpkin Hub</span>
+      </a>
+      <span class="navbar-version">docs</span>
+    </div>
+    <div class="navbar-links">
+      <a href="index.html" class="navbar-link">Documentation</a>
+      <a href="getting-started.html" class="navbar-link">Démarrage</a>
+      <a href="architecture.html" class="navbar-link">Architecture</a>
+      <a href="api.html" class="navbar-link">API</a>
+      <a href="roadmap.html" class="navbar-link">Roadmap</a>
+      <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Général</div>
+        <a href="index.html" class="sidebar-link">Vue d'ensemble</a>
+        <a href="getting-started.html" class="sidebar-link">Démarrage rapide</a>
+        <a href="architecture.html" class="sidebar-link">Architecture</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Référence</div>
+        <a href="api.html" class="sidebar-link">API Reference</a>
+        <a href="design-system.html" class="sidebar-link active">Design System</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Projet</div>
+        <a href="roadmap.html" class="sidebar-link">Roadmap</a>
+        <a href="contributing.html" class="sidebar-link">Contribuer</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sur cette page</div>
+        <a href="#philosophy" class="sidebar-sublink">Philosophie</a>
+        <a href="#colors" class="sidebar-sublink">Couleurs</a>
+        <a href="#typography" class="sidebar-sublink">Typographie</a>
+        <a href="#spacing" class="sidebar-sublink">Espacement</a>
+        <a href="#components" class="sidebar-sublink">Composants</a>
+        <a href="#effects" class="sidebar-sublink">Effets visuels</a>
+      </div>
+    </aside>
+
+    <main class="content">
+
+      <h1>Design System</h1>
+      <p style="color:#a3a3a3;margin-bottom:2rem;">
+        Brutaliste Industrielle — Le langage visuel de Pumpkin Hub.
+      </p>
+
+      <!-- ── Philosophie ───────────────────────────────────── -->
+      <h2 id="philosophy">Philosophie</h2>
+      <p>
+        Le design system de Pumpkin Hub s'inspire de l'esthétique <strong>"Brutaliste Industrielle"</strong> :
+        une interface sans artifice qui reflète la modernité et la rigueur du langage Rust.
+        Chaque décision visuelle suit ces principes :
+      </p>
+      <ul>
+        <li><strong>No-Radius</strong> — Aucun arrondi. Les éléments ont des angles droits exclusivement.</li>
+        <li><strong>Code-First</strong> — L'interface est pensée pour les développeurs : monospace omniprésent, données techniques en évidence.</li>
+        <li><strong>60-30-10</strong> — 60% noir (fond), 30% gris neutre (texte), 10% orange (actions/CTA).</li>
+        <li><strong>Clarté technique</strong> — Pas de décoration superflue. Chaque pixel sert la compréhension.</li>
+      </ul>
+
+      <!-- ── Couleurs ──────────────────────────────────────── -->
+      <h2 id="colors">Palette de couleurs</h2>
+
+      <h3>Fond</h3>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Hex</th><th style="width:60px;">Aperçu</th><th>Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>bg-base</code></td><td><code>#0a0a0a</code></td><td><div style="width:40px;height:24px;background:#0a0a0a;border:1px solid #262626;"></div></td><td>Fond principal</td></tr>
+          <tr><td><code>bg-elevated</code></td><td><code>#111111</code></td><td><div style="width:40px;height:24px;background:#111;border:1px solid #262626;"></div></td><td>Cartes, modales, callouts</td></tr>
+          <tr><td><code>bg-surface</code></td><td><code>#1a1a1a</code></td><td><div style="width:40px;height:24px;background:#1a1a1a;border:1px solid #262626;"></div></td><td>Hover, éléments interactifs</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Texte</h3>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Hex</th><th style="width:60px;">Aperçu</th><th>Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>text-primary</code></td><td><code>#ffffff</code></td><td><div style="width:40px;height:24px;background:#fff;border:1px solid #262626;"></div></td><td>Titres, texte important</td></tr>
+          <tr><td><code>text-secondary</code></td><td><code>#e5e5e5</code></td><td><div style="width:40px;height:24px;background:#e5e5e5;border:1px solid #262626;"></div></td><td>Corps de texte</td></tr>
+          <tr><td><code>text-muted</code></td><td><code>#a3a3a3</code></td><td><div style="width:40px;height:24px;background:#a3a3a3;border:1px solid #262626;"></div></td><td>Texte descriptif, secondaire</td></tr>
+          <tr><td><code>text-subtle</code></td><td><code>#737373</code></td><td><div style="width:40px;height:24px;background:#737373;border:1px solid #262626;"></div></td><td>Labels, métadonnées</td></tr>
+          <tr><td><code>text-dim</code></td><td><code>#525252</code></td><td><div style="width:40px;height:24px;background:#525252;border:1px solid #262626;"></div></td><td>Texte tertiaire, placeholders</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Accent</h3>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Hex</th><th style="width:60px;">Aperçu</th><th>Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>accent</code></td><td><code>#f97316</code></td><td><div style="width:40px;height:24px;background:#f97316;"></div></td><td>CTA, liens, états actifs</td></tr>
+          <tr><td><code>accent-light</code></td><td><code>#fb923c</code></td><td><div style="width:40px;height:24px;background:#fb923c;"></div></td><td>Hover sur accent</td></tr>
+          <tr><td><code>accent-dark</code></td><td><code>#ea580c</code></td><td><div style="width:40px;height:24px;background:#ea580c;"></div></td><td>Active sur accent</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Bordures</h3>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Hex</th><th>Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>border-default</code></td><td><code>#262626</code></td><td>Séparations, cartes</td></tr>
+          <tr><td><code>border-hover</code></td><td><code>#525252</code></td><td>État hover</td></tr>
+          <tr><td><code>border-accent</code></td><td><code>#f97316</code></td><td>État focus, sélection active</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Sémantique</h3>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Hex</th><th style="width:60px;">Aperçu</th><th>Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>success</code></td><td><code>#4ade80</code></td><td><div style="width:40px;height:24px;background:#4ade80;"></div></td><td>Publié, succès, actif</td></tr>
+          <tr><td><code>warning</code></td><td><code>#facc15</code></td><td><div style="width:40px;height:24px;background:#facc15;"></div></td><td>En review, attention</td></tr>
+          <tr><td><code>error</code></td><td><code>#f87171</code></td><td><div style="width:40px;height:24px;background:#f87171;"></div></td><td>Erreur, suppression</td></tr>
+          <tr><td><code>info</code></td><td><code>#38bdf8</code></td><td><div style="width:40px;height:24px;background:#38bdf8;"></div></td><td>Information, lien</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Typographie ───────────────────────────────────── -->
+      <h2 id="typography">Typographie</h2>
+
+      <h3>Polices</h3>
+      <table>
+        <thead>
+          <tr><th>Police</th><th>Usage</th><th>Graisses</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Raleway</strong></td><td>Titres, corps de texte, navigation</td><td>300, 400, 600, 700, 900</td></tr>
+          <tr><td><strong>JetBrains Mono</strong></td><td>Code, badges, valeurs techniques, métadonnées</td><td>400, 500, 700</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Échelle typographique</h3>
+      <table>
+        <thead>
+          <tr><th>Niveau</th><th>Taille</th><th>Graisse</th><th>Police</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>H1</td><td>2rem (32px)</td><td>900 (Black)</td><td>Raleway</td></tr>
+          <tr><td>H2</td><td>1.4rem (22px)</td><td>800 (ExtraBold)</td><td>Raleway</td></tr>
+          <tr><td>H3</td><td>1.1rem (18px)</td><td>700 (Bold)</td><td>Raleway</td></tr>
+          <tr><td>Body</td><td>0.875rem (14px)</td><td>400 (Regular)</td><td>Raleway</td></tr>
+          <tr><td>Code</td><td>0.75rem (12px)</td><td>400 (Regular)</td><td>JetBrains Mono</td></tr>
+          <tr><td>Label</td><td>0.65rem (10px)</td><td>500 (Medium)</td><td>JetBrains Mono</td></tr>
+        </tbody>
+      </table>
+
+      <p>Interlignage : <strong>1.7x</strong> pour le corps de texte, <strong>1.3x</strong> pour les titres.</p>
+
+      <!-- ── Espacement ────────────────────────────────────── -->
+      <h2 id="spacing">Grille &amp; espacement</h2>
+      <p>
+        Le système de grille utilise une base de <strong>8px</strong>. Tous les espacements
+        et dimensions sont des multiples de 8px pour assurer la consistance.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Token</th><th>Valeur</th><th>Usage courant</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>space-1</code></td><td>4px</td><td>Micro-espacement interne</td></tr>
+          <tr><td><code>space-2</code></td><td>8px</td><td>Gap minimal, padding léger</td></tr>
+          <tr><td><code>space-3</code></td><td>12px</td><td>Padding de badges et tags</td></tr>
+          <tr><td><code>space-4</code></td><td>16px</td><td>Padding de cartes, gap de grid</td></tr>
+          <tr><td><code>space-6</code></td><td>24px</td><td>Séparation de sections mineures</td></tr>
+          <tr><td><code>space-8</code></td><td>32px</td><td>Margin de sections majeures</td></tr>
+          <tr><td><code>space-12</code></td><td>48px</td><td>Espacement entre blocs</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Composants ────────────────────────────────────── -->
+      <h2 id="components">Composants</h2>
+
+      <h3>Boutons</h3>
+      <p>Deux variantes principales, toujours avec <code>border-radius: 0</code> :</p>
+      <ul>
+        <li><strong>Primary</strong> — Fond orange (#f97316), texte noir, hover → #ea580c</li>
+        <li><strong>Ghost</strong> — Fond transparent, bordure neutre, texte gris, hover → bordure claire</li>
+      </ul>
+
+      <h3>Cartes (Bento)</h3>
+      <ul>
+        <li>Bordure 1px #262626, fond #111</li>
+        <li>Hover : bordure → #f97316, translateY(-2px)</li>
+        <li>Pas d'ombre portée, pas d'arrondi</li>
+      </ul>
+
+      <h3>Badges</h3>
+      <ul>
+        <li>Police JetBrains Mono, 0.6rem, uppercase</li>
+        <li>Bordure colorée, fond semi-transparent (5% opacity)</li>
+        <li>Pas d'arrondi</li>
+      </ul>
+
+      <h3>Inputs</h3>
+      <ul>
+        <li>Fond #111, bordure #262626</li>
+        <li>Focus : bordure → #f97316, glow subtil</li>
+        <li>Police JetBrains Mono pour les champs techniques</li>
+      </ul>
+
+      <!-- ── Effets ────────────────────────────────────────── -->
+      <h2 id="effects">Effets visuels</h2>
+
+      <h3>Noise overlay</h3>
+      <p>
+        Texture de bruit SVG très subtile (opacity 3%) appliquée sur le <code>body::before</code>
+        en <code>position: fixed</code> avec <code>pointer-events: none</code>.
+      </p>
+
+      <h3>Scanlines</h3>
+      <p>
+        Effet de lignes de scan CRT via <code>repeating-linear-gradient</code> (amplitude 4px,
+        opacity 3%).
+      </p>
+
+      <h3>Glow orange</h3>
+      <p>
+        Box-shadow subtil sur les éléments en focus ou feature :
+        <code>box-shadow: 0 0 40px rgba(249, 115, 22, 0.15)</code>.
+      </p>
+
+      <h3>Grid Background</h3>
+      <p>
+        Grille orthogonale de fond (48px) en orange très léger (3% opacity) pour renforcer
+        l'esthétique technique/industrielle.
+      </p>
+
+    </main>
+  </div>
+
+  <footer class="footer">
+    Pumpkin Hub · Documentation · Open Source sous licence MIT
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contribuer — Pumpkin Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <a href="index.html" style="display:flex;align-items:center;gap:0.75rem;color:inherit;">
+        <div class="navbar-logo-icon"><span>PH</span></div>
+        <span class="navbar-title">Pumpkin Hub</span>
+      </a>
+      <span class="navbar-version">docs</span>
+    </div>
+    <div class="navbar-links">
+      <a href="index.html" class="navbar-link">Documentation</a>
+      <a href="getting-started.html" class="navbar-link">Démarrage</a>
+      <a href="architecture.html" class="navbar-link">Architecture</a>
+      <a href="api.html" class="navbar-link">API</a>
+      <a href="roadmap.html" class="navbar-link">Roadmap</a>
+      <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Général</div>
+        <a href="index.html" class="sidebar-link">Vue d'ensemble</a>
+        <a href="getting-started.html" class="sidebar-link">Démarrage rapide</a>
+        <a href="architecture.html" class="sidebar-link">Architecture</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Référence</div>
+        <a href="api.html" class="sidebar-link">API Reference</a>
+        <a href="design-system.html" class="sidebar-link">Design System</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Projet</div>
+        <a href="roadmap.html" class="sidebar-link">Roadmap</a>
+        <a href="contributing.html" class="sidebar-link active">Contribuer</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sur cette page</div>
+        <a href="#workflow" class="sidebar-sublink">Workflow Git</a>
+        <a href="#conventions" class="sidebar-sublink">Conventions de code</a>
+        <a href="#commits" class="sidebar-sublink">Commits</a>
+        <a href="#pr" class="sidebar-sublink">Pull Requests</a>
+        <a href="#quality" class="sidebar-sublink">Qualité</a>
+        <a href="#structure" class="sidebar-sublink">Ajouter une feature</a>
+      </div>
+    </aside>
+
+    <main class="content">
+
+      <h1>Contribuer</h1>
+      <p style="color:#a3a3a3;margin-bottom:2rem;">
+        Guide de contribution au projet Pumpkin Hub.
+      </p>
+
+      <div class="callout">
+        <div class="callout-label">Bienvenue</div>
+        Toute contribution est la bienvenue, qu'il s'agisse d'un bug fix, d'une nouvelle
+        feature, d'une amélioration de la documentation ou d'un report de bug. Merci de
+        prendre le temps de lire ce guide avant de soumettre votre contribution.
+      </div>
+
+      <!-- ── Workflow ──────────────────────────────────────── -->
+      <h2 id="workflow">Workflow Git</h2>
+
+      <ol>
+        <li><strong>Fork</strong> le dépôt sur GitHub</li>
+        <li><strong>Clone</strong> votre fork en local</li>
+        <li>Créer une branche depuis <code>develop</code> (jamais depuis <code>master</code>)</li>
+        <li>Implémenter les changements avec des commits atomiques</li>
+        <li>Pousser la branche et ouvrir une <strong>Pull Request</strong> vers <code>develop</code></li>
+      </ol>
+
+      <pre><code># Exemple de workflow
+git clone https://github.com/VOTRE-USERNAME/pumpkin-hub.git
+cd pumpkin-hub
+git checkout -b feature/ma-feature develop
+
+# ... développement ...
+
+git push origin feature/ma-feature</code></pre>
+
+      <h3>Branches</h3>
+      <table>
+        <thead>
+          <tr><th>Branche</th><th>Rôle</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>master</code></td><td>Production stable, releases taggées</td></tr>
+          <tr><td><code>develop</code></td><td>Intégration, base des PRs</td></tr>
+          <tr><td><code>feature/*</code></td><td>Nouvelles fonctionnalités</td></tr>
+          <tr><td><code>fix/*</code></td><td>Corrections de bugs</td></tr>
+          <tr><td><code>docs/*</code></td><td>Améliorations de la documentation</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Conventions ───────────────────────────────────── -->
+      <h2 id="conventions">Conventions de code</h2>
+
+      <h3>Rust (API)</h3>
+      <ul>
+        <li>Formatage avec <code>cargo fmt</code> (non négociable)</li>
+        <li>Analyse statique : <code>cargo clippy -- -D warnings</code> sans warnings</li>
+        <li>Types HTTP via <code>axum::http</code>, pas la crate <code>http</code> directement</li>
+        <li>Nouvelles routes dans <code>routes/{feature}.rs</code>, mergées dans <code>v1_routes()</code></li>
+        <li>Gestion d'erreurs via <code>AppError</code> — jamais de <code>unwrap()</code> dans le code de production</li>
+      </ul>
+
+      <h3>TypeScript (Frontend)</h3>
+      <ul>
+        <li>Linting avec ESLint (config Next.js) : <code>npm run lint</code></li>
+        <li>Type-check strict : <code>npx tsc --noEmit</code></li>
+        <li>Composants dans le répertoire <code>app/</code> (App Router)</li>
+        <li>Styles via Tailwind CSS, respect du design system brutaliste</li>
+      </ul>
+
+      <h3>Principes généraux</h3>
+      <ul>
+        <li><strong>Boy Scout Rule</strong> — Laisse le code plus propre que tu ne l'as trouvé</li>
+        <li><strong>SOLID</strong> — Single Responsibility, interfaces minimales, dépendances inversées</li>
+        <li><strong>KISS</strong> — La solution la plus simple est souvent la meilleure</li>
+        <li><strong>DRY</strong> — Factorise sans sur-ingénierie</li>
+        <li><strong>YAGNI</strong> — N'implémente pas de fonctionnalités "au cas où"</li>
+      </ul>
+
+      <!-- ── Commits ───────────────────────────────────────── -->
+      <h2 id="commits">Messages de commit</h2>
+
+      <p>
+        Les messages de commit suivent la convention
+        <a href="https://www.conventionalcommits.org/">Conventional Commits</a> :
+      </p>
+
+      <pre><code>type(scope): description courte
+
+[corps optionnel]
+
+[footer optionnel]</code></pre>
+
+      <h3>Types autorisés</h3>
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>feat</code></td><td>Nouvelle fonctionnalité</td></tr>
+          <tr><td><code>fix</code></td><td>Correction de bug</td></tr>
+          <tr><td><code>docs</code></td><td>Documentation uniquement</td></tr>
+          <tr><td><code>style</code></td><td>Formatage, point-virgules (pas de changement de logique)</td></tr>
+          <tr><td><code>refactor</code></td><td>Refactorisation sans changement de comportement</td></tr>
+          <tr><td><code>test</code></td><td>Ajout ou modification de tests</td></tr>
+          <tr><td><code>chore</code></td><td>Tâches de maintenance (CI, deps, config)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Scopes courants</h3>
+      <p>
+        <code>api</code>, <code>frontend</code>, <code>docs</code>, <code>docker</code>,
+        <code>ci</code>, <code>auth</code>, <code>plugins</code>, <code>search</code>
+      </p>
+
+      <h3>Exemples</h3>
+      <pre><code>feat(api): add plugin CRUD endpoints
+fix(frontend): correct search input focus state
+docs: update roadmap with Phase 2
+chore(ci): add Rust cache to workflow</code></pre>
+
+      <!-- ── Pull Requests ─────────────────────────────────── -->
+      <h2 id="pr">Pull Requests</h2>
+
+      <ul>
+        <li>Le titre suit la convention de commit (<code>feat(scope): ...</code>)</li>
+        <li>Description claire du changement et de la motivation</li>
+        <li>Référence les issues liées (ex: <code>Closes #42</code>)</li>
+        <li>La CI doit passer (lint, clippy, tests, build)</li>
+        <li>Au moins 1 review approbative avant merge</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-label">Astuce</div>
+        Pour les changements significatifs, ouvrir d'abord une <strong>issue</strong> pour discuter
+        de l'approche avant de commencer l'implémentation. Cela évite le travail inutile et
+        permet un feedback précoce.
+      </div>
+
+      <!-- ── Qualité ───────────────────────────────────────── -->
+      <h2 id="quality">Qualité du code</h2>
+
+      <p>Avant de soumettre, vérifier que :</p>
+
+      <h3>Backend</h3>
+      <pre><code># Formatage
+cargo fmt --all -- --check
+
+# Analyse statique
+cargo clippy -- -D warnings
+
+# Tests
+cargo test</code></pre>
+
+      <h3>Frontend</h3>
+      <pre><code># Linting
+npm run lint
+
+# Type-checking
+npx tsc --noEmit
+
+# Build
+npm run build</code></pre>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">Important</div>
+        La CI bloque le merge si l'un de ces checks échoue. Exécutez-les en local avant
+        de pousser pour gagner du temps.
+      </div>
+
+      <!-- ── Ajouter une feature ───────────────────────────── -->
+      <h2 id="structure">Ajouter une nouvelle feature (API)</h2>
+
+      <p>Procédure pour ajouter un nouveau module de routes :</p>
+
+      <ol>
+        <li>Créer le fichier <code>api/src/routes/{feature}.rs</code></li>
+        <li>Implémenter les handlers avec les types <code>AppState</code> et <code>AppError</code></li>
+        <li>Déclarer le module dans <code>routes/mod.rs</code> (<code>mod {feature};</code>)</li>
+        <li>Merger les routes dans <code>v1_routes()</code></li>
+        <li>Écrire les tests unitaires et/ou d'intégration</li>
+      </ol>
+
+      <pre><code>// api/src/routes/plugins.rs
+use axum::{routing::get, Json, Router};
+use crate::state::AppState;
+
+pub fn routes() -> Router&lt;AppState&gt; {
+    Router::new()
+        .route("/plugins", get(list_plugins))
+}
+
+async fn list_plugins() -> Json&lt;serde_json::Value&gt; {
+    // implementation
+    todo!()
+}</code></pre>
+
+      <pre><code>// api/src/routes/mod.rs
+mod health;
+mod plugins; // &lt;-- ajouter ici
+
+fn v1_routes() -> Router&lt;AppState&gt; {
+    Router::new()
+        .merge(health::routes())
+        .merge(plugins::routes()) // &lt;-- et ici
+}</code></pre>
+
+    </main>
+  </div>
+
+  <footer class="footer">
+    Pumpkin Hub · Documentation · Open Source sous licence MIT
+  </footer>
+
+</body>
+</html>

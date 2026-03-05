@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation — Pumpkin Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════ NAV ═══════════════════════════════ -->
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <div class="navbar-logo-icon"><span>PH</span></div>
+      <span class="navbar-title">Pumpkin Hub</span>
+      <span class="navbar-version">docs</span>
+    </div>
+    <div class="navbar-links">
+      <a href="index.html" class="navbar-link accent">Documentation</a>
+      <a href="getting-started.html" class="navbar-link">Démarrage</a>
+      <a href="architecture.html" class="navbar-link">Architecture</a>
+      <a href="api.html" class="navbar-link">API</a>
+      <a href="roadmap.html" class="navbar-link">Roadmap</a>
+      <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════ LAYOUT ════════════════════════════════ -->
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Général</div>
+        <a href="index.html" class="sidebar-link active">Vue d'ensemble</a>
+        <a href="getting-started.html" class="sidebar-link">Démarrage rapide</a>
+        <a href="architecture.html" class="sidebar-link">Architecture</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Référence</div>
+        <a href="api.html" class="sidebar-link">API Reference</a>
+        <a href="design-system.html" class="sidebar-link">Design System</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Projet</div>
+        <a href="roadmap.html" class="sidebar-link">Roadmap</a>
+        <a href="contributing.html" class="sidebar-link">Contribuer</a>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main class="content">
+
+      <span class="badge badge-orange" style="margin-bottom:1rem;">En développement actif</span>
+      <h1>Pumpkin Hub</h1>
+      <p style="font-size:1.1rem;color:#a3a3a3;margin-bottom:2rem;">
+        Le registre communautaire de plugins et ressources pour le serveur Minecraft
+        <strong>Pumpkin MC</strong>, propulsé par Rust.
+      </p>
+
+      <div class="callout">
+        <div class="callout-label">Important</div>
+        Pumpkin Hub est en phase de construction intensive. Les interfaces et APIs sont susceptibles
+        d'évoluer rapidement. Cette documentation reflète l'état actuel du projet.
+      </div>
+
+      <!-- ── Présentation ──────────────────────────────────── -->
+      <h2 id="presentation">Présentation</h2>
+      <p>
+        <strong>Pumpkin Hub</strong> est la plateforme centrale dédiée à la distribution et la découverte
+        d'extensions pour le serveur Minecraft <a href="https://github.com/Pumpkin-MC/Pumpkin">Pumpkin</a>.
+        Parce que Pumpkin redéfinit la performance serveur avec Rust, Pumpkin Hub redéfinit la gestion de
+        contenu avec une interface minimaliste, une sécurité accrue des binaires et une expérience
+        développeur sans friction.
+      </p>
+      <p>
+        Contrairement aux plateformes Java classiques (SpigotMC, Modrinth), Pumpkin Hub est conçu
+        nativement pour l'écosystème Rust : gestion des binaires compilés, vérification d'intégrité
+        SHA-256, support multi-architectures CPU (x86, ARM) et intégration GitHub native.
+      </p>
+
+      <!-- ── Fonctionnalités clés ──────────────────────────── -->
+      <h2 id="features">Fonctionnalités clés</h2>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title">Recherche instantanée</div>
+          <div class="card-desc">Propulsée par Meilisearch pour des résultats en millisecondes, avec filtres par catégorie, architecture et version.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Crate-Centric</div>
+          <div class="card-desc">Gestion native des binaires compilés Rust et des architectures CPU cibles (x86_64, aarch64).</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sécurité native</div>
+          <div class="card-desc">Signature SHA-256 systématique et vérification d'intégrité de chaque fichier distribué.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Dependency Graph</div>
+          <div class="card-desc">Visualisation claire des dépendances entre plugins pour garantir la compatibilité serveur.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Dashboard auteur</div>
+          <div class="card-desc">Analytics de téléchargements, gestion des versions et publication directe depuis GitHub.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Interface brutaliste</div>
+          <div class="card-desc">Design "No-Radius" industriel optimisé pour la clarté technique et la performance.</div>
+        </div>
+      </div>
+
+      <!-- ── Stack Technique ───────────────────────────────── -->
+      <h2 id="stack">Stack technique</h2>
+
+      <h3>Backend (API)</h3>
+      <table>
+        <thead>
+          <tr><th>Technologie</th><th>Rôle</th><th>Version</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Rust</strong></td><td>Langage principal</td><td>Edition 2021</td></tr>
+          <tr><td><strong>Axum</strong></td><td>Framework HTTP async</td><td>0.8</td></tr>
+          <tr><td><strong>Tokio</strong></td><td>Runtime asynchrone</td><td>1.x</td></tr>
+          <tr><td><strong>Tower HTTP</strong></td><td>Middlewares (CORS, Trace, Compression)</td><td>0.6</td></tr>
+          <tr><td><strong>PostgreSQL</strong></td><td>Base de données relationnelle</td><td>16</td></tr>
+          <tr><td><strong>Meilisearch</strong></td><td>Moteur de recherche full-text</td><td>1.7</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Frontend</h3>
+      <table>
+        <thead>
+          <tr><th>Technologie</th><th>Rôle</th><th>Version</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Next.js</strong></td><td>Framework React SSR/SSG</td><td>16.1</td></tr>
+          <tr><td><strong>React</strong></td><td>Bibliothèque UI</td><td>19.2</td></tr>
+          <tr><td><strong>Tailwind CSS</strong></td><td>Utilitaires CSS</td><td>4.x</td></tr>
+          <tr><td><strong>TypeScript</strong></td><td>Typage statique</td><td>5.x</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Infrastructure</h3>
+      <table>
+        <thead>
+          <tr><th>Service</th><th>Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Docker Compose</strong></td><td>Orchestration des conteneurs de développement</td></tr>
+          <tr><td><strong>GitHub Actions</strong></td><td>CI/CD (lint, type-check, clippy, tests)</td></tr>
+          <tr><td><strong>Cloudflare R2</strong></td><td>Stockage des binaires (prévu)</td></tr>
+          <tr><td><strong>Supabase Auth</strong></td><td>Authentification utilisateur (prévu)</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Audiences ─────────────────────────────────────── -->
+      <h2 id="audiences">Audiences cibles</h2>
+
+      <h3>Développeurs (Crate Authors)</h3>
+      <p>
+        Publication fluide de plugins, intégrée à GitHub, avec gestion des versions compilées,
+        des dépendances et des architectures CPU cibles. Le dashboard offre des analytics
+        détaillés sur les téléchargements et l'utilisation.
+      </p>
+
+      <h3>Administrateurs (Server Owners)</h3>
+      <p>
+        Catalogue ultra-rapide avec vérification d'intégrité SHA-256 et informations claires
+        sur la compatibilité des versions pour garantir la stabilité du serveur Pumpkin.
+      </p>
+
+      <h3>Communauté</h3>
+      <p>
+        Plateforme open-source et transparente, conçue pour favoriser l'adoption et la croissance
+        de l'écosystème Pumpkin MC.
+      </p>
+
+      <!-- ── Liens rapides ─────────────────────────────────── -->
+      <h2 id="quick-links">Liens rapides</h2>
+      <ul>
+        <li><a href="getting-started.html">Démarrage rapide</a> — Installer et lancer le projet en local</li>
+        <li><a href="architecture.html">Architecture</a> — Structure technique détaillée du backend et frontend</li>
+        <li><a href="api.html">Référence API</a> — Endpoints, middlewares et gestion d'erreurs</li>
+        <li><a href="design-system.html">Design System</a> — Typographies, couleurs et composants UI</li>
+        <li><a href="roadmap.html">Roadmap</a> — Fonctionnalités prévues et planification</li>
+        <li><a href="contributing.html">Contribuer</a> — Guide de contribution au projet</li>
+      </ul>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Pumpkin Hub · Documentation · Open Source sous licence MIT
+  </footer>
+
+</body>
+</html>
