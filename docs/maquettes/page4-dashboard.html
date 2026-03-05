@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" style="background:#0a0a0a;color:#e5e5e5;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Pumpkin Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: { extend: { fontFamily: { raleway: ['Raleway', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] } } }
+    }
+  </script>
+  <style>
+    html, body { background-color: #0a0a0a !important; color: #e5e5e5 !important; }
+    .bg-white { background-color: #0a0a0a !important; }
+    .text-black { color: #000 !important; }
+    input, select, textarea { background-color: #111 !important; color: #e5e5e5 !important; border-color: #262626 !important; }
+    * { box-sizing: border-box; }
+    * { font-family: 'Raleway', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace !important; }
+    body { background-color: #0a0a0a; color: #e5e5e5; }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Sidebar nav */
+    .nav-item { transition: color 0.15s, background 0.15s, border-color 0.15s; }
+    .nav-item.active {
+      color: #fff;
+      background: rgba(249,115,22,0.08);
+      border-left: 2px solid #f97316;
+    }
+    .nav-item:not(.active):hover { color: #a3a3a3; background: rgba(255,255,255,0.02); }
+
+    /* Plugin row */
+    .plugin-row { transition: background 0.15s; }
+    .plugin-row:hover { background: #111; }
+
+    /* Chart canvas */
+    #chartCanvas { display: block; }
+
+    /* Upload modal */
+    #upload-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #upload-modal.open { display: flex; }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #333;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #f97316;
+      background: rgba(249,115,22,0.03);
+    }
+
+    /* Status badge */
+    .status-published { color: #4ade80; background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.2); }
+    .status-review { color: #facc15; background: rgba(250,204,21,0.05); border-color: rgba(250,204,21,0.2); }
+    .status-draft { color: #737373; background: rgba(115,115,115,0.08); border-color: rgba(115,115,115,0.2); }
+
+    /* Progress bar shimmer */
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .shimmer {
+      background: linear-gradient(90deg, #f97316 0%, #fb923c 50%, #f97316 100%);
+      background-size: 200% auto;
+      animation: shimmer 2s linear infinite;
+    }
+
+    /* KPI card hover */
+    .kpi-card { transition: border-color 0.15s; }
+    .kpi-card:hover { border-color: #f97316 !important; }
+  </style>
+</head>
+<body class="min-h-screen" style="background:#0a0a0a;color:#e5e5e5;">
+
+  <!-- ═══════════════════ TOP NAV ═════════════════════════════════════ -->
+  <nav class="border-b border-neutral-800 sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-sm">
+    <div class="flex h-14 items-center justify-between px-6">
+      <div class="flex items-center gap-3">
+        <a href="page1-landing.html" class="flex items-center gap-3">
+          <div class="w-7 h-7 bg-orange-500 flex items-center justify-center">
+            <span class="text-black font-mono font-bold text-xs">PH</span>
+          </div>
+          <span class="font-raleway font-bold text-sm tracking-widest uppercase text-white">Pumpkin Hub</span>
+        </a>
+        <span class="text-neutral-700 mx-2">/</span>
+        <span class="font-mono text-xs text-neutral-400">Dashboard</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Notifications -->
+        <button class="relative p-1.5 text-neutral-600 hover:text-white transition-colors border border-transparent hover:border-neutral-800">
+          <i data-lucide="bell" style="width:16px;height:16px;"></i>
+          <span class="absolute top-0.5 right-0.5 w-2 h-2 bg-orange-500 rounded-full border border-[#0a0a0a]"></span>
+        </button>
+        <!-- API Key -->
+        <button class="font-mono text-xs text-neutral-500 hover:text-white transition-colors border border-neutral-800 hover:border-neutral-600 px-3 py-1.5 flex items-center gap-2">
+          <i data-lucide="key" style="width:12px;height:12px;"></i>
+          API Key
+        </button>
+        <!-- User -->
+        <div class="flex items-center gap-2.5 border-l border-neutral-800 pl-4">
+          <div class="w-8 h-8 bg-orange-500/20 border border-orange-500/30 flex items-center justify-center font-mono font-bold text-orange-500 text-xs">fd</div>
+          <div>
+            <div class="font-raleway font-semibold text-xs text-white leading-none mb-0.5">ferrisdev</div>
+            <div class="font-mono text-[9px] text-neutral-600">Author</div>
+          </div>
+          <button class="text-neutral-700 hover:text-neutral-400 transition-colors ml-1">
+            <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="flex">
+
+    <!-- ══════════════════ SIDEBAR ════════════════════════════════════ -->
+    <aside class="w-56 border-r border-neutral-800 min-h-screen flex-shrink-0 pt-6">
+      <nav class="space-y-0.5 px-3">
+        <a href="#" class="nav-item active flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase border-l-2">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;"></i>
+          Overview
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase text-neutral-600 border-l-2 border-transparent">
+          <i data-lucide="package" style="width:14px;height:14px;"></i>
+          My Plugins
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase text-neutral-600 border-l-2 border-transparent">
+          <i data-lucide="bar-chart-2" style="width:14px;height:14px;"></i>
+          Analytics
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase text-neutral-600 border-l-2 border-transparent">
+          <i data-lucide="bell" style="width:14px;height:14px;"></i>
+          Notifications
+          <span class="ml-auto font-mono text-[10px] bg-orange-500 text-black px-1.5 py-0.5 font-bold">3</span>
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase text-neutral-600 border-l-2 border-transparent">
+          <i data-lucide="key" style="width:14px;height:14px;"></i>
+          API Keys
+        </a>
+
+        <div class="border-t border-neutral-800 my-4"></div>
+
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase text-neutral-600 border-l-2 border-transparent">
+          <i data-lucide="settings" style="width:14px;height:14px;"></i>
+          Settings
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase text-neutral-600 border-l-2 border-transparent">
+          <i data-lucide="book-open" style="width:14px;height:14px;"></i>
+          Registry Docs
+        </a>
+        <a href="page1-landing.html" class="nav-item flex items-center gap-3 px-3 py-2.5 font-raleway text-xs font-semibold tracking-wider uppercase text-neutral-600 border-l-2 border-transparent">
+          <i data-lucide="arrow-left" style="width:14px;height:14px;"></i>
+          Back to Hub
+        </a>
+      </nav>
+
+      <!-- Upload CTA pinned to sidebar bottom -->
+      <div class="px-3 mt-8">
+        <button onclick="openUpload()" class="w-full font-mono text-xs bg-orange-500 hover:bg-orange-600 text-black font-bold py-3 transition-colors flex items-center justify-center gap-2">
+          <i data-lucide="upload" style="width:14px;height:14px;"></i>
+          Upload New Plugin
+        </button>
+      </div>
+    </aside>
+
+    <!-- ══════════════════ MAIN AREA ══════════════════════════════════ -->
+    <main class="flex-1 min-w-0 p-8">
+
+      <!-- Page title + action -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="font-raleway font-black text-2xl text-white mb-1">Overview</h1>
+          <p class="font-mono text-xs text-neutral-600">Last updated: <span class="text-neutral-400">5 minutes ago</span></p>
+        </div>
+        <button onclick="openUpload()" class="font-mono text-sm bg-orange-500 hover:bg-orange-600 text-black font-bold px-5 py-2.5 transition-colors flex items-center gap-2">
+          <i data-lucide="upload" style="width:14px;height:14px;"></i>
+          Upload New Plugin
+        </button>
+      </div>
+
+      <!-- ═══ KPI CARDS ═══ -->
+      <div class="grid grid-cols-4 gap-4 mb-8">
+
+        <div class="kpi-card border border-neutral-800 bg-neutral-900/40 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Total Downloads</div>
+            <i data-lucide="download" class="text-neutral-700" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="font-mono text-3xl font-bold text-white mb-1">94,012</div>
+          <div class="font-mono text-xs text-green-400">↑ +12.4% vs last month</div>
+        </div>
+
+        <div class="kpi-card border border-neutral-800 bg-neutral-900/40 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Active Plugins</div>
+            <i data-lucide="package" class="text-neutral-700" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="font-mono text-3xl font-bold text-white mb-1">4</div>
+          <div class="font-mono text-xs text-neutral-500">2 pending review</div>
+        </div>
+
+        <div class="kpi-card border border-neutral-800 bg-neutral-900/40 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Avg. Rating</div>
+            <i data-lucide="star" class="text-neutral-700" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="font-mono text-3xl font-bold text-white mb-1">4.8</div>
+          <div class="flex items-center gap-1">
+            <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+            <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+            <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+            <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+            <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card border border-orange-500/20 bg-orange-500/5 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="font-mono text-[10px] text-orange-500/70 uppercase tracking-widest">This Week</div>
+            <i data-lucide="trending-up" class="text-orange-500" style="width:16px;height:16px;"></i>
+          </div>
+          <div class="font-mono text-3xl font-bold text-orange-500 mb-1">3,841</div>
+          <div class="font-mono text-xs text-orange-500/70">Downloads across all plugins</div>
+        </div>
+
+      </div>
+
+      <!-- ═══ DOWNLOAD CHART ═══ -->
+      <div class="border border-neutral-800 bg-neutral-900/30 mb-8">
+        <div class="px-5 py-4 border-b border-neutral-800 flex items-center justify-between">
+          <div>
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-0.5">Downloads Over Time</div>
+            <div class="font-raleway font-bold text-sm text-white">Combined download activity</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="font-mono text-[10px] border border-orange-500 bg-orange-500/10 text-orange-500 px-3 py-1.5">7D</button>
+            <button class="font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-neutral-500 px-3 py-1.5 transition-colors">30D</button>
+            <button class="font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-neutral-500 px-3 py-1.5 transition-colors">90D</button>
+            <button class="font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-neutral-500 px-3 py-1.5 transition-colors">ALL</button>
+          </div>
+        </div>
+
+        <!-- SVG Chart -->
+        <div class="p-5">
+          <svg viewBox="0 0 800 180" class="w-full" style="height: 180px;">
+            <!-- Grid lines -->
+            <line x1="0" y1="30" x2="800" y2="30" stroke="#1a1a1a" stroke-width="1"/>
+            <line x1="0" y1="75" x2="800" y2="75" stroke="#1a1a1a" stroke-width="1"/>
+            <line x1="0" y1="120" x2="800" y2="120" stroke="#1a1a1a" stroke-width="1"/>
+            <line x1="0" y1="165" x2="800" y2="165" stroke="#262626" stroke-width="1"/>
+
+            <!-- Y axis labels -->
+            <text x="0" y="32" fill="#404040" font-size="10" font-family="JetBrains Mono">600</text>
+            <text x="0" y="77" fill="#404040" font-size="10" font-family="JetBrains Mono">400</text>
+            <text x="0" y="122" fill="#404040" font-size="10" font-family="JetBrains Mono">200</text>
+
+            <!-- Area fill -->
+            <defs>
+              <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f97316" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Area -->
+            <path d="M 32,140 L 80,120 L 150,110 L 210,125 L 280,90 L 350,80 L 420,95 L 490,70 L 560,55 L 630,45 L 700,35 L 760,30 L 760,165 L 32,165 Z"
+                  fill="url(#chartGrad)"/>
+
+            <!-- Line -->
+            <path d="M 32,140 L 80,120 L 150,110 L 210,125 L 280,90 L 350,80 L 420,95 L 490,70 L 560,55 L 630,45 L 700,35 L 760,30"
+                  fill="none" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+
+            <!-- Data points -->
+            <circle cx="32" cy="140" r="3" fill="#f97316"/>
+            <circle cx="80" cy="120" r="3" fill="#f97316"/>
+            <circle cx="150" cy="110" r="3" fill="#f97316"/>
+            <circle cx="210" cy="125" r="3" fill="#f97316"/>
+            <circle cx="280" cy="90" r="3" fill="#f97316"/>
+            <circle cx="350" cy="80" r="3" fill="#f97316"/>
+            <circle cx="420" cy="95" r="3" fill="#f97316"/>
+            <circle cx="490" cy="70" r="3" fill="#f97316"/>
+            <circle cx="560" cy="55" r="3" fill="#f97316"/>
+            <circle cx="630" cy="45" r="3" fill="#f97316"/>
+            <circle cx="700" cy="35" r="3" fill="#f97316"/>
+            <circle cx="760" cy="30" r="4" fill="#f97316" stroke="#0a0a0a" stroke-width="2"/>
+
+            <!-- X labels -->
+            <text x="25" y="178" fill="#404040" font-size="9" font-family="JetBrains Mono">Jun 1</text>
+            <text x="130" y="178" fill="#404040" font-size="9" font-family="JetBrains Mono">Jun 3</text>
+            <text x="260" y="178" fill="#404040" font-size="9" font-family="JetBrains Mono">Jun 5</text>
+            <text x="390" y="178" fill="#404040" font-size="9" font-family="JetBrains Mono">Jun 7</text>
+            <text x="520" y="178" fill="#404040" font-size="9" font-family="JetBrains Mono">Jun 9</text>
+            <text x="655" y="178" fill="#404040" font-size="9" font-family="JetBrains Mono">Jun 11</text>
+            <text x="735" y="178" fill="#f97316" font-size="9" font-family="JetBrains Mono" font-weight="bold">Today</text>
+          </svg>
+
+          <!-- Chart legend -->
+          <div class="flex items-center gap-6 mt-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-0.5 bg-orange-500"></div>
+              <span class="font-mono text-[10px] text-neutral-600">Total (all plugins)</span>
+            </div>
+            <div class="font-mono text-[10px] text-neutral-700">Peak: 648 downloads on Jun 11</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ MY PLUGINS TABLE ═══ -->
+      <div class="border border-neutral-800">
+        <div class="px-5 py-4 border-b border-neutral-800 flex items-center justify-between">
+          <div class="font-raleway font-bold text-sm text-white">Published Plugins</div>
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[10px] text-neutral-600">6 total</span>
+            <button class="font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-neutral-500 px-3 py-1.5 transition-colors flex items-center gap-1.5">
+              <i data-lucide="filter" style="width:11px;height:11px;"></i> Filter
+            </button>
+          </div>
+        </div>
+
+        <!-- Table header -->
+        <div class="grid grid-cols-12 px-5 py-2.5 bg-neutral-900/50 border-b border-neutral-800">
+          <div class="col-span-4 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Plugin</div>
+          <div class="col-span-2 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Version</div>
+          <div class="col-span-2 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Status</div>
+          <div class="col-span-2 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Downloads</div>
+          <div class="col-span-1 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Rating</div>
+          <div class="col-span-1 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Actions</div>
+        </div>
+
+        <!-- Row 1: PumpkinGuard -->
+        <div class="plugin-row grid grid-cols-12 px-5 py-4 border-b border-neutral-800 items-center">
+          <div class="col-span-4 flex items-center gap-3">
+            <div class="w-8 h-8 bg-orange-500/10 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="shield-check" class="text-orange-500" style="width:13px;height:13px;"></i>
+            </div>
+            <div>
+              <a href="page3-plugin.html" class="font-raleway font-bold text-sm text-white hover:text-orange-500 transition-colors">PumpkinGuard</a>
+              <div class="font-mono text-[10px] text-neutral-600">Updated 2 days ago</div>
+            </div>
+          </div>
+          <div class="col-span-2 font-mono text-sm text-neutral-400">2.1.3</div>
+          <div class="col-span-2">
+            <span class="status-published font-mono text-[10px] border px-2 py-0.5">● Published</span>
+          </div>
+          <div class="col-span-2">
+            <div class="font-mono text-sm text-white font-bold">48,231</div>
+            <div class="font-mono text-[10px] text-green-400">+2,341 this week</div>
+          </div>
+          <div class="col-span-1">
+            <div class="flex items-center gap-1">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.9</span>
+            </div>
+          </div>
+          <div class="col-span-1 flex items-center gap-1">
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+            </button>
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="more-horizontal" style="width:13px;height:13px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 2: WorldEdit-RS -->
+        <div class="plugin-row grid grid-cols-12 px-5 py-4 border-b border-neutral-800 items-center">
+          <div class="col-span-4 flex items-center gap-3">
+            <div class="w-8 h-8 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="map" class="text-neutral-400" style="width:13px;height:13px;"></i>
+            </div>
+            <div>
+              <a href="page3-plugin.html" class="font-raleway font-bold text-sm text-white hover:text-orange-500 transition-colors">WorldEdit-RS</a>
+              <div class="font-mono text-[10px] text-neutral-600">Updated 5 days ago</div>
+            </div>
+          </div>
+          <div class="col-span-2 font-mono text-sm text-neutral-400">0.9.0</div>
+          <div class="col-span-2">
+            <span class="status-published font-mono text-[10px] border px-2 py-0.5">● Published</span>
+          </div>
+          <div class="col-span-2">
+            <div class="font-mono text-sm text-white font-bold">32,018</div>
+            <div class="font-mono text-[10px] text-green-400">+1,102 this week</div>
+          </div>
+          <div class="col-span-1">
+            <div class="flex items-center gap-1">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.7</span>
+            </div>
+          </div>
+          <div class="col-span-1 flex items-center gap-1">
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+            </button>
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="more-horizontal" style="width:13px;height:13px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 3: EconomyCore (NEW — in review) -->
+        <div class="plugin-row grid grid-cols-12 px-5 py-4 border-b border-neutral-800 items-center">
+          <div class="col-span-4 flex items-center gap-3">
+            <div class="w-8 h-8 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="coins" class="text-neutral-400" style="width:13px;height:13px;"></i>
+            </div>
+            <div>
+              <div class="font-raleway font-bold text-sm text-white">EconomyCore</div>
+              <div class="font-mono text-[10px] text-neutral-600">Submitted 1 hour ago</div>
+            </div>
+          </div>
+          <div class="col-span-2 font-mono text-sm text-neutral-400">1.4.2</div>
+          <div class="col-span-2">
+            <span class="status-review font-mono text-[10px] border px-2 py-0.5">◌ In Review</span>
+          </div>
+          <div class="col-span-2">
+            <div class="font-mono text-sm text-neutral-600">—</div>
+            <div class="font-mono text-[10px] text-neutral-700">pending publish</div>
+          </div>
+          <div class="col-span-1">
+            <span class="font-mono text-xs text-neutral-700">—</span>
+          </div>
+          <div class="col-span-1 flex items-center gap-1">
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+            </button>
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="more-horizontal" style="width:13px;height:13px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 4: AuthForge -->
+        <div class="plugin-row grid grid-cols-12 px-5 py-4 border-b border-neutral-800 items-center">
+          <div class="col-span-4 flex items-center gap-3">
+            <div class="w-8 h-8 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="lock" class="text-neutral-400" style="width:13px;height:13px;"></i>
+            </div>
+            <div>
+              <a href="page3-plugin.html" class="font-raleway font-bold text-sm text-white hover:text-orange-500 transition-colors">AuthForge</a>
+              <div class="font-mono text-[10px] text-neutral-600">Updated 1 week ago</div>
+            </div>
+          </div>
+          <div class="col-span-2 font-mono text-sm text-neutral-400">3.0.2</div>
+          <div class="col-span-2">
+            <span class="status-published font-mono text-[10px] border px-2 py-0.5">● Published</span>
+          </div>
+          <div class="col-span-2">
+            <div class="font-mono text-sm text-white font-bold">9,201</div>
+            <div class="font-mono text-[10px] text-neutral-500">+398 this week</div>
+          </div>
+          <div class="col-span-1">
+            <div class="flex items-center gap-1">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.8</span>
+            </div>
+          </div>
+          <div class="col-span-1 flex items-center gap-1">
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+            </button>
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="more-horizontal" style="width:13px;height:13px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 5: ChatBridge (Draft) -->
+        <div class="plugin-row grid grid-cols-12 px-5 py-4 items-center opacity-60">
+          <div class="col-span-4 flex items-center gap-3">
+            <div class="w-8 h-8 bg-neutral-900 border border-neutral-800 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="message-circle" class="text-neutral-600" style="width:13px;height:13px;"></i>
+            </div>
+            <div>
+              <div class="font-raleway font-bold text-sm text-neutral-400">ChatBridge-v2</div>
+              <div class="font-mono text-[10px] text-neutral-700">Draft · Not published</div>
+            </div>
+          </div>
+          <div class="col-span-2 font-mono text-sm text-neutral-700">2.0.0-alpha</div>
+          <div class="col-span-2">
+            <span class="status-draft font-mono text-[10px] border px-2 py-0.5">○ Draft</span>
+          </div>
+          <div class="col-span-2 font-mono text-sm text-neutral-700">—</div>
+          <div class="col-span-1 font-mono text-xs text-neutral-700">—</div>
+          <div class="col-span-1 flex items-center gap-1">
+            <button class="p-1.5 text-neutral-600 hover:text-white border border-transparent hover:border-neutral-700 transition-colors">
+              <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+            </button>
+            <button class="p-1.5 text-red-900 hover:text-red-500 border border-transparent hover:border-red-900/30 transition-colors">
+              <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ══════════════════ UPLOAD MODAL ══════════════════════════════════ -->
+  <div id="upload-modal" onclick="closeUpload(event)">
+    <div class="border border-neutral-700 bg-[#0f0f0f] w-full max-w-lg p-0 relative" onclick="event.stopPropagation()">
+
+      <!-- Modal header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
+        <div>
+          <div class="font-raleway font-black text-lg text-white">Upload New Plugin</div>
+          <div class="font-mono text-[10px] text-neutral-600 mt-0.5">Binary will be scanned before publishing</div>
+        </div>
+        <button onclick="closeUpload()" class="text-neutral-600 hover:text-white border border-neutral-800 hover:border-neutral-600 p-1.5 transition-colors">
+          <i data-lucide="x" style="width:14px;height:14px;"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5">
+
+        <!-- Plugin name -->
+        <div>
+          <label class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest block mb-1.5">Plugin Name</label>
+          <input type="text" placeholder="my-awesome-plugin" class="w-full bg-neutral-900 border border-neutral-700 focus:border-orange-500 px-3 py-2.5 font-mono text-sm text-white placeholder-neutral-700 outline-none transition-colors" />
+        </div>
+
+        <!-- Version -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest block mb-1.5">Version</label>
+            <input type="text" placeholder="0.1.0" class="w-full bg-neutral-900 border border-neutral-700 focus:border-orange-500 px-3 py-2.5 font-mono text-sm text-white placeholder-neutral-700 outline-none transition-colors" />
+          </div>
+          <div>
+            <label class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest block mb-1.5">API Target</label>
+            <select class="w-full bg-neutral-900 border border-neutral-700 focus:border-orange-500 px-3 py-2.5 font-mono text-sm text-neutral-400 outline-none transition-colors appearance-none">
+              <option>0.4.x (latest)</option>
+              <option>0.3.x (LTS)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Drop zone -->
+        <div>
+          <label class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest block mb-1.5">Binary (.so / .dll / .dylib)</label>
+          <div class="drop-zone p-8 text-center cursor-pointer" id="drop-zone">
+            <i data-lucide="upload-cloud" class="text-neutral-600 mx-auto mb-3" style="width:28px;height:28px;"></i>
+            <div class="font-mono text-xs text-neutral-600 mb-1">Drag & drop your compiled plugin here</div>
+            <div class="font-mono text-[10px] text-neutral-700">or <span class="text-orange-500 cursor-pointer hover:underline">browse files</span></div>
+            <div class="mt-3 font-mono text-[10px] text-neutral-800">Accepted: .so, .dll, .dylib · Max 50MB</div>
+          </div>
+        </div>
+
+        <!-- SHA notice -->
+        <div class="flex items-start gap-3 bg-neutral-900 border border-neutral-800 p-3">
+          <i data-lucide="info" class="text-orange-500 flex-shrink-0 mt-0.5" style="width:13px;height:13px;"></i>
+          <div class="font-mono text-[10px] text-neutral-600 leading-relaxed">
+            After upload, the binary will be scanned by <span class="text-neutral-400">cargo-geiger</span> for unsafe blocks. A SHA-256 hash is computed and stored immutably. Publication typically takes <span class="text-neutral-400">2–5 minutes</span>.
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-3 pt-2">
+          <button onclick="closeUpload()" class="flex-1 font-mono text-xs border border-neutral-700 text-neutral-400 hover:border-neutral-500 py-3 transition-colors">Cancel</button>
+          <button class="flex-1 font-mono text-sm bg-orange-500 hover:bg-orange-600 text-black font-bold py-3 transition-colors flex items-center justify-center gap-2">
+            <i data-lucide="upload" style="width:14px;height:14px;"></i>
+            Upload & Verify
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function openUpload() {
+      document.getElementById('upload-modal').classList.add('open');
+    }
+    function closeUpload(e) {
+      if (!e || e.target === document.getElementById('upload-modal')) {
+        document.getElementById('upload-modal').classList.remove('open');
+      }
+    }
+
+    // Chart period toggle
+    document.querySelectorAll('.border-orange-500, .border-neutral-700').forEach(btn => {
+      if (btn.textContent.match(/^(7D|30D|90D|ALL)$/)) {
+        btn.addEventListener('click', () => {
+          // Simple toggle
+        });
+      }
+    });
+  </script>
+</body>
+</html>

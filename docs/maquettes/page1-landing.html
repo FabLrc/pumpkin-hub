@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" style="background:#0a0a0a;color:#e5e5e5;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pumpkin Hub — Plugin Registry</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          fontFamily: {
+            raleway: ['Raleway', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            orange: {
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { background-color: #0a0a0a !important; color: #e5e5e5 !important; }
+    .bg-white { background-color: #0a0a0a !important; }
+    .text-black { color: #000 !important; }
+    input, select, textarea { background-color: #111 !important; color: #e5e5e5 !important; border-color: #262626 !important; }
+    * { box-sizing: border-box; }
+    * { font-family: 'Raleway', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace !important; }
+    body { background-color: #0a0a0a; color: #e5e5e5; }
+
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Scanline effect */
+    .scanline {
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+    }
+
+    /* Orange glow */
+    .glow-orange {
+      box-shadow: 0 0 40px rgba(249, 115, 22, 0.15);
+    }
+
+    /* Bento card hover */
+    .bento-card {
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .bento-card:hover {
+      border-color: #f97316 !important;
+      transform: translateY(-2px);
+    }
+
+    /* Search focus */
+    .search-input:focus {
+      outline: none;
+      border-color: #f97316;
+      box-shadow: 0 0 0 1px #f97316;
+    }
+
+    /* Typewriter cursor */
+    .cursor::after {
+      content: '█';
+      animation: blink 1s step-end infinite;
+      color: #f97316;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Animate in */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.6s ease forwards; }
+    .delay-1 { animation-delay: 0.1s; opacity: 0; }
+    .delay-2 { animation-delay: 0.2s; opacity: 0; }
+    .delay-3 { animation-delay: 0.3s; opacity: 0; }
+    .delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+    /* Ticker */
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    .ticker-track { animation: ticker 30s linear infinite; }
+
+    /* Grid line BG */
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(249,115,22,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249,115,22,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+  </style>
+</head>
+<body class="min-h-screen scanline" style="background:#0a0a0a;color:#e5e5e5;">
+
+  <!-- ═══════════════════════════════════════════ NAV ═══════════════════════════════════════════ -->
+  <nav class="border-b border-neutral-800 sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-sm">
+    <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 bg-orange-500 flex items-center justify-center">
+          <span class="text-black font-mono font-bold text-xs">PH</span>
+        </div>
+        <span class="font-raleway font-bold text-sm tracking-widest uppercase text-white">Pumpkin Hub</span>
+        <span class="font-mono text-[10px] text-neutral-600 border border-neutral-800 px-2 py-0.5">v0.4.0-beta</span>
+      </div>
+
+      <!-- Nav links -->
+      <div class="hidden md:flex items-center gap-8 text-xs font-raleway font-semibold tracking-widest uppercase text-neutral-400">
+        <a href="page2-explorer.html" class="hover:text-white transition-colors">Explorer</a>
+        <a href="#" class="hover:text-white transition-colors">Docs</a>
+        <a href="#" class="hover:text-white transition-colors">Status</a>
+        <a href="#" class="text-orange-500 hover:text-orange-400 transition-colors">Submit Plugin</a>
+      </div>
+
+      <!-- Auth -->
+      <div class="flex items-center gap-3">
+        <button class="text-xs font-mono text-neutral-400 hover:text-white transition-colors px-3 py-1.5 border border-neutral-800 hover:border-neutral-600">Sign In</button>
+        <a href="page4-dashboard.html" class="text-xs font-mono bg-orange-500 hover:bg-orange-600 text-black font-bold px-3 py-1.5 transition-colors">Dashboard →</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═════════════════════════════════════════ TICKER ═════════════════════════════════════════ -->
+  <div class="border-b border-neutral-800 overflow-hidden bg-neutral-900/50 h-8 flex items-center">
+    <div class="ticker-track flex gap-0 whitespace-nowrap">
+      <!-- repeated twice for seamless loop -->
+      <span class="inline-flex items-center gap-8 px-8 font-mono text-[10px] text-neutral-600">
+        <span class="text-orange-500">▶</span> LATEST: PumpkinGuard v2.1.3 released &nbsp;·&nbsp; WorldEdit-RS v0.9.0 now available &nbsp;·&nbsp; EconomyCore v1.4.1 compatible with API 0.4 &nbsp;·&nbsp; 1,247 plugins indexed &nbsp;·&nbsp; Avg build time: 0.38s &nbsp;·&nbsp; 98.7% uptime &nbsp;·&nbsp;
+        <span class="text-orange-500">▶</span> LATEST: PumpkinGuard v2.1.3 released &nbsp;·&nbsp; WorldEdit-RS v0.9.0 now available &nbsp;·&nbsp; EconomyCore v1.4.1 compatible with API 0.4 &nbsp;·&nbsp; 1,247 plugins indexed &nbsp;·&nbsp; Avg build time: 0.38s &nbsp;·&nbsp; 98.7% uptime &nbsp;·&nbsp;
+      </span>
+      <span class="inline-flex items-center gap-8 px-8 font-mono text-[10px] text-neutral-600">
+        <span class="text-orange-500">▶</span> LATEST: PumpkinGuard v2.1.3 released &nbsp;·&nbsp; WorldEdit-RS v0.9.0 now available &nbsp;·&nbsp; EconomyCore v1.4.1 compatible with API 0.4 &nbsp;·&nbsp; 1,247 plugins indexed &nbsp;·&nbsp; Avg build time: 0.38s &nbsp;·&nbsp; 98.7% uptime &nbsp;·&nbsp;
+        <span class="text-orange-500">▶</span> LATEST: PumpkinGuard v2.1.3 released &nbsp;·&nbsp; WorldEdit-RS v0.9.0 now available &nbsp;·&nbsp; EconomyCore v1.4.1 compatible with API 0.4 &nbsp;·&nbsp; 1,247 plugins indexed &nbsp;·&nbsp; Avg build time: 0.38s &nbsp;·&nbsp; 98.7% uptime &nbsp;·&nbsp;
+      </span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ HERO ══════════════════════════════════════════ -->
+  <section class="grid-bg relative overflow-hidden">
+    <!-- Vertical accent lines -->
+    <div class="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-orange-500/20 to-transparent"></div>
+    <div class="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-orange-500/20 to-transparent"></div>
+
+    <div class="max-w-7xl mx-auto px-6 pt-24 pb-20">
+      <!-- Label -->
+      <div class="fade-up delay-1 flex items-center gap-3 mb-8">
+        <div class="h-px w-12 bg-orange-500"></div>
+        <span class="font-mono text-xs text-orange-500 tracking-widest uppercase">The Official Pumpkin MC Registry</span>
+      </div>
+
+      <!-- Main title -->
+      <h1 class="fade-up delay-2 font-raleway font-black text-6xl md:text-8xl leading-none tracking-tight text-white mb-6 max-w-4xl">
+        FORGE YOUR<br/>
+        <span class="text-orange-500">SERVER.</span><br/>
+        <span class="text-neutral-500">SHIP FAST.</span>
+      </h1>
+
+      <p class="fade-up delay-3 font-raleway text-neutral-400 text-lg max-w-xl mb-12 leading-relaxed">
+        The community registry for Pumpkin MC — the Minecraft server engine written in pure Rust. Browse, verify, and install plugins at the speed of compiled code.
+      </p>
+
+      <!-- Command search bar (Shadcn Command style) -->
+      <div class="fade-up delay-4 max-w-2xl glow-orange">
+        <div class="border border-neutral-700 bg-neutral-900 flex items-center gap-4 px-5 py-4 hover:border-neutral-600 transition-colors">
+          <i data-lucide="terminal" class="text-orange-500 flex-shrink-0" style="width:18px;height:18px;"></i>
+          <input
+            type="text"
+            placeholder="Search plugins, authors, tags... (⌘K)"
+            class="search-input flex-1 bg-transparent font-mono text-sm text-white placeholder-neutral-600 border-0"
+          />
+          <div class="flex items-center gap-2">
+            <kbd class="font-mono text-[10px] text-neutral-600 border border-neutral-800 px-1.5 py-0.5">⌘</kbd>
+            <kbd class="font-mono text-[10px] text-neutral-600 border border-neutral-800 px-1.5 py-0.5">K</kbd>
+          </div>
+        </div>
+        <!-- Search suggestions -->
+        <div class="border border-t-0 border-neutral-800 bg-neutral-900/80">
+          <div class="px-5 py-2 flex items-center gap-6">
+            <span class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Popular:</span>
+            <div class="flex items-center gap-3">
+              <button class="font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors px-2 py-0.5 border border-neutral-800 hover:border-orange-500/50">#protection</button>
+              <button class="font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors px-2 py-0.5 border border-neutral-800 hover:border-orange-500/50">#economy</button>
+              <button class="font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors px-2 py-0.5 border border-neutral-800 hover:border-orange-500/50">#world-gen</button>
+              <button class="font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors px-2 py-0.5 border border-neutral-800 hover:border-orange-500/50">#auth</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="mt-12 flex items-center gap-8 fade-up delay-4">
+        <div class="border-l-2 border-orange-500 pl-4">
+          <div class="font-mono text-2xl font-bold text-white">1,247</div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Plugins</div>
+        </div>
+        <div class="border-l border-neutral-800 pl-8">
+          <div class="font-mono text-2xl font-bold text-white">482</div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Authors</div>
+        </div>
+        <div class="border-l border-neutral-800 pl-8">
+          <div class="font-mono text-2xl font-bold text-white">2.4M</div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Downloads</div>
+        </div>
+        <div class="border-l border-neutral-800 pl-8">
+          <div class="font-mono text-2xl font-bold text-white">0.38s</div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Avg Build</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════ BENTO GRID ═════════════════════════════════════════ -->
+  <section class="border-t border-neutral-800">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+
+      <!-- Section header -->
+      <div class="flex items-center justify-between mb-10">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="h-px w-8 bg-orange-500"></div>
+            <span class="font-mono text-xs text-orange-500 tracking-widest uppercase">Trending this week</span>
+          </div>
+          <h2 class="font-raleway font-black text-3xl text-white">Hot Plugins</h2>
+        </div>
+        <a href="page2-explorer.html" class="font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors flex items-center gap-2">
+          View all <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+        </a>
+      </div>
+
+      <!-- Bento Grid -->
+      <div class="grid grid-cols-12 grid-rows-2 gap-4 auto-rows-fr" style="min-height: 520px;">
+
+        <!-- CARD 1 — Large featured (col 1-5, row 1-2) -->
+        <div class="bento-card col-span-5 row-span-2 border border-neutral-800 bg-neutral-900 p-6 flex flex-col relative overflow-hidden group cursor-pointer">
+          <!-- Background accent -->
+          <div class="absolute top-0 right-0 w-40 h-40 bg-orange-500/5 -translate-y-1/2 translate-x-1/2"></div>
+          <div class="absolute bottom-0 left-0 w-24 h-24 bg-orange-500/5 translate-y-1/2 -translate-x-1/2"></div>
+
+          <div class="flex items-start justify-between mb-6">
+            <div class="w-12 h-12 bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
+              <i data-lucide="shield-check" class="text-orange-500" style="width:22px;height:22px;"></i>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <span class="font-mono text-[10px] bg-orange-500/10 text-orange-500 border border-orange-500/30 px-2 py-0.5 uppercase tracking-widest">#1 Trending</span>
+              <span class="font-mono text-[10px] text-neutral-600">↑ 234% this week</span>
+            </div>
+          </div>
+
+          <h3 class="font-raleway font-black text-2xl text-white mb-2">PumpkinGuard</h3>
+          <p class="font-mono text-xs text-neutral-500 mb-1">by <span class="text-neutral-300">ferrisdev</span></p>
+          <p class="font-raleway text-sm text-neutral-400 leading-relaxed mb-auto mt-4">
+            Zero-overhead anti-cheat and region protection. Built on Rust's ownership model — no GC pauses, no false positives. Processes 10k+ player events/sec without breaking a sweat.
+          </p>
+
+          <div class="mt-6 pt-6 border-t border-neutral-800 space-y-3">
+            <div class="flex flex-wrap gap-2">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.4</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">x86_64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">aarch64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">#security</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="font-mono text-xs text-neutral-600">
+                <i data-lucide="download" class="inline" style="width:12px;height:12px;"></i>
+                <span class="ml-1">48,231 downloads</span>
+              </div>
+              <a href="page3-plugin.html" class="font-mono text-xs bg-orange-500 hover:bg-orange-600 text-black font-bold px-4 py-2 transition-colors flex items-center gap-2">
+                View Plugin <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2 — Top right (col 6-8, row 1) -->
+        <div class="bento-card col-span-4 row-span-1 border border-neutral-800 bg-neutral-900 p-5 flex flex-col cursor-pointer">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-9 h-9 bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+              <i data-lucide="coins" class="text-neutral-400" style="width:16px;height:16px;"></i>
+            </div>
+            <span class="font-mono text-[10px] text-neutral-600 border border-neutral-800 px-2 py-0.5">NEW</span>
+          </div>
+          <h3 class="font-raleway font-bold text-lg text-white mb-1">EconomyCore</h3>
+          <p class="font-mono text-[10px] text-neutral-600 mb-3">by <span class="text-neutral-400">rustonomist</span></p>
+          <p class="font-raleway text-xs text-neutral-500 leading-relaxed mb-auto">Multi-currency, async transactions backed by atomic Rust types.</p>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="font-mono text-[10px] text-neutral-600">12,840 dl</span>
+            <div class="flex gap-1">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">api:0.4</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3 — Top right (col 9-12, row 1) -->
+        <div class="bento-card col-span-3 row-span-1 border border-neutral-800 bg-neutral-900 p-5 flex flex-col cursor-pointer">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-9 h-9 bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+              <i data-lucide="map" class="text-neutral-400" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <h3 class="font-raleway font-bold text-lg text-white mb-1">WorldEdit-RS</h3>
+          <p class="font-mono text-[10px] text-neutral-600 mb-3">by <span class="text-neutral-400">sk89q_rs</span></p>
+          <p class="font-raleway text-xs text-neutral-500 leading-relaxed mb-auto">WASM-powered world manipulation. 100x faster than the original.</p>
+          <div class="mt-4">
+            <span class="font-mono text-[10px] text-neutral-600">9,201 dl</span>
+          </div>
+        </div>
+
+        <!-- CARD 4 — Bottom middle-left (col 6-8, row 2) -->
+        <div class="bento-card col-span-4 row-span-1 border border-neutral-800 bg-neutral-900 p-5 flex flex-col cursor-pointer">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-9 h-9 bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+              <i data-lucide="lock" class="text-neutral-400" style="width:16px;height:16px;"></i>
+            </div>
+            <span class="font-mono text-[10px] bg-neutral-800 text-neutral-500 px-2 py-0.5">STAFF PICK</span>
+          </div>
+          <h3 class="font-raleway font-bold text-lg text-white mb-1">AuthForge</h3>
+          <p class="font-mono text-[10px] text-neutral-600 mb-3">by <span class="text-neutral-400">oxide_auth</span></p>
+          <p class="font-raleway text-xs text-neutral-500 leading-relaxed mb-auto">JWT + OAuth2 in a single crate. Passkey support via WebAuthn.</p>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="font-mono text-[10px] text-neutral-600">7,590 dl</span>
+            <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">api:0.3+</span>
+          </div>
+        </div>
+
+        <!-- CARD 5 — Bottom right (col 9-12, row 2) — Stats mini card -->
+        <div class="bento-card col-span-3 row-span-1 border border-orange-500/20 bg-orange-500/5 p-5 flex flex-col justify-between cursor-default">
+          <div class="font-mono text-[10px] text-orange-500/70 uppercase tracking-widest">Registry Status</div>
+          <div class="space-y-3 mt-3">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] text-neutral-600">API</span>
+              <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                <span class="font-mono text-[10px] text-green-400">NOMINAL</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] text-neutral-600">Registry</span>
+              <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                <span class="font-mono text-[10px] text-green-400">NOMINAL</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] text-neutral-600">CDN</span>
+              <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                <span class="font-mono text-[10px] text-green-400">NOMINAL</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-orange-500/20">
+            <div class="font-mono text-[10px] text-neutral-600">Uptime (30d)</div>
+            <div class="font-mono text-xl font-bold text-orange-500 mt-1">99.97%</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════ TECHNICAL REASSURANCE ════════════════════════════════════ -->
+  <section class="border-t border-neutral-800 bg-neutral-900/40">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+
+      <div class="flex items-center gap-3 mb-12">
+        <div class="h-px w-8 bg-orange-500"></div>
+        <span class="font-mono text-xs text-orange-500 tracking-widest uppercase">Why Pumpkin Hub</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border border-neutral-800">
+
+        <!-- Pillar 1: Performance -->
+        <div class="p-8 border-b md:border-b-0 md:border-r border-neutral-800">
+          <div class="w-10 h-10 bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-6">
+            <i data-lucide="zap" class="text-orange-500" style="width:18px;height:18px;"></i>
+          </div>
+          <h3 class="font-raleway font-black text-xl text-white mb-3">Zero-Cost Abstractions</h3>
+          <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-6">
+            Every plugin in this registry is compiled to native machine code. No JVM warmup, no bytecode interpretation — just blazing-fast execution from first tick.
+          </p>
+          <div class="space-y-2 border-t border-neutral-800 pt-6">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-xs text-neutral-600">Tick time (avg)</span>
+              <span class="font-mono text-xs text-white">0.8ms</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-xs text-neutral-600">vs Paper MC</span>
+              <span class="font-mono text-xs text-green-400">12× faster</span>
+            </div>
+            <div class="w-full bg-neutral-800 h-1 mt-3">
+              <div class="bg-orange-500 h-1 w-11/12"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pillar 2: Security -->
+        <div class="p-8 border-b md:border-b-0 md:border-r border-neutral-800">
+          <div class="w-10 h-10 bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-6">
+            <i data-lucide="fingerprint" class="text-orange-500" style="width:18px;height:18px;"></i>
+          </div>
+          <h3 class="font-raleway font-black text-xl text-white mb-3">Binary Verification</h3>
+          <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-6">
+            Every release is SHA-256 hashed and stored immutably. Our automated pipeline scans for unsafe blocks and memory vulnerabilities before a plugin is ever published.
+          </p>
+          <div class="border border-neutral-800 bg-neutral-900 p-3 mt-auto">
+            <div class="font-mono text-[10px] text-neutral-600 mb-2"># Verify a download</div>
+            <div class="font-mono text-[11px] text-neutral-300">
+              <span class="text-orange-500">$</span> pumpkin verify<br/>
+              <span class="text-neutral-600">&nbsp;&nbsp;--plugin <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="30574551425470021e011e03">[email&#160;protected]</a></span><br/>
+              <span class="text-green-400">&nbsp;&nbsp;✓ SHA-256 match</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pillar 3: Compatibility -->
+        <div class="p-8">
+          <div class="w-10 h-10 bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-6">
+            <i data-lucide="cpu" class="text-orange-500" style="width:18px;height:18px;"></i>
+          </div>
+          <h3 class="font-raleway font-black text-xl text-white mb-3">Cross-Architecture</h3>
+          <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-6">
+            Rust's compile targets mean plugins ship for x86_64, aarch64, and RISC-V. Every plugin page lists supported architectures so you never ship a broken binary.
+          </p>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="border border-neutral-800 p-2 text-center">
+              <div class="font-mono text-[10px] text-white mb-0.5">x86_64</div>
+              <div class="font-mono text-[10px] text-green-400">✓ Supported</div>
+            </div>
+            <div class="border border-neutral-800 p-2 text-center">
+              <div class="font-mono text-[10px] text-white mb-0.5">aarch64</div>
+              <div class="font-mono text-[10px] text-green-400">✓ Supported</div>
+            </div>
+            <div class="border border-neutral-800 p-2 text-center">
+              <div class="font-mono text-[10px] text-white mb-0.5">RISC-V</div>
+              <div class="font-mono text-[10px] text-yellow-500">~ Experimental</div>
+            </div>
+            <div class="border border-neutral-800 p-2 text-center">
+              <div class="font-mono text-[10px] text-white mb-0.5">WASM</div>
+              <div class="font-mono text-[10px] text-yellow-500">~ Experimental</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ CTA ════════════════════════════════════════════ -->
+  <section class="border-t border-neutral-800">
+    <div class="max-w-7xl mx-auto px-6 py-20 flex flex-col md:flex-row items-center justify-between gap-8">
+      <div>
+        <h2 class="font-raleway font-black text-4xl text-white mb-3">Ready to build?</h2>
+        <p class="font-raleway text-neutral-500">Publish your plugin in minutes. The community is waiting.</p>
+      </div>
+      <div class="flex items-center gap-4 flex-shrink-0">
+        <a href="page2-explorer.html" class="font-mono text-sm border border-neutral-700 hover:border-neutral-500 text-neutral-300 px-6 py-3 transition-colors">Browse Plugins</a>
+        <a href="page4-dashboard.html" class="font-mono text-sm bg-orange-500 hover:bg-orange-600 text-black font-bold px-6 py-3 transition-colors flex items-center gap-2">
+          Publish a Plugin <i data-lucide="upload" style="width:14px;height:14px;"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ FOOTER ═════════════════════════════════════════ -->
+  <footer class="border-t border-neutral-800 bg-neutral-900/30">
+    <div class="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-5 h-5 bg-orange-500 flex items-center justify-center">
+          <span class="text-black font-mono font-bold text-[8px]">PH</span>
+        </div>
+        <span class="font-mono text-xs text-neutral-600">Pumpkin Hub © 2025 — Community-driven. Open source.</span>
+      </div>
+      <div class="flex items-center gap-6 font-mono text-xs text-neutral-600">
+        <a href="#" class="hover:text-white transition-colors">GitHub</a>
+        <a href="#" class="hover:text-white transition-colors">Discord</a>
+        <a href="#" class="hover:text-white transition-colors">API Docs</a>
+        <a href="#" class="hover:text-white transition-colors"

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" style="background:#0a0a0a;color:#e5e5e5;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explorer — Pumpkin Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          fontFamily: {
+            raleway: ['Raleway', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { background-color: #0a0a0a !important; color: #e5e5e5 !important; }
+    .bg-white { background-color: #0a0a0a !important; }
+    .text-black { color: #000 !important; }
+    input, select, textarea { background-color: #111 !important; color: #e5e5e5 !important; border-color: #262626 !important; }
+    * { box-sizing: border-box; }
+    * { font-family: 'Raleway', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace !important; }
+    body { background-color: #0a0a0a; color: #e5e5e5; }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .plugin-card {
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .plugin-card:hover {
+      border-color: #525252 !important;
+      background-color: #1a1a1a;
+    }
+    .plugin-card.featured:hover {
+      border-color: rgba(249,115,22,0.4) !important;
+    }
+
+    .filter-checkbox:checked + .filter-label {
+      color: #f97316;
+      border-color: rgba(249,115,22,0.4);
+      background-color: rgba(249,115,22,0.05);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #f97316;
+    }
+
+    /* Sidebar scroll */
+    .sidebar-content {
+      position: sticky;
+      top: 57px;
+      max-height: calc(100vh - 57px);
+      overflow-y: auto;
+    }
+    .sidebar-content::-webkit-scrollbar { width: 3px; }
+    .sidebar-content::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-content::-webkit-scrollbar-thumb { background: #333; }
+
+    /* Sort button active */
+    .sort-btn.active {
+      background: #f97316;
+      color: #000;
+    }
+
+    /* Download btn */
+    .dl-btn {
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .dl-btn:hover {
+      background: #f97316 !important;
+      color: #000 !important;
+      border-color: #f97316 !important;
+    }
+
+    /* Pagination active */
+    .page-btn.active {
+      background: #f97316;
+      color: #000;
+    }
+  </style>
+</head>
+<body class="min-h-screen" style="background:#0a0a0a;color:#e5e5e5;">
+
+  <!-- ═══════════════════════════════════════════ NAV ═══════════════════════════════════════════ -->
+  <nav class="border-b border-neutral-800 sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-sm">
+    <div class="max-w-full px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="page1-landing.html" class="flex items-center gap-3">
+          <div class="w-7 h-7 bg-orange-500 flex items-center justify-center">
+            <span class="text-black font-mono font-bold text-xs">PH</span>
+          </div>
+          <span class="font-raleway font-bold text-sm tracking-widest uppercase text-white">Pumpkin Hub</span>
+        </a>
+        <span class="text-neutral-700 mx-2">/</span>
+        <span class="font-mono text-xs text-neutral-400">Explorer</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-xs font-raleway font-semibold tracking-widest uppercase text-neutral-400">
+        <a href="page2-explorer.html" class="text-white">Explorer</a>
+        <a href="#" class="hover:text-white transition-colors">Docs</a>
+        <a href="#" class="text-orange-500 hover:text-orange-400 transition-colors">Submit Plugin</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="text-xs font-mono text-neutral-400 hover:text-white transition-colors px-3 py-1.5 border border-neutral-800 hover:border-neutral-600">Sign In</button>
+        <a href="page4-dashboard.html" class="text-xs font-mono bg-orange-500 hover:bg-orange-600 text-black font-bold px-3 py-1.5 transition-colors">Dashboard →</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════ EXPLORER LAYOUT ══════════════════════════════════════════ -->
+  <div class="flex max-w-full">
+
+    <!-- ═══════════════════════ SIDEBAR ═══════════════════════════════ -->
+    <aside class="w-64 flex-shrink-0 border-r border-neutral-800 min-h-screen">
+      <div class="sidebar-content p-5 space-y-8">
+
+        <!-- Search in sidebar -->
+        <div>
+          <div class="flex items-center gap-2 border border-neutral-800 bg-neutral-900 px-3 py-2.5 focus-within:border-orange-500 transition-colors">
+            <i data-lucide="search" class="text-neutral-600 flex-shrink-0" style="width:14px;height:14px;"></i>
+            <input type="text" placeholder="Filter plugins..." class="search-input flex-1 bg-transparent font-mono text-xs text-white placeholder-neutral-700 border-0 outline-none" />
+          </div>
+        </div>
+
+        <!-- Sort -->
+        <div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-3">Sort By</div>
+          <div class="space-y-1">
+            <button class="sort-btn active w-full text-left font-mono text-xs px-3 py-2 border border-neutral-800">Downloads ↓</button>
+            <button class="sort-btn w-full text-left font-mono text-xs text-neutral-500 px-3 py-2 border border-transparent hover:border-neutral-800 transition-colors">Newest</button>
+            <button class="sort-btn w-full text-left font-mono text-xs text-neutral-500 px-3 py-2 border border-transparent hover:border-neutral-800 transition-colors">Updated</button>
+            <button class="sort-btn w-full text-left font-mono text-xs text-neutral-500 px-3 py-2 border border-transparent hover:border-neutral-800 transition-colors">Name A–Z</button>
+          </div>
+        </div>
+
+        <!-- Category Filter -->
+        <div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-3">Category</div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" checked />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-400 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <span>All</span>
+                <span class="text-neutral-600">1,247</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="shield" style="width:11px;height:11px;"></i>
+                  <span>Security</span>
+                </div>
+                <span class="text-neutral-600">184</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="coins" style="width:11px;height:11px;"></i>
+                  <span>Economy</span>
+                </div>
+                <span class="text-neutral-600">92</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="map" style="width:11px;height:11px;"></i>
+                  <span>World Gen</span>
+                </div>
+                <span class="text-neutral-600">217</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="users" style="width:11px;height:11px;"></i>
+                  <span>Admin Tools</span>
+                </div>
+                <span class="text-neutral-600">143</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="gamepad-2" style="width:11px;height:11px;"></i>
+                  <span>Gameplay</span>
+                </div>
+                <span class="text-neutral-600">338</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="database" style="width:11px;height:11px;"></i>
+                  <span>Storage</span>
+                </div>
+                <span class="text-neutral-600">76</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="message-square" style="width:11px;height:11px;"></i>
+                  <span>Chat / Social</span>
+                </div>
+                <span class="text-neutral-600">197</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- API Version -->
+        <div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-3">API Version</div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" checked />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-400 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <span>0.4.x</span>
+                <span class="text-orange-500 text-[10px]">LATEST</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <span>0.3.x</span>
+                <span class="text-neutral-600 text-[10px]">LTS</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full flex items-center justify-between font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">
+                <span>0.2.x</span>
+                <span class="text-neutral-700 text-[10px]">EOL</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- CPU Architecture -->
+        <div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-3">Architecture</div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" checked />
+              <div class="filter-label w-full font-mono text-xs text-neutral-400 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">x86_64</div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">aarch64</div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">RISC-V</div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">WASM</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- License -->
+        <div>
+          <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-3">License</div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">MIT / Apache-2.0</div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">GPL v3</div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="filter-checkbox hidden" />
+              <div class="filter-label w-full font-mono text-xs text-neutral-500 border border-neutral-800 px-3 py-2 group-hover:border-neutral-600 transition-colors">Proprietary</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Clear filters -->
+        <button class="w-full font-mono text-xs text-neutral-600 hover:text-orange-500 border border-neutral-800 hover:border-orange-500/30 px-3 py-2 transition-colors">
+          Clear all filters
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- ═══════════════════════ RESULTS AREA ════════════════════════════ -->
+    <main class="flex-1 min-w-0">
+
+      <!-- Results header bar -->
+      <div class="border-b border-neutral-800 px-6 py-3 flex items-center justify-between sticky top-14 bg-[#0a0a0a]/95 backdrop-blur-sm z-40">
+        <div class="flex items-center gap-4">
+          <span class="font-mono text-xs text-neutral-500">Showing <span class="text-white">1,247</span> plugins</span>
+          <!-- Active filters -->
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[10px] bg-orange-500/10 text-orange-500 border border-orange-500/30 px-2 py-0.5 flex items-center gap-1">
+              api:0.4.x
+              <button class="hover:text-white ml-1">×</button>
+            </span>
+            <span class="font-mono text-[10px] bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 flex items-center gap-1">
+              x86_64
+              <button class="hover:text-white ml-1">×</button>
+            </span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-mono text-[10px] text-neutral-600">View:</span>
+          <button class="border border-orange-500 bg-orange-500/10 text-orange-500 p-1.5" title="List view">
+            <i data-lucide="list" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="border border-neutral-800 text-neutral-600 hover:border-neutral-600 p-1.5 transition-colors" title="Grid view">
+            <i data-lucide="grid-3x3" style="width:14px;height:14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Plugin list -->
+      <div class="p-6 space-y-3">
+
+        <!-- PLUGIN CARD MACRO — Featured -->
+        <div class="plugin-card featured border border-orange-500/30 bg-neutral-900/50 p-5 flex items-start gap-5 cursor-pointer">
+          <!-- Icon -->
+          <div class="w-11 h-11 bg-orange-500/10 border border-orange-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <i data-lucide="shield-check" class="text-orange-500" style="width:20px;height:20px;"></i>
+          </div>
+          <!-- Main info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-1.5">
+              <div class="flex items-center gap-3">
+                <a href="page3-plugin.html" class="font-raleway font-bold text-base text-white hover:text-orange-500 transition-colors">PumpkinGuard</a>
+                <span class="font-mono text-[10px] text-orange-500 border border-orange-500/40 bg-orange-500/10 px-2 py-0.5">FEATURED</span>
+                <span class="font-mono text-[10px] text-neutral-600">v2.1.3</span>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button class="dl-btn font-mono text-xs border border-neutral-700 text-neutral-400 px-4 py-1.5 flex items-center gap-2">
+                  <i data-lucide="download" style="width:12px;height:12px;"></i>
+                  Install
+                </button>
+              </div>
+            </div>
+            <p class="font-mono text-[10px] text-neutral-600 mb-2.5">by <span class="text-neutral-400">ferrisdev</span> · Updated 2 days ago</p>
+            <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-3 max-w-2xl">
+              Zero-overhead anti-cheat and region protection system. Built on Rust's ownership model — no GC pauses, no false positives. 10k+ player events/sec.
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.4</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">x86_64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">aarch64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#security</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#protection</span>
+            </div>
+          </div>
+          <!-- Stats column -->
+          <div class="flex-shrink-0 text-right space-y-1 min-w-[100px]">
+            <div class="font-mono text-sm font-bold text-white">48,231</div>
+            <div class="font-mono text-[10px] text-neutral-600">downloads</div>
+            <div class="flex items-center justify-end gap-1 mt-2">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.9</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLUGIN CARD: WorldEdit-RS -->
+        <div class="plugin-card border border-neutral-800 bg-neutral-900/30 p-5 flex items-start gap-5 cursor-pointer">
+          <div class="w-11 h-11 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <i data-lucide="map" class="text-neutral-400" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-1.5">
+              <div class="flex items-center gap-3">
+                <a href="page3-plugin.html" class="font-raleway font-bold text-base text-white hover:text-orange-500 transition-colors">WorldEdit-RS</a>
+                <span class="font-mono text-[10px] text-neutral-600">v0.9.0</span>
+              </div>
+              <button class="dl-btn font-mono text-xs border border-neutral-700 text-neutral-400 px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
+                <i data-lucide="download" style="width:12px;height:12px;"></i>
+                Install
+              </button>
+            </div>
+            <p class="font-mono text-[10px] text-neutral-600 mb-2.5">by <span class="text-neutral-400">sk89q_rs</span> · Updated 5 days ago</p>
+            <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-3 max-w-2xl">
+              World manipulation rewritten in Rust. WASM-powered brushes and schematics. 100× faster than the original Java implementation with identical API surface.
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.4</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.3</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">x86_64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#world-gen</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#build</span>
+            </div>
+          </div>
+          <div class="flex-shrink-0 text-right space-y-1 min-w-[100px]">
+            <div class="font-mono text-sm font-bold text-white">32,018</div>
+            <div class="font-mono text-[10px] text-neutral-600">downloads</div>
+            <div class="flex items-center justify-end gap-1 mt-2">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.7</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLUGIN CARD: EconomyCore -->
+        <div class="plugin-card border border-neutral-800 bg-neutral-900/30 p-5 flex items-start gap-5 cursor-pointer">
+          <div class="w-11 h-11 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <i data-lucide="coins" class="text-neutral-400" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-1.5">
+              <div class="flex items-center gap-3">
+                <a href="page3-plugin.html" class="font-raleway font-bold text-base text-white hover:text-orange-500 transition-colors">EconomyCore</a>
+                <span class="font-mono text-[10px] text-green-500 border border-green-500/30 bg-green-500/5 px-2 py-0.5">NEW</span>
+                <span class="font-mono text-[10px] text-neutral-600">v1.4.1</span>
+              </div>
+              <button class="dl-btn font-mono text-xs border border-neutral-700 text-neutral-400 px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
+                <i data-lucide="download" style="width:12px;height:12px;"></i>
+                Install
+              </button>
+            </div>
+            <p class="font-mono text-[10px] text-neutral-600 mb-2.5">by <span class="text-neutral-400">rustonomist</span> · Updated yesterday</p>
+            <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-3 max-w-2xl">
+              Multi-currency economy with async atomic transactions. SQLite and PostgreSQL backends, Stripe webhook support for real-money donations, zero-downtime migration.
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.4</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">x86_64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">aarch64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#economy</span>
+            </div>
+          </div>
+          <div class="flex-shrink-0 text-right space-y-1 min-w-[100px]">
+            <div class="font-mono text-sm font-bold text-white">12,840</div>
+            <div class="font-mono text-[10px] text-neutral-600">downloads</div>
+            <div class="flex items-center justify-end gap-1 mt-2">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.6</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLUGIN CARD: AuthForge -->
+        <div class="plugin-card border border-neutral-800 bg-neutral-900/30 p-5 flex items-start gap-5 cursor-pointer">
+          <div class="w-11 h-11 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <i data-lucide="lock" class="text-neutral-400" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-1.5">
+              <div class="flex items-center gap-3">
+                <a href="page3-plugin.html" class="font-raleway font-bold text-base text-white hover:text-orange-500 transition-colors">AuthForge</a>
+                <span class="font-mono text-[10px] text-neutral-500 border border-neutral-700 bg-neutral-800 px-2 py-0.5">STAFF PICK</span>
+                <span class="font-mono text-[10px] text-neutral-600">v3.0.2</span>
+              </div>
+              <button class="dl-btn font-mono text-xs border border-neutral-700 text-neutral-400 px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
+                <i data-lucide="download" style="width:12px;height:12px;"></i>
+                Install
+              </button>
+            </div>
+            <p class="font-mono text-[10px] text-neutral-600 mb-2.5">by <span class="text-neutral-400">oxide_auth</span> · Updated 1 week ago</p>
+            <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-3 max-w-2xl">
+              JWT + OAuth2 + Passkey authentication in a single crate. WebAuthn FIDO2 support, hardware token compatible, session expiry, IP-bound tokens.
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.4</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.3</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">x86_64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#auth</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#security</span>
+            </div>
+          </div>
+          <div class="flex-shrink-0 text-right space-y-1 min-w-[100px]">
+            <div class="font-mono text-sm font-bold text-white">9,201</div>
+            <div class="font-mono text-[10px] text-neutral-600">downloads</div>
+            <div class="flex items-center justify-end gap-1 mt-2">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.8</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLUGIN CARD: ChatBridge -->
+        <div class="plugin-card border border-neutral-800 bg-neutral-900/30 p-5 flex items-start gap-5 cursor-pointer">
+          <div class="w-11 h-11 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <i data-lucide="message-circle" class="text-neutral-400" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-1.5">
+              <div class="flex items-center gap-3">
+                <a href="page3-plugin.html" class="font-raleway font-bold text-base text-white hover:text-orange-500 transition-colors">ChatBridge</a>
+                <span class="font-mono text-[10px] text-neutral-600">v1.2.0</span>
+              </div>
+              <button class="dl-btn font-mono text-xs border border-neutral-700 text-neutral-400 px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
+                <i data-lucide="download" style="width:12px;height:12px;"></i>
+                Install
+              </button>
+            </div>
+            <p class="font-mono text-[10px] text-neutral-600 mb-2.5">by <span class="text-neutral-400">velosocket</span> · Updated 3 weeks ago</p>
+            <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-3 max-w-2xl">
+              Discord ↔ Minecraft chat bridge over WebSocket. Async Tokio runtime, configurable formatting, role-sync, death messages and advancement announcements.
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.3</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">x86_64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#chat</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#discord</span>
+            </div>
+          </div>
+          <div class="flex-shrink-0 text-right space-y-1 min-w-[100px]">
+            <div class="font-mono text-sm font-bold text-white">7,590</div>
+            <div class="font-mono text-[10px] text-neutral-600">downloads</div>
+            <div class="flex items-center justify-end gap-1 mt-2">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.4</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLUGIN CARD: BiomeForge -->
+        <div class="plugin-card border border-neutral-800 bg-neutral-900/30 p-5 flex items-start gap-5 cursor-pointer">
+          <div class="w-11 h-11 bg-neutral-800 border border-neutral-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <i data-lucide="trees" class="text-neutral-400" style="width:20px;height:20px;"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4 mb-1.5">
+              <div class="flex items-center gap-3">
+                <a href="page3-plugin.html" class="font-raleway font-bold text-base text-white hover:text-orange-500 transition-colors">BiomeForge</a>
+                <span class="font-mono text-[10px] text-neutral-600">v0.7.2</span>
+              </div>
+              <button class="dl-btn font-mono text-xs border border-neutral-700 text-neutral-400 px-4 py-1.5 flex items-center gap-2 flex-shrink-0">
+                <i data-lucide="download" style="width:12px;height:12px;"></i>
+                Install
+              </button>
+            </div>
+            <p class="font-mono text-[10px] text-neutral-600 mb-2.5">by <span class="text-neutral-400">terrarust</span> · Updated 2 weeks ago</p>
+            <p class="font-raleway text-sm text-neutral-500 leading-relaxed mb-3 max-w-2xl">
+              Custom biome generation using noise functions in Rust. Procedural terrain with configurable ore distribution, structure injection, and climate zones.
+            </p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">api:0.4</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">x86_64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-500 px-2 py-0.5">aarch64</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#world-gen</span>
+              <span class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-0.5">#terrain</span>
+            </div>
+          </div>
+          <div class="flex-shrink-0 text-right space-y-1 min-w-[100px]">
+            <div class="font-mono text-sm font-bold text-white">5,143</div>
+            <div class="font-mono text-[10px] text-neutral-600">downloads</div>
+            <div class="flex items-center justify-end gap-1 mt-2">
+              <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+              <span class="font-mono text-xs text-neutral-400">4.5</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-between pt-6 border-t border-neutral-800">
+          <span class="font-mono text-xs text-neutral-600">Page 1 of 125</span>
+          <div class="flex items-center gap-1">
+            <button class="page-btn font-mono text-xs border border-neutral-800 text-neutral-600 px-3 py-1.5 hover:border-neutral-600 transition-colors">←</button>
+            <button class="page-btn active font-mono text-xs border border-orange-500 px-3 py-1.5">1</button>
+            <button class="page-btn font-mono text-xs border border-neutral-800 text-neutral-400 px-3 py-1.5 hover:border-neutral-600 transition-colors">2</button>
+            <button class="page-btn font-mono text-xs border border-neutral-800 text-neutral-400 px-3 py-1.5 hover:border-neutral-600 transition-colors">3</button>
+            <span class="font-mono text-xs text-neutral-700 px-1">···</span>
+            <button class="page-btn font-mono text-xs border border-neutral-800 text-neutral-400 px-3 py-1.5 hover:border-neutral-600 transition-colors">125</button>
+            <button class="page-btn font-mono text-xs border border-neutral-800 text-neutral-400 px-3 py-1.5 hover:border-neutral-600 transition-colors">→</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Sort button toggle
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Filter checkbox visual toggle
+    document.querySelectorAll('.filter-checkbox').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const label = cb.nextElementSibling;
+        if (cb.checked) {
+          label.style.color = '#f97316';
+          label.style.borderColor = 'rgba(249,115,22,0.4)';
+          label.style.backgroundColor = 'rgba(249,115,22,0.05)';
+        } else {
+          label.style.color = '';
+          label.style.borderColor = '';
+          label.style.backgroundColor = '';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" style="background:#0a0a0a;color:#e5e5e5;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PumpkinGuard — Pumpkin Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: { extend: { fontFamily: { raleway: ['Raleway', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] } } }
+    }
+  </script>
+  <style>
+    html, body { background-color: #0a0a0a !important; color: #e5e5e5 !important; }
+    .bg-white { background-color: #0a0a0a !important; }
+    .text-black { color: #000 !important; }
+    input, select, textarea { background-color: #111 !important; color: #e5e5e5 !important; border-color: #262626 !important; }
+    * { box-sizing: border-box; }
+    * { font-family: 'Raleway', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace !important; }
+    body { background-color: #0a0a0a; color: #e5e5e5; }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Tabs */
+    .tab-btn { transition: color 0.15s, border-color 0.15s; }
+    .tab-btn.active {
+      color: #fff;
+      border-bottom: 2px solid #f97316;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Install panel */
+    .install-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .install-panel.open { max-height: 300px; }
+
+    /* Copy button */
+    .copy-btn:active { transform: scale(0.95); }
+
+    /* Markdown-style content */
+    .md-content h2 {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 900;
+      font-size: 1.25rem;
+      color: #fff;
+      margin: 2rem 0 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #262626;
+    }
+    .md-content h3 {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #e5e5e5;
+      margin: 1.5rem 0 0.5rem;
+    }
+    .md-content p {
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.875rem;
+      color: #a3a3a3;
+      line-height: 1.8;
+      margin-bottom: 1rem;
+    }
+    .md-content ul {
+      list-style: none;
+      margin-bottom: 1rem;
+    }
+    .md-content ul li {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: #a3a3a3;
+      padding: 0.25rem 0;
+      padding-left: 1.25rem;
+      position: relative;
+    }
+    .md-content ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #f97316;
+    }
+    .md-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: #1a1a1a;
+      border: 1px solid #262626;
+      color: #f97316;
+      padding: 0.1rem 0.4rem;
+    }
+    .md-content pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: #111;
+      border: 1px solid #262626;
+      border-left: 3px solid #f97316;
+      color: #a3a3a3;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+      line-height: 1.7;
+    }
+
+    /* Download chart bars */
+    .chart-bar {
+      transition: height 0.3s ease;
+      background: #262626;
+    }
+    .chart-bar:hover { background: #f97316; }
+
+    /* Version row hover */
+    .ver-row:hover { background: #141414; }
+
+    /* Dependency card */
+    .dep-card { transition: border-color 0.15s; }
+    .dep-card:hover { border-color: #525252; }
+
+    /* Sidebar sticky */
+    .sidebar-sticky { position: sticky; top: 57px; }
+
+    /* Hash text */
+    .hash-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: #525252;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 240px;
+    }
+    .hash-text:hover { color: #a3a3a3; }
+  </style>
+</head>
+<body class="min-h-screen" style="background:#0a0a0a;color:#e5e5e5;">
+
+  <!-- NAV -->
+  <nav class="border-b border-neutral-800 sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-sm">
+    <div class="max-w-full px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="page1-landing.html" class="flex items-center gap-3">
+          <div class="w-7 h-7 bg-orange-500 flex items-center justify-center">
+            <span class="text-black font-mono font-bold text-xs">PH</span>
+          </div>
+          <span class="font-raleway font-bold text-sm tracking-widest uppercase text-white">Pumpkin Hub</span>
+        </a>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-xs font-raleway font-semibold tracking-widest uppercase text-neutral-400">
+        <a href="page2-explorer.html" class="hover:text-white transition-colors">Explorer</a>
+        <a href="#" class="hover:text-white transition-colors">Docs</a>
+        <a href="#" class="text-orange-500 hover:text-orange-400 transition-colors">Submit Plugin</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="text-xs font-mono text-neutral-400 hover:text-white transition-colors px-3 py-1.5 border border-neutral-800 hover:border-neutral-600">Sign In</button>
+        <a href="page4-dashboard.html" class="text-xs font-mono bg-orange-500 hover:bg-orange-600 text-black font-bold px-3 py-1.5 transition-colors">Dashboard →</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-6">
+
+    <!-- ═══════════════════ BREADCRUMB + HEADER ════════════════════════ -->
+    <div class="border-b border-neutral-800 py-6">
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-2 font-mono text-xs text-neutral-600 mb-5">
+        <a href="page1-landing.html" class="hover:text-neutral-400 transition-colors">hub</a>
+        <span class="text-neutral-800">/</span>
+        <a href="page2-explorer.html" class="hover:text-neutral-400 transition-colors">plugins</a>
+        <span class="text-neutral-800">/</span>
+        <a href="#" class="hover:text-neutral-400 transition-colors">security</a>
+        <span class="text-neutral-800">/</span>
+        <span class="text-neutral-300">pumpkin-guard</span>
+      </div>
+
+      <!-- Plugin header -->
+      <div class="flex items-start justify-between gap-6">
+        <div class="flex items-start gap-5">
+          <!-- Icon -->
+          <div class="w-14 h-14 bg-orange-500/10 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="shield-check" class="text-orange-500" style="width:26px;height:26px;"></i>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-3 mb-1.5">
+              <h1 class="font-raleway font-black text-3xl text-white">PumpkinGuard</h1>
+              <span class="font-mono text-xs text-orange-500 border border-orange-500/40 bg-orange-500/10 px-2 py-0.5">v2.1.3</span>
+              <span class="font-mono text-xs text-neutral-500 border border-neutral-700 bg-neutral-800 px-2 py-0.5">FEATURED</span>
+            </div>
+            <div class="flex items-center gap-4 font-mono text-xs text-neutral-600">
+              <span>by <a href="#" class="text-neutral-400 hover:text-orange-500 transition-colors">ferrisdev</a></span>
+              <span>·</span>
+              <div class="flex items-center gap-1">
+                <i data-lucide="star" class="text-orange-500" style="width:11px;height:11px;fill:#f97316;"></i>
+                <span class="text-neutral-400">4.9</span>
+                <span class="text-neutral-700">(312 ratings)</span>
+              </div>
+              <span>·</span>
+              <span>Updated 2 days ago</span>
+              <span>·</span>
+              <span>MIT License</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Install CTA -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <button class="font-mono text-xs border border-neutral-700 text-neutral-400 hover:border-neutral-500 px-4 py-2.5 transition-colors flex items-center gap-2">
+            <i data-lucide="github" style="width:14px;height:14px;"></i>
+            Source
+          </button>
+          <button onclick="toggleInstall()" class="font-mono text-sm bg-orange-500 hover:bg-orange-600 text-black font-bold px-5 py-2.5 transition-colors flex items-center gap-2" id="install-trigger">
+            <i data-lucide="terminal" style="width:14px;height:14px;"></i>
+            Quick Install
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══ INSTALL PANEL (Terminal copy-paste) ═══ -->
+      <div id="install-panel" class="install-panel mt-4">
+        <div class="border border-orange-500/30 bg-neutral-900 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-mono text-xs text-orange-500 uppercase tracking-widest">Install via Pumpkin CLI</span>
+            <button onclick="toggleInstall()" class="font-mono text-xs text-neutral-600 hover:text-white transition-colors">✕ Close</button>
+          </div>
+
+          <!-- Method 1 -->
+          <div class="mb-3">
+            <div class="font-mono text-[10px] text-neutral-600 mb-1.5">Method 1 — CLI (recommended)</div>
+            <div class="bg-[#0d0d0d] border border-neutral-800 p-3 flex items-center justify-between gap-4">
+              <code class="font-mono text-sm text-neutral-200 flex-1 overflow-x-auto">
+                <span class="text-orange-500 select-none">$ </span>pumpkin install <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="96f1e3f7e4f2d6a4b8a7b8a5">[email&#160;protected]</a>
+              </code>
+              <button onclick="copyCmd(this, 'pumpkin install guard@2.1.3')" class="copy-btn font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-orange-500 hover:text-orange-500 px-3 py-1.5 transition-colors flex-shrink-0">
+                COPY
+              </button>
+            </div>
+          </div>
+
+          <!-- Method 2 -->
+          <div class="mb-3">
+            <div class="font-mono text-[10px] text-neutral-600 mb-1.5">Method 2 — Cargo.toml</div>
+            <div class="bg-[#0d0d0d] border border-neutral-800 p-3 flex items-center justify-between gap-4">
+              <code class="font-mono text-sm text-neutral-200 flex-1">
+                <span class="text-neutral-600">[dependencies]</span><br/>
+                <span class="text-orange-400">pumpkin-guard</span> = <span class="text-green-400">"2.1.3"</span>
+              </code>
+              <button onclick="copyCmd(this, '[dependencies]\npumpkin-guard = \"2.1.3\"')" class="copy-btn font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-orange-500 hover:text-orange-500 px-3 py-1.5 transition-colors flex-shrink-0">
+                COPY
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 font-mono text-[10px] text-neutral-600">
+            <i data-lucide="check-circle" class="text-green-500" style="width:11px;height:11px;"></i>
+            SHA-256 verified &nbsp;·&nbsp;
+            <i data-lucide="shield" class="text-green-500" style="width:11px;height:11px;"></i>
+            No unsafe blocks &nbsp;·&nbsp;
+            <i data-lucide="cpu" class="text-neutral-500" style="width:11px;height:11px;"></i>
+            x86_64, aarch64
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ MAIN CONTENT + SIDEBAR ════════════════════════ -->
+    <div class="flex gap-8 py-8">
+
+      <!-- ═══ MAIN CONTENT ═══ -->
+      <div class="flex-1 min-w-0">
+
+        <!-- TABS -->
+        <div class="border-b border-neutral-800 flex gap-0 mb-8">
+          <button class="tab-btn active font-mono text-xs text-neutral-400 px-5 py-3 uppercase tracking-widest" data-tab="overview">Overview</button>
+          <button class="tab-btn font-mono text-xs text-neutral-600 px-5 py-3 uppercase tracking-widest hover:text-neutral-300 transition-colors" data-tab="versions">Versions</button>
+          <button class="tab-btn font-mono text-xs text-neutral-600 px-5 py-3 uppercase tracking-widest hover:text-neutral-300 transition-colors" data-tab="dependencies">Dependencies</button>
+        </div>
+
+        <!-- ═══ TAB: OVERVIEW ═══ -->
+        <div id="tab-overview" class="tab-panel active md-content">
+
+          <h2>What is PumpkinGuard?</h2>
+          <p>
+            PumpkinGuard is a zero-overhead anti-cheat and region protection plugin for Pumpkin MC servers. Designed from the ground up in Rust, it leverages the borrow checker to guarantee memory safety without a garbage collector — meaning no GC pauses, no unpredictable latency spikes, and no false positives during peak load.
+          </p>
+          <p>
+            The plugin hooks into Pumpkin's event system at compile time via procedural macros, achieving tick-level monitoring without allocating on the hot path.
+          </p>
+
+          <h2>Features</h2>
+          <ul>
+            <li>Real-time movement validation with configurable tolerance windows</li>
+            <li>Region protection with ACL-based permission trees</li>
+            <li>Async event processing — server tick is never blocked</li>
+            <li>Built-in integration with <code>AuthForge</code> for identity-bound protections</li>
+            <li>Web dashboard API (JSON over HTTP) for remote administration</li>
+            <li>Zero <code>unsafe</code> blocks — verified by <code>cargo-geiger</code></li>
+          </ul>
+
+          <h2>Configuration</h2>
+          <p>Drop a <code>pumpkin_guard.toml</code> in your server root. All configuration is hot-reloadable via SIGHUP or <code>/guard reload</code>:</p>
+          <pre>[protection]
+enabled = true
+tolerance_ms = 120
+max_velocity = 0.5
+
+[regions]
+default_acl = "owner-only"
+persist_backend = "sqlite"   # or "postgres"
+
+[monitoring]
+log_level = "warn"
+webhook_url = "https://your.discord.webhook"</pre>
+
+          <h2>Performance Benchmarks</h2>
+          <p>Tested on a 500-player stress scenario with synthetic movement injection at 1,000 events/sec per player:</p>
+          <ul>
+            <li>Average event latency: <code>0.08ms</code></li>
+            <li>P99 latency: <code>0.31ms</code></li>
+            <li>Memory overhead: <code>~4MB RSS</code> per 100 active players</li>
+            <li>CPU usage: <code>&lt;2%</code> on a single core (AMD EPYC 9754)</li>
+          </ul>
+
+          <h2>Changelog (v2.1.3)</h2>
+          <ul>
+            <li>Fix: race condition in region deserialization under high concurrent writes</li>
+            <li>Perf: reduce allocations in movement validator by 40% via arena pooling</li>
+            <li>New: <code>--dry-run</code> flag for config validation without server restart</li>
+            <li>API: add <code>GET /api/v1/regions/:id/members</code> endpoint</li>
+          </ul>
+
+        </div>
+
+        <!-- ═══ TAB: VERSIONS ═══ -->
+        <div id="tab-versions" class="tab-panel">
+          <div class="mb-6 flex items-center justify-between">
+            <span class="font-mono text-xs text-neutral-600">6 releases · <span class="text-white">v2.1.3</span> is latest</span>
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-[10px] text-neutral-600">Filter:</span>
+              <button class="font-mono text-[10px] border border-orange-500 bg-orange-500/10 text-orange-500 px-2 py-1">All</button>
+              <button class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-1 hover:border-neutral-600">Stable</button>
+              <button class="font-mono text-[10px] border border-neutral-800 text-neutral-600 px-2 py-1 hover:border-neutral-600">Pre-release</button>
+            </div>
+          </div>
+
+          <!-- Version table -->
+          <div class="border border-neutral-800">
+            <!-- Table header -->
+            <div class="grid grid-cols-12 gap-4 px-4 py-2.5 border-b border-neutral-800 bg-neutral-900/50">
+              <div class="col-span-2 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Version</div>
+              <div class="col-span-2 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">API Compat</div>
+              <div class="col-span-2 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Arch</div>
+              <div class="col-span-4 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">SHA-256</div>
+              <div class="col-span-1 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Size</div>
+              <div class="col-span-1 font-mono text-[10px] text-neutral-600 uppercase tracking-widest">DL</div>
+            </div>
+
+            <!-- v2.1.3 (latest) -->
+            <div class="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-neutral-800 items-center">
+              <div class="col-span-2 flex items-center gap-2">
+                <span class="font-mono text-sm text-white font-bold">2.1.3</span>
+                <span class="font-mono text-[9px] bg-orange-500/10 text-orange-500 border border-orange-500/30 px-1.5 py-0.5">LATEST</span>
+              </div>
+              <div class="col-span-2 font-mono text-xs text-neutral-400">0.4.x</div>
+              <div class="col-span-2 font-mono text-xs text-neutral-500">x86_64, arm64</div>
+              <div class="col-span-4">
+                <div class="hash-text" title="a3f2e8d1c7b94056e2a1f38dc09b5e714c82a9df01b2e3c4d5a6f7b8c9d0e1f2">a3f2e8d1c7b94056e2a1f38dc09b5e71...</div>
+                <button class="font-mono text-[9px] text-neutral-700 hover:text-orange-500 transition-colors mt-0.5">copy full hash</button>
+              </div>
+              <div class="col-span-1 font-mono text-xs text-neutral-500">2.1 MB</div>
+              <div class="col-span-1">
+                <button class="font-mono text-[10px] bg-orange-500 hover:bg-orange-600 text-black font-bold px-2 py-1 transition-colors">↓</button>
+              </div>
+            </div>
+
+            <!-- v2.1.2 -->
+            <div class="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-neutral-800 items-center">
+              <div class="col-span-2"><span class="font-mono text-sm text-neutral-400">2.1.2</span></div>
+              <div class="col-span-2 font-mono text-xs text-neutral-500">0.4.x</div>
+              <div class="col-span-2 font-mono text-xs text-neutral-600">x86_64, arm64</div>
+              <div class="col-span-4">
+                <div class="hash-text">9c4d2f1a8b3e57609f0c21e48d7a6b59...</div>
+              </div>
+              <div class="col-span-1 font-mono text-xs text-neutral-600">2.1 MB</div>
+              <div class="col-span-1">
+                <button class="font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-orange-500 hover:text-orange-500 px-2 py-1 transition-colors">↓</button>
+              </div>
+            </div>
+
+            <!-- v2.0.0 -->
+            <div class="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-neutral-800 items-center">
+              <div class="col-span-2 flex items-center gap-2">
+                <span class="font-mono text-sm text-neutral-400">2.0.0</span>
+                <span class="font-mono text-[9px] text-neutral-600 border border-neutral-800 px-1.5 py-0.5">MAJOR</span>
+              </div>
+              <div class="col-span-2 font-mono text-xs text-neutral-500">0.4.x</div>
+              <div class="col-span-2 font-mono text-xs text-neutral-600">x86_64</div>
+              <div class="col-span-4">
+                <div class="hash-text">7b1e9a3c6d2f84170e3b59dc18a5f7c4...</div>
+              </div>
+              <div class="col-span-1 font-mono text-xs text-neutral-600">1.9 MB</div>
+              <div class="col-span-1">
+                <button class="font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-orange-500 hover:text-orange-500 px-2 py-1 transition-colors">↓</button>
+              </div>
+            </div>
+
+            <!-- v1.8.4 (LTS) -->
+            <div class="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-neutral-800 items-center">
+              <div class="col-span-2 flex items-center gap-2">
+                <span class="font-mono text-sm text-neutral-400">1.8.4</span>
+                <span class="font-mono text-[9px] text-green-600 border border-green-600/30 px-1.5 py-0.5">LTS</span>
+              </div>
+              <div class="col-span-2 font-mono text-xs text-neutral-500">0.3.x</div>
+              <div class="col-span-2 font-mono text-xs text-neutral-600">x86_64</div>
+              <div class="col-span-4">
+                <div class="hash-text">2d8c5e1b4a9f72036c1e47dc09b8a6f3...</div>
+              </div>
+              <div class="col-span-1 font-mono text-xs text-neutral-600">1.7 MB</div>
+              <div class="col-span-1">
+                <button class="font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-orange-500 hover:text-orange-500 px-2 py-1 transition-colors">↓</button>
+              </div>
+            </div>
+
+            <!-- v1.5.0 -->
+            <div class="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-neutral-800 items-center">
+              <div class="col-span-2"><span class="font-mono text-sm text-neutral-700">1.5.0</span></div>
+              <div class="col-span-2 font-mono text-xs text-neutral-700">0.3.x</div>
+              <div class="col-span-2 font-mono text-xs text-neutral-700">x86_64</div>
+              <div class="col-span-4">
+                <div class="hash-text" style="color: #333">e5f3a9c2d7b1840250f9c36da18b7e52...</div>
+              </div>
+              <div class="col-span-1 font-mono text-xs text-neutral-700">1.5 MB</div>
+              <div class="col-span-1">
+                <button class="font-mono text-[10px] border border-neutral-800 text-neutral-700 hover:border-orange-500 hover:text-orange-500 px-2 py-1 transition-colors">↓</button>
+              </div>
+            </div>
+
+            <!-- v1.0.0 EOL -->
+            <div class="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 items-center opacity-50">
+              <div class="col-span-2 flex items-center gap-2">
+                <span class="font-mono text-sm text-neutral-700">1.0.0</span>
+                <span class="font-mono text-[9px] text-red-900 border border-red-900/30 px-1.5 py-0.5">EOL</span>
+              </div>
+              <div class="col-span-2 font-mono text-xs text-neutral-700">0.2.x</div>
+              <div class="col-span-2 font-mono text-xs text-neutral-700">x86_64</div>
+              <div class="col-span-4"><div class="hash-text" style="color: #333">1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d...</div></div>
+              <div class="col-span-1 font-mono text-xs text-neutral-700">1.1 MB</div>
+              <div class="col-span-1"><button class="font-mono text-[10px] border border-neutral-800 text-neutral-800 px-2 py-1 cursor-not-allowed">↓</button></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ═══ TAB: DEPENDENCIES ═══ -->
+        <div id="tab-dependencies" class="tab-panel">
+          <div class="mb-6">
+            <span class="font-mono text-xs text-neutral-600">4 runtime dependencies · <span class="text-white">0</span> unsafe crates</span>
+          </div>
+          <div class="space-y-3">
+
+            <div class="dep-card border border-neutral-800 bg-neutral-900/30 p-4 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-8 h-8 border border-neutral-700 flex items-center justify-center">
+                  <i data-lucide="package" class="text-neutral-500" style="width:14px;height:14px;"></i>
+                </div>
+                <div>
+                  <div class="font-mono text-sm text-white mb-0.5">pumpkin-api <span class="text-neutral-600">^0.4.0</span></div>
+                  <div class="font-mono text-[10px] text-neutral-600">Core Pumpkin server bindings</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-[10px] text-green-500 border border-green-500/20 bg-green-500/5 px-2 py-0.5">✓ No unsafe</span>
+                <a href="page3-plugin.html" class="font-mono text-[10px] text-neutral-600 hover:text-orange-500 border border-neutral-800 hover:border-orange-500/30 px-2 py-1 transition-colors">View →</a>
+              </div>
+            </div>
+
+            <div class="dep-card border border-neutral-800 bg-neutral-900/30 p-4 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-8 h-8 border border-neutral-700 flex items-center justify-center">
+                  <i data-lucide="package" class="text-neutral-500" style="width:14px;height:14px;"></i>
+                </div>
+                <div>
+                  <div class="font-mono text-sm text-white mb-0.5">tokio <span class="text-neutral-600">^1.35</span></div>
+                  <div class="font-mono text-[10px] text-neutral-600">Async runtime · features: rt-multi-thread, sync</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-[10px] text-green-500 border border-green-500/20 bg-green-500/5 px-2 py-0.5">✓ No unsafe</span>
+                <a href="#" class="font-mono text-[10px] text-neutral-600 hover:text-orange-500 border border-neutral-800 hover:border-orange-500/30 px-2 py-1 transition-colors">crates.io →</a>
+              </div>
+            </div>
+
+            <div class="dep-card border border-neutral-800 bg-neutral-900/30 p-4 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-8 h-8 border border-neutral-700 flex items-center justify-center">
+                  <i data-lucide="package" class="text-neutral-500" style="width:14px;height:14px;"></i>
+                </div>
+                <div>
+                  <div class="font-mono text-sm text-white mb-0.5">serde <span class="text-neutral-600">^1.0</span></div>
+                  <div class="font-mono text-[10px] text-neutral-600">Serialization framework · features: derive</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-[10px] text-green-500 border border-green-500/20 bg-green-500/5 px-2 py-0.5">✓ No unsafe</span>
+                <a href="#" class="font-mono text-[10px] text-neutral-600 hover:text-orange-500 border border-neutral-800 hover:border-orange-500/30 px-2 py-1 transition-colors">crates.io →</a>
+              </div>
+            </div>
+
+            <div class="dep-card border border-neutral-800 bg-neutral-900/30 p-4 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-8 h-8 border border-neutral-700 flex items-center justify-center">
+                  <i data-lucide="package" class="text-neutral-500" style="width:14px;height:14px;"></i>
+                </div>
+                <div>
+                  <div class="font-mono text-sm text-white mb-0.5">sqlx <span class="text-neutral-600">^0.7</span></div>
+                  <div class="font-mono text-[10px] text-neutral-600">Async SQL toolkit · features: sqlite, postgres, runtime-tokio</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-[10px] text-green-500 border border-green-500/20 bg-green-500/5 px-2 py-0.5">✓ No unsafe</span>
+                <a href="#" class="font-mono text-[10px] text-neutral-600 hover:text-orange-500 border border-neutral-800 hover:border-orange-500/30 px-2 py-1 transition-colors">crates.io →</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ RIGHT SIDEBAR ═══ -->
+      <aside class="w-72 flex-shrink-0">
+        <div class="sidebar-sticky space-y-6">
+
+          <!-- Download stats -->
+          <div class="border border-neutral-800 bg-neutral-900/30 p-5">
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-4">Statistics</div>
+
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="font-mono text-3xl font-bold text-white">48,231</span>
+              <span class="font-mono text-xs text-neutral-600">total downloads</span>
+            </div>
+            <div class="font-mono text-xs text-green-400 mb-5">↑ +2,341 this week</div>
+
+            <!-- Mini chart -->
+            <div class="mb-1">
+              <div class="font-mono text-[10px] text-neutral-700 mb-2">Last 8 weeks</div>
+              <div class="flex items-end gap-1 h-16">
+                <div class="chart-bar flex-1" style="height: 30%"></div>
+                <div class="chart-bar flex-1" style="height: 45%"></div>
+                <div class="chart-bar flex-1" style="height: 38%"></div>
+                <div class="chart-bar flex-1" style="height: 60%"></div>
+                <div class="chart-bar flex-1" style="height: 55%"></div>
+                <div class="chart-bar flex-1" style="height: 70%"></div>
+                <div class="chart-bar flex-1" style="height: 85%"></div>
+                <div class="chart-bar flex-1 bg-orange-500 opacity-80" style="height: 100%"></div>
+              </div>
+            </div>
+
+            <div class="border-t border-neutral-800 pt-4 mt-4 space-y-2">
+              <div class="flex justify-between font-mono text-xs">
+                <span class="text-neutral-600">This week</span>
+                <span class="text-white">2,341</span>
+              </div>
+              <div class="flex justify-between font-mono text-xs">
+                <span class="text-neutral-600">This month</span>
+                <span class="text-white">8,902</span>
+              </div>
+              <div class="flex justify-between font-mono text-xs">
+                <span class="text-neutral-600">All time</span>
+                <span class="text-white">48,231</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Links -->
+          <div class="border border-neutral-800 bg-neutral-900/30 p-5">
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-4">Links</div>
+            <div class="space-y-2">
+              <a href="#" class="flex items-center gap-3 font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors group">
+                <i data-lucide="github" style="width:14px;height:14px;"></i>
+                <span>ferrisdev/pumpkin-guard</span>
+                <i data-lucide="arrow-up-right" class="ml-auto text-neutral-700 group-hover:text-orange-500" style="width:11px;height:11px;"></i>
+              </a>
+              <a href="#" class="flex items-center gap-3 font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors group">
+                <i data-lucide="book-open" style="width:14px;height:14px;"></i>
+                <span>Documentation</span>
+                <i data-lucide="arrow-up-right" class="ml-auto text-neutral-700 group-hover:text-orange-500" style="width:11px;height:11px;"></i>
+              </a>
+              <a href="#" class="flex items-center gap-3 font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors group">
+                <i data-lucide="bug" style="width:14px;height:14px;"></i>
+                <span>Report Issue</span>
+                <i data-lucide="arrow-up-right" class="ml-auto text-neutral-700 group-hover:text-orange-500" style="width:11px;height:11px;"></i>
+              </a>
+              <a href="#" class="flex items-center gap-3 font-mono text-xs text-neutral-400 hover:text-orange-500 transition-colors group">
+                <i data-lucide="message-circle" style="width:14px;height:14px;"></i>
+                <span>Discord Support</span>
+                <i data-lucide="arrow-up-right" class="ml-auto text-neutral-700 group-hover:text-orange-500" style="width:11px;height:11px;"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Meta -->
+          <div class="border border-neutral-800 bg-neutral-900/30 p-5">
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-4">Details</div>
+            <div class="space-y-2.5">
+              <div class="flex justify-between">
+                <span class="font-mono text-[10px] text-neutral-600">Published</span>
+                <span class="font-mono text-[10px] text-neutral-400">2024-03-12</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-mono text-[10px] text-neutral-600">Updated</span>
+                <span class="font-mono text-[10px] text-neutral-400">2025-06-01</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-mono text-[10px] text-neutral-600">License</span>
+                <span class="font-mono text-[10px] text-neutral-400">MIT / Apache-2.0</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-mono text-[10px] text-neutral-600">Rust Edition</span>
+                <span class="font-mono text-[10px] text-neutral-400">2021</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-mono text-[10px] text-neutral-600">MSRV</span>
+                <span class="font-mono text-[10px] text-neutral-400">1.74.0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Author card -->
+          <div class="border border-neutral-800 bg-neutral-900/30 p-5">
+            <div class="font-mono text-[10px] text-neutral-600 uppercase tracking-widest mb-4">Author</div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-orange-500/20 border border-orange-500/30 flex items-center justify-center font-mono font-bold text-orange-500 text-sm">fd</div>
+              <div>
+                <div class="font-raleway font-bold text-sm text-white">ferrisdev</div>
+                <div class="font-mono text-[10px] text-neutral-600">12 plugins · 94k total dl</div>
+              </div>
+            </div>
+            <a href="page4-dashboard.html" class="mt-3 block w-full text-center font-mono text-[10px] border border-neutral-700 text-neutral-500 hover:border-neutral-500 px-3 py-2 transition-colors">View Profile</a>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    lucide.createIcons();
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Install panel toggle
+    function toggleInstall() {
+      const panel = document.getElementById('install-panel');
+      panel.classList.toggle('open');
+    }
+
+    // Copy command
+    function copyCmd(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✓ COPIED';
+        btn.style.color = '#4ade80';
+        btn.style.borderCol
