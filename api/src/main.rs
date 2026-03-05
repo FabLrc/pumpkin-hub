@@ -24,10 +24,12 @@ async fn main() {
 
     let app = pumpkin_hub_api::build_app(config);
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap_or_else(|err| {
-        tracing::error!(%err, %addr, "Failed to bind TCP listener");
-        std::process::exit(1);
-    });
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .unwrap_or_else(|err| {
+            tracing::error!(%err, %addr, "Failed to bind TCP listener");
+            std::process::exit(1);
+        });
 
     tracing::info!("Listening on http://{addr}");
 

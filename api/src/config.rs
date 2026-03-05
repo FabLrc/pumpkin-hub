@@ -31,8 +31,7 @@ pub enum ConfigError {
 
 impl Config {
     pub fn from_env() -> Result<Self, ConfigError> {
-        let host = std::env::var("SERVER_HOST")
-            .unwrap_or_else(|_| "0.0.0.0".to_string());
+        let host = std::env::var("SERVER_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
         let port = parse_env_var::<u16>("SERVER_PORT", 8080)?;
 
         let ip: IpAddr = host.parse().map_err(|_| ConfigError::InvalidValue {

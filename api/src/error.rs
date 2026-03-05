@@ -29,9 +29,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
             AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
-            AppError::UnprocessableEntity(msg) => {
-                (StatusCode::UNPROCESSABLE_ENTITY, msg.clone())
-            }
+            AppError::UnprocessableEntity(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.clone()),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             AppError::Internal(err) => {
                 // Log the root cause server-side, never expose it to the client.

@@ -6,9 +6,7 @@ use crate::state::AppState;
 
 /// Assembles all versioned sub-routers under their respective prefixes.
 pub fn create_router(state: AppState) -> Router {
-    Router::new()
-        .nest("/api/v1", v1_routes())
-        .with_state(state)
+    Router::new().nest("/api/v1", v1_routes()).with_state(state)
 }
 
 fn v1_routes() -> Router<AppState> {

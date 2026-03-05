@@ -2,8 +2,8 @@
 
 > **Le registre de plugins et ressources de nouvelle génération pour l'écosystème Pumpkin MC (Rust).**
 
-[![Status: Active Development](https://img.shields.io/badge/Status-Active_Development-orange?style=for-the-badge)](https://github.com/votre-repo/pumpkin-hub)
-[![Built with: Rust & Next.js](https://img.shields.io/badge/Stack-Rust_%2F_Next.js-black?style=for-the-badge)](https://github.com/votre-repo/pumpkin-hub)
+[![Status: Active Development](https://img.shields.io/badge/Status-Active_Development-orange?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
+[![Built with: Rust & Next.js](https://img.shields.io/badge/Stack-Rust_%2F_Next.js-black?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
 
 ---
 
