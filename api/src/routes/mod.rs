@@ -1,5 +1,6 @@
 pub mod auth;
 mod health;
+mod plugins;
 
 use axum::Router;
 
@@ -11,5 +12,8 @@ pub fn create_router(state: AppState) -> Router {
 }
 
 fn v1_routes() -> Router<AppState> {
-    Router::new().merge(health::routes()).merge(auth::routes())
+    Router::new()
+        .merge(health::routes())
+        .merge(auth::routes())
+        .merge(plugins::routes())
 }
