@@ -41,44 +41,36 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
           </Link>
         </div>
 
-        {/* Bento Grid */}
-        <div
-          className="grid grid-cols-12 grid-rows-2 gap-4 auto-rows-fr"
-          style={{ minHeight: "520px" }}
-        >
-          {/* Featured card (large, col 1-5, row 1-2) */}
+        {/* Bento Grid — featured (5 cols × 2 rows) + 2×2 small cards (7 cols × 2 rows) */}
+        <div className="grid grid-cols-12 gap-4" style={{ gridTemplateRows: "1fr 1fr", minHeight: "520px" }}>
+          {/* Featured card */}
           {featured ? (
             <Link
               href={`/plugins/${featured.slug}`}
               className="bento-card col-span-5 row-span-2 border border-border-default bg-bg-elevated p-6 flex flex-col relative overflow-hidden group cursor-pointer"
             >
-              <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/5 translate-y-1/2 -translate-x-1/2" />
+              <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/5 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
               <div className="flex items-start justify-between mb-6">
-                <div className="w-12 h-12 bg-accent/10 border border-accent/30 flex items-center justify-center">
+                <div className="w-12 h-12 bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
                   <span className="font-mono font-bold text-sm text-accent">
                     {featured.name.slice(0, 2).toUpperCase()}
                   </span>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-mono text-[10px] bg-accent/10 text-accent border border-accent/30 px-2 py-0.5 uppercase tracking-widest">
-                    #1 Trending
-                  </span>
-                </div>
+                <span className="font-mono text-[10px] bg-accent/10 text-accent border border-accent/30 px-2 py-0.5 uppercase tracking-widest">
+                  #1 Trending
+                </span>
               </div>
 
               <h3 className="font-raleway font-black text-2xl text-text-primary mb-2">
                 {featured.name}
               </h3>
               <p className="font-mono text-xs text-text-dim mb-1">
-                by{" "}
-                <span className="text-text-muted">
-                  {featured.author.username}
-                </span>
+                by <span className="text-text-subtle">{featured.author.username}</span>
               </p>
               {featured.short_description && (
-                <p className="font-raleway text-sm text-text-subtle leading-relaxed mb-auto mt-4">
+                <p className="font-raleway text-sm text-text-subtle leading-relaxed mt-4 mb-auto">
                   {featured.short_description}
                 </p>
               )}
@@ -95,12 +87,11 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
                   ))}
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="font-mono text-xs text-text-dim">
+                  <span className="font-mono text-xs text-text-dim">
                     {formatDownloads(featured.downloads_total)} downloads
-                  </div>
-                  <span className="font-mono text-xs bg-accent hover:bg-accent-dark text-black font-bold px-4 py-2 transition-colors flex items-center gap-2">
-                    View Plugin{" "}
-                    <ArrowRight className="w-[12px] h-[12px]" />
+                  </span>
+                  <span className="font-mono text-xs bg-accent text-black font-bold px-4 py-2 flex items-center gap-2">
+                    View Plugin <ArrowRight className="w-[12px] h-[12px]" />
                   </span>
                 </div>
               </div>
@@ -109,21 +100,16 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
             <FeaturedPlaceholder />
           )}
 
-          {/* Smaller cards */}
-          {rest.length > 0
-            ? rest.map((plugin, index) => (
-                <SmallBentoCard
-                  key={plugin.id}
-                  plugin={plugin}
-                  colSpan={index < 2 ? (index === 0 ? 4 : 3) : index === 2 ? 4 : 3}
-                />
-              ))
-            : Array.from({ length: 4 }).map((_, index) => (
-                <SmallPlaceholder
-                  key={index}
-                  colSpan={index < 2 ? (index === 0 ? 4 : 3) : index === 2 ? 4 : 3}
-                />
-              ))}
+          {/* Small cards — nested 2×2 grid in the remaining 7 columns */}
+          <div className="col-span-7 row-span-2 grid grid-cols-2 grid-rows-2 gap-4">
+            {rest.length > 0
+              ? rest.map((plugin) => (
+                  <SmallBentoCard key={plugin.id} plugin={plugin} />
+                ))
+              : Array.from({ length: 4 }).map((_, index) => (
+                  <SmallPlaceholder key={index} />
+                ))}
+          </div>
         </div>
       </div>
     </section>
@@ -132,33 +118,25 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
 
 // ── Small Bento Card ──────────────────────────────────────────────────────
 
-function SmallBentoCard({
-  plugin,
-  colSpan,
-}: {
-  plugin: PluginSummary;
-  colSpan: number;
-}) {
+function SmallBentoCard({ plugin }: { plugin: PluginSummary }) {
   return (
     <Link
       href={`/plugins/${plugin.slug}`}
-      className={`bento-card col-span-${colSpan} row-span-1 border border-border-default bg-bg-elevated p-5 flex flex-col cursor-pointer`}
+      className="bento-card border border-border-default bg-bg-elevated p-5 flex flex-col min-w-0 cursor-pointer"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-9 h-9 bg-bg-surface border border-border-hover flex items-center justify-center">
-          <span className="font-mono font-bold text-xs text-text-subtle">
-            {plugin.name.slice(0, 2).toUpperCase()}
-          </span>
-        </div>
+      <div className="w-9 h-9 bg-bg-surface border border-border-hover flex items-center justify-center flex-shrink-0 mb-4">
+        <span className="font-mono font-bold text-xs text-text-subtle">
+          {plugin.name.slice(0, 2).toUpperCase()}
+        </span>
       </div>
-      <h3 className="font-raleway font-bold text-lg text-text-primary mb-1">
+      <h3 className="font-raleway font-bold text-lg text-text-primary mb-1 truncate">
         {plugin.name}
       </h3>
-      <p className="font-mono text-[10px] text-text-dim mb-3">
+      <p className="font-mono text-[10px] text-text-dim mb-3 truncate">
         by <span className="text-text-subtle">{plugin.author.username}</span>
       </p>
       {plugin.short_description && (
-        <p className="font-raleway text-xs text-text-dim leading-relaxed mb-auto">
+        <p className="font-raleway text-xs text-text-dim leading-relaxed mb-auto line-clamp-3">
           {plugin.short_description}
         </p>
       )}
@@ -183,11 +161,9 @@ function FeaturedPlaceholder() {
   );
 }
 
-function SmallPlaceholder({ colSpan }: { colSpan: number }) {
+function SmallPlaceholder() {
   return (
-    <div
-      className={`bento-card col-span-${colSpan} row-span-1 border border-border-default bg-bg-elevated p-5 flex flex-col items-center justify-center`}
-    >
+    <div className="bento-card border border-border-default bg-bg-elevated p-5 flex flex-col items-center justify-center">
       <div className="w-9 h-9 bg-bg-surface border border-border-hover mb-3" />
       <div className="h-3 w-24 bg-bg-surface mb-2" />
       <div className="h-2 w-16 bg-bg-surface" />
