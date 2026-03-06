@@ -1,4 +1,4 @@
-use pumpkin_hub_api::config::Config;
+use pumpkin_hub_api::{config::Config, db};
 
 #[tokio::main]
 async fn main() {
@@ -19,10 +19,19 @@ async fn main() {
         std::process::exit(1);
     });
 
+    tracing::info!("Connecting to database and running migrations…");
+    let pool = db::connect_and_migrate(&config.database_url)
+        .await
+        .unwrap_or_else(|err| {
+            tracing::error!(%err, "Failed to connect to database");
+            std::process::exit(1);
+        });
+    tracing::info!("Database ready");
+
     let addr = config.server.address;
     tracing::info!(%addr, "Starting pumpkin-hub-api");
 
-    let app = pumpkin_hub_api::build_app(config);
+    let app = pumpkin_hub_api::build_app(config, pool);
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await
