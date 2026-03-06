@@ -25,8 +25,8 @@
 ## 🏗️ Tech Stack
 
 *   **Frontend:** Next.js 16+, Tailwind CSS, Shadcn UI.
-*   **Backend:** Rust (Axum), Meilisearch.
-*   **Infrastructure:** Cloudflare R2, PostgreSQL, Supabase Auth.
+*   **Backend:** Rust (Axum), SQLx, Meilisearch.
+*   **Infrastructure:** Cloudflare R2, PostgreSQL.
 
 ## 📖 Documentation
 

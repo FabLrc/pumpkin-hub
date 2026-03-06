@@ -64,7 +64,8 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">API en développement</div>
-        L'API est actuellement en Phase 1. Seul l'endpoint health check est implémenté.
+        L'API est en Phase 1. La couche base de données (modèles, migrations, seeds) et
+        l'endpoint health check sont implémentés.
         Les endpoints ci-dessous marqués <span class="badge badge-blue">Planifié</span>
         seront ajoutés dans les prochaines phases.
       </div>
@@ -95,11 +96,22 @@
         <code style="font-size:1rem;">/api/v1/health</code>
       </div>
 
-      <p>Vérifie que l'API est opérationnelle. Utilisé par Docker pour les health checks.</p>
+      <p>Vérifie que l'API est opérationnelle et que la base de données est accessible. Utilisé par Docker pour les health checks.</p>
 
       <h3>Réponse <span class="badge badge-green">200 OK</span></h3>
       <pre><code>{
-  "status": "healthy"
+  "status": "ok",
+  "service": "pumpkin-hub-api",
+  "version": "0.1.0",
+  "database": "connected"
+}</code></pre>
+
+      <h3>Réponse <span class="badge badge-orange">503 Service Unavailable</span></h3>
+      <pre><code>{
+  "status": "degraded",
+  "service": "pumpkin-hub-api",
+  "version": "0.1.0",
+  "database": "disconnected"
 }</code></pre>
 
       <table>
@@ -107,7 +119,10 @@
           <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>status</code></td><td><code>string</code></td><td>État du service — toujours <code>"healthy"</code> si l'API répond</td></tr>
+          <tr><td><code>status</code></td><td><code>string</code></td><td>État du service : <code>"ok"</code> ou <code>"degraded"</code></td></tr>
+          <tr><td><code>service</code></td><td><code>string</code></td><td>Nom du service</td></tr>
+          <tr><td><code>version</code></td><td><code>string</code></td><td>Version du crate (depuis <code>Cargo.toml</code>)</td></tr>
+          <tr><td><code>database</code></td><td><code>string</code></td><td>Connectivité DB : <code>"connected"</code> ou <code>"disconnected"</code></td></tr>
         </tbody>
       </table>
 
