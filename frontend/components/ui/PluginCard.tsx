@@ -1,6 +1,6 @@
 import type { PluginSummary } from "@/lib/types";
 import Link from "next/link";
-import { Download, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { Badge } from "./Badge";
 
 interface PluginCardProps {

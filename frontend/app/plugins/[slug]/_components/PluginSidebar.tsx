@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Github,
   BookOpen,
@@ -176,9 +177,11 @@ function AuthorCard({ plugin }: { plugin: PluginResponse }) {
       </div>
       <div className="flex items-center gap-3">
         {plugin.author.avatar_url ? (
-          <img
+          <Image
             src={plugin.author.avatar_url}
             alt={plugin.author.username}
+            width={40}
+            height={40}
             className="w-10 h-10 border border-accent/30"
           />
         ) : (
