@@ -19,6 +19,12 @@ pub enum AppError {
     #[error("Unauthorized")]
     Unauthorized,
 
+    #[error("Forbidden")]
+    Forbidden,
+
+    #[error("Conflict: {0}")]
+    Conflict(String),
+
     /// Wraps any internal error as a boxed trait object.
     /// The root cause is logged server-side but never sent to the client.
     #[error("Internal server error")]
@@ -31,6 +37,8 @@ impl IntoResponse for AppError {
             AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
             AppError::UnprocessableEntity(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.clone()),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
+            AppError::Forbidden => (StatusCode::FORBIDDEN, self.to_string()),
+            AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
             AppError::Internal(err) => {
                 // Log the root cause server-side, never expose it to the client.
                 tracing::error!(%err, "Internal server error");
