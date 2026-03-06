@@ -30,11 +30,11 @@
 
 ## 📖 Documentation
 
-Full documentation is available at [pumpkin-hub docs](https://fablrc.github.io/pumpkin-hub/) (English & French).
+Full documentation is available at [pumpkin-hub docs](https://fablrc.github.io/pumpkin-hub/).
 
 ## 🛠️ Installation (Development)
 
 > [!NOTE]
-> **Phase 1 in progress:** Database models, migrations, and GitHub OAuth authentication are implemented. Plugin CRUD and frontend pages are next.
+> **Phase 1 in progress:** Database models, migrations, GitHub OAuth authentication, and full Plugin CRUD (list, create, read, update, delete with validation, pagination, sorting, and category filtering) are implemented. Frontend pages are next.
 
 *Detailed setup instructions available in the [documentation](https://fablrc.github.io/pumpkin-hub/getting-started.html).*

@@ -24,7 +24,6 @@
       <a href="api.html" class="navbar-link">API</a>
       <a href="roadmap.html" class="navbar-link">Roadmap</a>
       <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
-      <a href="fr/architecture.html" class="navbar-link" title="Français">FR</a>
     </div>
   </nav>
 
@@ -108,6 +107,11 @@
 │       ├── db.rs           # PostgreSQL connection pool &amp; migrations
 │       ├── error.rs        # Centralized error type (AppError)
 │       ├── state.rs        # Shared state (AppState + PgPool)
+│       ├── auth/           # GitHub OAuth &amp; JWT authentication
+│       │   ├── mod.rs      # Auth module exports
+│       │   ├── github.rs   # GitHub OAuth flow (redirect, callback)
+│       │   ├── jwt.rs      # JWT creation &amp; validation
+│       │   └── middleware.rs # AuthUser extractor middleware
 │       ├── models/         # Data models (SQLx FromRow + Serde)
 │       │   ├── user.rs     # User (GitHub OAuth profile)
 │       │   ├── plugin.rs   # Plugin (registry entry)
@@ -116,7 +120,12 @@
 │       │   └── plugin_category.rs # Junction table
 │       └── routes/
 │           ├── mod.rs      # Sub-router assembly
-│           └── health.rs   # GET /api/v1/health (+ DB check)
+│           ├── health.rs   # GET /api/v1/health (+ DB check)
+│           ├── auth.rs     # Auth routes (login, callback, me, logout)
+│           └── plugins/    # Plugin CRUD module
+│               ├── mod.rs      # Route declarations
+│               ├── dto.rs      # Request/response DTOs &amp; validation
+│               └── handlers.rs # Handler functions &amp; helpers
 │
 ├── frontend/               # Next.js frontend
 │   ├── package.json        # NPM dependencies
@@ -184,6 +193,8 @@
           <tr><td><code>NotFound</code></td><td>404</td><td>Resource not found</td></tr>
           <tr><td><code>UnprocessableEntity</code></td><td>422</td><td>Invalid data (message forwarded to client)</td></tr>
           <tr><td><code>Unauthorized</code></td><td>401</td><td>Unauthorized access</td></tr>
+          <tr><td><code>Forbidden</code></td><td>403</td><td>Authenticated but not authorized (ownership check)</td></tr>
+          <tr><td><code>Conflict</code></td><td>409</td><td>Resource conflict (e.g., duplicate slug)</td></tr>
           <tr><td><code>Internal</code></td><td>500</td><td>Internal error (logged server-side, never exposed)</td></tr>
         </tbody>
       </table>

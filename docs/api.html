@@ -24,7 +24,6 @@
       <a href="api.html" class="navbar-link accent">API</a>
       <a href="roadmap.html" class="navbar-link">Roadmap</a>
       <a href="https://github.com/FabLrc/pumpkin-hub" class="navbar-link">GitHub ↗</a>
-      <a href="fr/api.html" class="navbar-link" title="Français">FR</a>
     </div>
   </nav>
 
@@ -54,6 +53,12 @@
         <a href="#errors" class="sidebar-sublink">Error Handling</a>
         <a href="#cors" class="sidebar-sublink">CORS Policy</a>
         <a href="#auth" class="sidebar-sublink">Authentication</a>
+        <a href="#plugins" class="sidebar-sublink">Plugins</a>
+        <a href="#plugins-list" class="sidebar-sublink" style="padding-left:2rem;">List Plugins</a>
+        <a href="#plugins-create" class="sidebar-sublink" style="padding-left:2rem;">Create Plugin</a>
+        <a href="#plugins-get" class="sidebar-sublink" style="padding-left:2rem;">Get Plugin</a>
+        <a href="#plugins-update" class="sidebar-sublink" style="padding-left:2rem;">Update Plugin</a>
+        <a href="#plugins-delete" class="sidebar-sublink" style="padding-left:2rem;">Delete Plugin</a>
         <a href="#planned" class="sidebar-sublink">Planned Endpoints</a>
       </div>
     </aside>
@@ -67,9 +72,8 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Work in progress</div>
-        The API is in Phase 1. Database models, <code>/health</code>, and GitHub OAuth authentication<br>
-        are implemented. The "planned" endpoints listed<br>
-        below are scheduled in the roadmap.
+        The API is in Phase 1. Health check, GitHub OAuth authentication and Plugin CRUD are implemented.<br>
+        Version management, search and user endpoints are planned for upcoming phases.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -158,7 +162,9 @@
         </thead>
         <tbody>
           <tr><td><span class="badge badge-yellow">401</span></td><td><code>Unauthorized</code></td><td>Authentication required or invalid token</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td><code>Forbidden</code></td><td>Authenticated but not authorized (e.g., not the resource owner)</td></tr>
           <tr><td><span class="badge badge-yellow">404</span></td><td><code>NotFound</code></td><td>Resource not found</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td><code>Conflict</code></td><td>Resource conflict (e.g., duplicate slug or name)</td></tr>
           <tr><td><span class="badge badge-yellow">422</span></td><td><code>UnprocessableEntity</code></td><td>Invalid data (details in message)</td></tr>
           <tr><td><span class="badge badge-red">500</span></td><td><code>Internal</code></td><td>Internal error (details logged server-side, never exposed to client)</td></tr>
           <tr><td><span class="badge badge-red">504</span></td><td>Timeout</td><td>Request exceeded the 30-second global timeout</td></tr>
@@ -283,6 +289,216 @@
         </tbody>
       </table>
 
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                         PLUGINS                               -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="plugins">Plugins</h2>
+      <p>
+        Plugin endpoints handle the full CRUD lifecycle for registry entries.
+        Public endpoints (list, get) require no authentication. Write endpoints
+        (create, update, delete) require a valid JWT and enforce ownership.
+      </p>
+
+      <!-- ── List Plugins ────────────────────────────────── -->
+      <h3 id="plugins-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins</code></h3>
+      <p>Returns a paginated list of active plugins with optional sorting and category filtering.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>integer</td><td><code>1</code></td><td>Page number (≥ 1)</td></tr>
+          <tr><td><code>per_page</code></td><td>integer</td><td><code>20</code></td><td>Items per page (1–100)</td></tr>
+          <tr><td><code>sort</code></td><td>string</td><td><code>created_at</code></td><td>Sort field: <code>created_at</code>, <code>updated_at</code>, <code>downloads_total</code>, <code>name</code></td></tr>
+          <tr><td><code>order</code></td><td>string</td><td><code>desc</code></td><td>Sort order: <code>asc</code> or <code>desc</code></td></tr>
+          <tr><td><code>category</code></td><td>string</td><td>—</td><td>Filter by category slug</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Request</h4>
+      <pre><code>curl "http://localhost:8080/api/v1/plugins?page=1&per_page=10&sort=downloads_total&order=desc"</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "slug": "fast-chunks",
+      "name": "Fast Chunks",
+      "short_description": "Optimized chunk loading for Pumpkin MC",
+      "downloads_total": 1250,
+      "author": {
+        "username": "rustdev",
+        "avatar_url": "https://avatars.githubusercontent.com/u/1"
+      },
+      "categories": [
+        { "slug": "performance", "name": "Performance", "icon": "⚡" }
+      ],
+      "created_at": "2026-03-06T12:00:00Z",
+      "updated_at": "2026-03-10T08:30:00Z"
+    }
+  ],
+  "page": 1,
+  "per_page": 10,
+  "total": 42
+}</code></pre>
+
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>data</code></td><td>array</td><td>Array of plugin summaries</td></tr>
+          <tr><td><code>data[].slug</code></td><td>string</td><td>URL-safe unique identifier</td></tr>
+          <tr><td><code>data[].author</code></td><td>object</td><td>Author summary (<code>username</code>, <code>avatar_url</code>)</td></tr>
+          <tr><td><code>data[].categories</code></td><td>array</td><td>Associated categories (<code>slug</code>, <code>name</code>, <code>icon</code>)</td></tr>
+          <tr><td><code>page</code></td><td>integer</td><td>Current page number</td></tr>
+          <tr><td><code>per_page</code></td><td>integer</td><td>Items per page</td></tr>
+          <tr><td><code>total</code></td><td>integer</td><td>Total matching plugins</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Create Plugin ───────────────────────────────── -->
+      <h3 id="plugins-create"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/plugins</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <p>Creates a new plugin. Requires authentication. The authenticated user becomes the plugin author.</p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "name": "Fast Chunks",
+  "short_description": "Optimized chunk loading for Pumpkin MC",
+  "description": "Detailed description with full feature list...",
+  "license": "MIT",
+  "repository_url": "https://github.com/rustdev/fast-chunks",
+  "website_url": "https://fast-chunks.dev",
+  "category_ids": [
+    "uuid-of-performance-category"
+  ]
+}</code></pre>
+
+      <h4>Validation Rules</h4>
+      <table>
+        <thead><tr><th>Field</th><th>Required</th><th>Constraints</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>Yes</td><td>3–100 characters, alphanumeric + space/hyphen/underscore</td></tr>
+          <tr><td><code>short_description</code></td><td>Yes</td><td>Max 255 characters</td></tr>
+          <tr><td><code>description</code></td><td>No</td><td>Max 50,000 characters</td></tr>
+          <tr><td><code>license</code></td><td>No</td><td>Max 50 characters</td></tr>
+          <tr><td><code>repository_url</code></td><td>No</td><td>Valid URL, max 500 characters</td></tr>
+          <tr><td><code>website_url</code></td><td>No</td><td>Valid URL, max 500 characters</td></tr>
+          <tr><td><code>category_ids</code></td><td>No</td><td>Array of UUIDs, max 5 categories</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">201 Created</span></h4>
+      <p>Returns the full plugin object (see <a href="#plugins-get">Get Plugin</a> response format).</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Missing or invalid authentication</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Plugin name conflicts with existing slug</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Validation failure (details in error message)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-info">
+        <div class="callout-label">Slug Generation</div>
+        The slug is automatically generated from the plugin name (lowercased, spaces/special
+        characters replaced by hyphens). If a collision is detected, a numeric suffix is appended
+        (e.g., <code>fast-chunks-2</code>).
+      </div>
+
+      <!-- ── Get Plugin ──────────────────────────────────── -->
+      <h3 id="plugins-get"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug</code></h3>
+      <p>Returns the full details of a single plugin by its slug.</p>
+
+      <h4>Request</h4>
+      <pre><code>curl http://localhost:8080/api/v1/plugins/fast-chunks</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "slug": "fast-chunks",
+  "name": "Fast Chunks",
+  "short_description": "Optimized chunk loading for Pumpkin MC",
+  "description": "Detailed description with full feature list...",
+  "license": "MIT",
+  "repository_url": "https://github.com/rustdev/fast-chunks",
+  "website_url": "https://fast-chunks.dev",
+  "downloads_total": 1250,
+  "is_active": true,
+  "author": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "username": "rustdev",
+    "display_name": "Rust Developer",
+    "avatar_url": "https://avatars.githubusercontent.com/u/1"
+  },
+  "categories": [
+    { "id": "cat-uuid", "slug": "performance", "name": "Performance", "icon": "⚡" }
+  ],
+  "created_at": "2026-03-06T12:00:00Z",
+  "updated_at": "2026-03-10T08:30:00Z"
+}</code></pre>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin not found or inactive</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Update Plugin ───────────────────────────────── -->
+      <h3 id="plugins-update"><span class="badge badge-orange">PUT</span> &nbsp; <code>/api/v1/plugins/:slug</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <p>Updates plugin metadata. Requires authentication and ownership (only the plugin author can update).</p>
+
+      <h4>Request Body</h4>
+      <p>All fields are optional. Only provided fields are updated (partial update via <code>COALESCE</code>).</p>
+      <pre><code>{
+  "name": "Fast Chunks Pro",
+  "short_description": "Updated description",
+  "license": "Apache-2.0",
+  "category_ids": ["uuid-1", "uuid-2"]
+}</code></pre>
+
+      <h4>Validation Rules</h4>
+      <p>Same constraints as <a href="#plugins-create">Create Plugin</a>, but all fields are optional.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the updated full plugin object (see <a href="#plugins-get">Get Plugin</a> response format).</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Missing or invalid authentication</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Authenticated user is not the plugin author</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin not found</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Updated name conflicts with existing slug</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Validation failure</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Delete Plugin ───────────────────────────────── -->
+      <h3 id="plugins-delete"><span class="badge badge-red">DELETE</span> &nbsp; <code>/api/v1/plugins/:slug</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <p>Soft-deletes a plugin by setting <code>is_active = false</code>. The plugin data is preserved in the database but no longer appears in listings or detail queries. Requires authentication and ownership.</p>
+
+      <h4>Request</h4>
+      <pre><code>curl -X DELETE http://localhost:8080/api/v1/plugins/fast-chunks \
+  -H "Authorization: Bearer &lt;jwt&gt;"</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{ "message": "Plugin deleted" }</code></pre>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Missing or invalid authentication</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Authenticated user is not the plugin author</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin not found or already deleted</td></tr>
+        </tbody>
+      </table>
+
       <!-- ── Planned Endpoints ─────────────────────────────────────────────── -->
       <h2 id="planned">Planned Endpoints</h2>
 
@@ -290,20 +506,6 @@
         The following endpoints will be progressively added. See the
         <a href="roadmap.html">roadmap</a> for the detailed schedule.
       </p>
-
-      <h3>Plugins</h3>
-      <table>
-        <thead>
-          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins</code></td><td>Paginated list with filters</td></tr>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Plugin details</td></tr>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/plugins</code></td><td>Publish a new plugin</td></tr>
-          <tr><td><span class="badge badge-orange">PUT</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Update metadata</td></tr>
-          <tr><td><span class="badge badge-red">DELETE</span></td><td><code>/api/v1/plugins/:slug</code></td><td>Deletion (soft-delete)</td></tr>
-        </tbody>
-      </table>
 
       <h3>Versions &amp; Binaries</h3>
       <table>
