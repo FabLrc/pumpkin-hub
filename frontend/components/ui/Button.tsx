@@ -9,11 +9,10 @@ interface ButtonBaseProps {
   className?: string;
 }
 
-interface ButtonAsButton
-  extends ButtonBaseProps,
-    ButtonHTMLAttributes<HTMLButtonElement> {
-  href?: never;
-}
+type ButtonAsButton = ButtonBaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof ButtonBaseProps> & {
+    href?: never;
+  };
 
 interface ButtonAsLink extends ButtonBaseProps {
   href: string;
