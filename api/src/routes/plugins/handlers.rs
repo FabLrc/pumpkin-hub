@@ -68,14 +68,13 @@ fn slugify(input: &str) -> String {
 async fn generate_unique_slug(pool: &PgPool, name: &str) -> Result<String, AppError> {
     let base = slugify(name);
 
-    let existing_slugs: Vec<String> = sqlx::query_scalar(
-        "SELECT slug FROM plugins WHERE slug = $1 OR slug LIKE $2",
-    )
-    .bind(&base)
-    .bind(format!("{base}-%"))
-    .fetch_all(pool)
-    .await
-    .map_err(AppError::internal)?;
+    let existing_slugs: Vec<String> =
+        sqlx::query_scalar("SELECT slug FROM plugins WHERE slug = $1 OR slug LIKE $2")
+            .bind(&base)
+            .bind(format!("{base}-%"))
+            .fetch_all(pool)
+            .await
+            .map_err(AppError::internal)?;
 
     if existing_slugs.is_empty() {
         return Ok(base);
@@ -126,13 +125,11 @@ async fn load_categories_batch(
 
     let mut map: HashMap<Uuid, Vec<CategorySummary>> = HashMap::new();
     for row in rows {
-        map.entry(row.plugin_id)
-            .or_default()
-            .push(CategorySummary {
-                id: row.category_id,
-                name: row.category_name,
-                slug: row.category_slug,
-            });
+        map.entry(row.plugin_id).or_default().push(CategorySummary {
+            id: row.category_id,
+            name: row.category_name,
+            slug: row.category_slug,
+        });
     }
 
     Ok(map)
@@ -150,10 +147,7 @@ async fn load_categories_for_plugin(
 // ── Query Helpers ───────────────────────────────────────────────────────────
 
 /// Fetches a single plugin row (with author info) by slug.
-async fn fetch_plugin_by_slug(
-    pool: &PgPool,
-    slug: &str,
-) -> Result<PluginWithAuthorRow, AppError> {
+async fn fetch_plugin_by_slug(pool: &PgPool, slug: &str) -> Result<PluginWithAuthorRow, AppError> {
     sqlx::query_as(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
                 p.description, p.repository_url, p.documentation_url, p.license,
@@ -502,20 +496,17 @@ pub async fn delete_plugin(
     let row = fetch_plugin_by_slug(pool, &slug).await?;
 
     // Owners, admins and moderators can soft-delete
-    let is_allowed = auth.user_id == row.author_id
-        || auth.role == "admin"
-        || auth.role == "moderator";
+    let is_allowed =
+        auth.user_id == row.author_id || auth.role == "admin" || auth.role == "moderator";
     if !is_allowed {
         return Err(AppError::Forbidden);
     }
 
-    sqlx::query(
-        "UPDATE plugins SET is_active = false, updated_at = now() WHERE slug = $1",
-    )
-    .bind(&slug)
-    .execute(pool)
-    .await
-    .map_err(AppError::internal)?;
+    sqlx::query("UPDATE plugins SET is_active = false, updated_at = now() WHERE slug = $1")
+        .bind(&slug)
+        .execute(pool)
+        .await
+        .map_err(AppError::internal)?;
 
     Ok(Json(serde_json::json!({ "message": "Plugin deleted" })))
 }

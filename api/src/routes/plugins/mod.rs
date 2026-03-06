@@ -7,7 +7,10 @@ use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/plugins", get(handlers::list_plugins).post(handlers::create_plugin))
+        .route(
+            "/plugins",
+            get(handlers::list_plugins).post(handlers::create_plugin),
+        )
         .route(
             "/plugins/{slug}",
             get(handlers::get_plugin)
