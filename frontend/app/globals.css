@@ -1,26 +1,337 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap");
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ── Design Tokens ─────────────────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Background */
+  --color-bg-base: #0a0a0a;
+  --color-bg-elevated: #111111;
+  --color-bg-surface: #1a1a1a;
+
+  /* Text */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e5e5e5;
+  --color-text-muted: #a3a3a3;
+  --color-text-subtle: #737373;
+  --color-text-dim: #525252;
+
+  /* Accent (Orange) */
+  --color-accent: #f97316;
+  --color-accent-light: #fb923c;
+  --color-accent-dark: #ea580c;
+
+  /* Borders */
+  --color-border-default: #262626;
+  --color-border-hover: #525252;
+  --color-border-accent: #f97316;
+
+  /* Semantic */
+  --color-success: #4ade80;
+  --color-warning: #facc15;
+  --color-error: #f87171;
+  --color-info: #38bdf8;
+
+  /* Typography */
+  --font-raleway: "Raleway", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ── Base Styles ───────────────────────────────────────────────────────── */
+
+html,
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-secondary);
+  font-family: var(--font-raleway);
+}
+
+/* ── Noise Texture Overlay ─────────────────────────────────────────────── */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Scanline Effect ───────────────────────────────────────────────────── */
+
+.scanline {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* ── Grid Background ───────────────────────────────────────────────────── */
+
+.grid-bg {
+  background-image: linear-gradient(
+      rgba(249, 115, 22, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── Orange Glow ───────────────────────────────────────────────────────── */
+
+.glow-orange {
+  box-shadow: 0 0 40px rgba(249, 115, 22, 0.15);
+}
+
+/* ── Bento Card Hover ──────────────────────────────────────────────────── */
+
+.bento-card {
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.bento-card:hover {
+  border-color: var(--color-accent) !important;
+  transform: translateY(-2px);
+}
+
+/* ── Plugin Card Hover ─────────────────────────────────────────────────── */
+
+.plugin-card {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.plugin-card:hover {
+  border-color: var(--color-border-hover) !important;
+  background-color: var(--color-bg-surface);
+}
+.plugin-card.featured:hover {
+  border-color: rgba(249, 115, 22, 0.4) !important;
+}
+
+/* ── Search Focus ──────────────────────────────────────────────────────── */
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+/* ── Typewriter Cursor ─────────────────────────────────────────────────── */
+
+.cursor::after {
+  content: "█";
+  animation: blink 1s step-end infinite;
+  color: var(--color-accent);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Fade-Up Animation ─────────────────────────────────────────────────── */
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fadeUp 0.6s ease forwards;
+}
+.delay-1 {
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+.delay-2 {
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+.delay-3 {
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+.delay-4 {
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+/* ── Ticker Animation ──────────────────────────────────────────────────── */
+
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  animation: ticker 30s linear infinite;
+}
+
+/* ── Tab System ────────────────────────────────────────────────────────── */
+
+.tab-btn {
+  transition: color 0.15s, border-color 0.15s;
+}
+
+/* ── Chart Bars ────────────────────────────────────────────────────────── */
+
+.chart-bar {
+  transition: height 0.3s ease;
+  background: #262626;
+}
+.chart-bar:hover {
+  background: var(--color-accent);
+}
+
+/* ── Version Row ───────────────────────────────────────────────────────── */
+
+.ver-row:hover {
+  background: #141414;
+}
+
+/* ── Sidebar Scroll ────────────────────────────────────────────────────── */
+
+.sidebar-scroll {
+  position: sticky;
+  top: 57px;
+  max-height: calc(100vh - 57px);
+  overflow-y: auto;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #333;
+}
+
+/* ── Sort Button Active ────────────────────────────────────────────────── */
+
+.sort-btn.active {
+  background: var(--color-accent);
+  color: #000;
+}
+
+/* ── Filter Checkbox Active ────────────────────────────────────────────── */
+
+.filter-checkbox:checked + .filter-label {
+  color: var(--color-accent);
+  border-color: rgba(249, 115, 22, 0.4);
+  background-color: rgba(249, 115, 22, 0.05);
+}
+
+/* ── Pagination Active ─────────────────────────────────────────────────── */
+
+.page-btn.active {
+  background: var(--color-accent);
+  color: #000;
+}
+
+/* ── Hash Text ─────────────────────────────────────────────────────────── */
+
+.hash-text {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: #525252;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+.hash-text:hover {
+  color: #a3a3a3;
+}
+
+/* ── Markdown Content ──────────────────────────────────────────────────── */
+
+.md-content h2 {
+  font-family: var(--font-raleway);
+  font-weight: 900;
+  font-size: 1.25rem;
+  color: #fff;
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #262626;
+}
+
+.md-content h3 {
+  font-family: var(--font-raleway);
+  font-weight: 700;
+  font-size: 1rem;
+  color: #e5e5e5;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.md-content p {
+  font-family: var(--font-raleway);
+  font-size: 0.875rem;
+  color: #a3a3a3;
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+
+.md-content ul {
+  list-style: none;
+  margin-bottom: 1rem;
+}
+
+.md-content ul li {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #a3a3a3;
+  padding: 0.25rem 0;
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.md-content ul li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+}
+
+.md-content code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #262626;
+  color: var(--color-accent);
+  padding: 0.1rem 0.4rem;
+}
+
+.md-content pre {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: #111;
+  border: 1px solid #262626;
+  border-left: 3px solid var(--color-accent);
+  color: #a3a3a3;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  line-height: 1.7;
+}
+
+/* ── Download Button Hover ─────────────────────────────────────────────── */
+
+.dl-btn {
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.dl-btn:hover {
+  background: var(--color-accent) !important;
+  color: #000 !important;
+  border-color: var(--color-accent) !important;
 }
