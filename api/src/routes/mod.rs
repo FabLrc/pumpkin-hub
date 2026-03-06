@@ -11,7 +11,5 @@ pub fn create_router(state: AppState) -> Router {
 }
 
 fn v1_routes() -> Router<AppState> {
-    Router::new()
-        .merge(health::routes())
-        .merge(auth::routes())
+    Router::new().merge(health::routes()).merge(auth::routes())
 }

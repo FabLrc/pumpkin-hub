@@ -168,18 +168,13 @@ async fn callback(
 
 // ── GET /api/v1/auth/me ─────────────────────────────────────────────────────
 /// Returns the current authenticated user's profile. Protected route.
-async fn me(
-    State(state): State<AppState>,
-    auth: AuthUser,
-) -> Result<Json<UserProfile>, AppError> {
-    let user = sqlx::query_as::<_, crate::models::user::User>(
-        "SELECT * FROM users WHERE id = $1",
-    )
-    .bind(auth.user_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(AppError::internal)?
-    .ok_or(AppError::NotFound)?;
+async fn me(State(state): State<AppState>, auth: AuthUser) -> Result<Json<UserProfile>, AppError> {
+    let user = sqlx::query_as::<_, crate::models::user::User>("SELECT * FROM users WHERE id = $1")
+        .bind(auth.user_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(AppError::internal)?
+        .ok_or(AppError::NotFound)?;
 
     Ok(Json(UserProfile::from(user)))
 }

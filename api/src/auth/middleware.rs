@@ -47,9 +47,7 @@ fn extract_token(parts: &Parts) -> Result<String, AppError> {
 
     // 2. Fall back to Authorization: Bearer <token>
     if let Some(auth_header) = parts.headers.get(axum::http::header::AUTHORIZATION) {
-        let header_value = auth_header
-            .to_str()
-            .map_err(|_| AppError::Unauthorized)?;
+        let header_value = auth_header.to_str().map_err(|_| AppError::Unauthorized)?;
         if let Some(token) = header_value.strip_prefix("Bearer ") {
             let token = token.trim();
             if !token.is_empty() {
