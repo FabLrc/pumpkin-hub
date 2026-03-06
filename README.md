@@ -34,4 +34,7 @@ Full documentation is available at [pumpkin-hub docs](https://fablrc.github.io/p
 
 ## 🛠️ Installation (Development)
 
-*Note: Detailed deployment instructions will be added as versions stabilize.*
+> [!NOTE]
+> **Phase 1 in progress:** Database models, migrations, and GitHub OAuth authentication are implemented. Plugin CRUD and frontend pages are next.
+
+*Detailed setup instructions available in the [documentation](https://fablrc.github.io/pumpkin-hub/getting-started.html).*

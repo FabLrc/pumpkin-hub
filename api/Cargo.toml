@@ -49,6 +49,24 @@ thiserror = "2"
 # Environment variables
 dotenvy = "0.15"
 
+# OAuth 2.0
+oauth2 = "5"
+
+# HTTP client (for GitHub API calls)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# JWT authentication
+jsonwebtoken = "9"
+
+# Cookie support
+axum-extra = { version = "0.10", features = ["cookie"] }
+
+# Time (required by cookie builder)
+time = "0.3"
+
+# Random bytes for CSRF state
+rand = "0.8"
+
 [profile.release]
 opt-level = 3
 lto = true

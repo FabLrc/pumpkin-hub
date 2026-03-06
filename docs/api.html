@@ -53,6 +53,7 @@
         <a href="#health" class="sidebar-sublink">Health Check</a>
         <a href="#errors" class="sidebar-sublink">Error Handling</a>
         <a href="#cors" class="sidebar-sublink">CORS Policy</a>
+        <a href="#auth" class="sidebar-sublink">Authentication</a>
         <a href="#planned" class="sidebar-sublink">Planned Endpoints</a>
       </div>
     </aside>
@@ -66,8 +67,8 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Work in progress</div>
-        The API is in Phase 1. The database layer (models, migrations, seeds) and<br>
-        the <code>/health</code> endpoint are implemented. The "planned" endpoints listed<br>
+        The API is in Phase 1. Database models, <code>/health</code>, and GitHub OAuth authentication<br>
+        are implemented. The "planned" endpoints listed<br>
         below are scheduled in the roadmap.
       </div>
 
@@ -93,7 +94,7 @@
           <tr><td><code>Content-Type</code></td><td>Request / Response</td><td><code>application/json</code></td></tr>
           <tr><td><code>x-request-id</code></td><td>Response</td><td>Unique UUID assigned to each request (traceability)</td></tr>
           <tr><td><code>Content-Encoding</code></td><td>Response</td><td><code>gzip</code> if the client supports compression</td></tr>
-          <tr><td><code>Authorization</code></td><td>Request</td><td>Bearer token (for authenticated endpoints, coming soon)</td></tr>
+          <tr><td><code>Authorization</code></td><td>Request</td><td><code>Bearer &lt;jwt&gt;</code> — alternative to the cookie for programmatic API clients</td></tr>
         </tbody>
       </table>
 
@@ -192,25 +193,103 @@
         </tbody>
       </table>
 
-      <!-- ── Planned Endpoints ─────────────────────────────── -->
+      <!-- ── Authentication ──────────────────────────────────────────────────── -->
+      <h2 id="auth">Authentication</h2>
+
+      <p>
+        Authentication is based on <strong>GitHub OAuth 2.0</strong>.
+        After the OAuth flow, a signed <strong>JWT is stored in an <code>HttpOnly</code> cookie</strong>
+        (<code>SameSite=Lax</code>). Protected endpoints accept the token either via cookie
+        or via the <code>Authorization: Bearer &lt;jwt&gt;</code> header.
+      </p>
+
+      <div class="callout callout-info">
+        <div class="callout-label">CSRF Protection</div>
+        A short-lived CSRF state is stored in an HttpOnly cookie during login and validated
+        at callback. This prevents CSRF attacks on the OAuth flow.
+      </div>
+
+      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/github</code></h3>
+      <p>Redirects the user to GitHub's OAuth authorization page. Scopes requested: <code>read:user</code>, <code>user:email</code>.</p>
+      <h4>Response</h4>
+      <p><code>302 Found</code> — redirect to <code>https://github.com/login/oauth/authorize?...</code></p>
+
+      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/github/callback</code></h3>
+      <p>Handles the OAuth callback from GitHub. Exchanges the authorization code for an access token,
+      fetches the user's GitHub profile, upserts the user in the database, and issues a JWT cookie.</p>
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>code</code></td><td>string</td><td>Authorization code from GitHub</td></tr>
+          <tr><td><code>state</code></td><td>string</td><td>CSRF state to validate against the cookie</td></tr>
+        </tbody>
+      </table>
+      <h4>Response</h4>
+      <p><code>303 See Other</code> — redirects to the frontend (<code>ALLOWED_ORIGINS</code> first value) and sets the <code>pumpkin_hub_token</code> cookie.</p>
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Missing CSRF cookie or state mismatch</td></tr>
+          <tr><td><span class="badge badge-red">500</span></td><td>GitHub token exchange or DB error</td></tr>
+        </tbody>
+      </table>
+
+      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/me</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <p>Returns the currently authenticated user's profile. Requires a valid JWT (cookie or Bearer header).</p>
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "octocat",
+  "display_name": "The Octocat",
+  "email": "octocat@github.com",
+  "avatar_url": "https://avatars.githubusercontent.com/u/1",
+  "bio": null,
+  "role": "author",
+  "created_at": "2026-03-06T12:00:00Z"
+}</code></pre>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>UUID</td><td>Internal user identifier</td></tr>
+          <tr><td><code>username</code></td><td>string</td><td>GitHub username (login)</td></tr>
+          <tr><td><code>display_name</code></td><td>string | null</td><td>GitHub display name</td></tr>
+          <tr><td><code>email</code></td><td>string | null</td><td>GitHub email (if public)</td></tr>
+          <tr><td><code>avatar_url</code></td><td>string | null</td><td>GitHub avatar URL</td></tr>
+          <tr><td><code>bio</code></td><td>string | null</td><td>GitHub bio</td></tr>
+          <tr><td><code>role</code></td><td><code>author</code> | <code>moderator</code> | <code>admin</code></td><td>Platform role</td></tr>
+          <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Registration date</td></tr>
+        </tbody>
+      </table>
+
+      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/logout</code></h3>
+      <p>Clears the JWT cookie (<code>pumpkin_hub_token</code>), effectively logging the user out.</p>
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{ "message": "Logged out" }</code></pre>
+
+      <!-- ── JWT Claims ─────────────────────────────────────────────────────── -->
+      <h3>JWT Claims</h3>
+      <p>The JWT is signed with <code>HS256</code>. The secret is configured via <code>JWT_SECRET</code>.
+      The default TTL is <strong>24 hours</strong> (<code>JWT_TTL_SECONDS=86400</code>).</p>
+      <table>
+        <thead><tr><th>Claim</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>sub</code></td><td>UUID</td><td>User's internal identifier</td></tr>
+          <tr><td><code>username</code></td><td>string</td><td>GitHub username at time of issue</td></tr>
+          <tr><td><code>role</code></td><td>string</td><td>User role at time of issue</td></tr>
+          <tr><td><code>iat</code></td><td>Unix timestamp</td><td>Issued at</td></tr>
+          <tr><td><code>exp</code></td><td>Unix timestamp</td><td>Expiration</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Planned Endpoints ─────────────────────────────────────────────── -->
       <h2 id="planned">Planned Endpoints</h2>
 
       <p>
         The following endpoints will be progressively added. See the
         <a href="roadmap.html">roadmap</a> for the detailed schedule.
       </p>
-
-      <h3>Authentication</h3>
-      <table>
-        <thead>
-          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/login</code></td><td>Authentication via GitHub OAuth</td></tr>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/refresh</code></td><td>Token renewal</td></tr>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/auth/logout</code></td><td>Logout and revocation</td></tr>
-        </tbody>
-      </table>
 
       <h3>Plugins</h3>
       <table>
