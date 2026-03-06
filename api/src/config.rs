@@ -7,6 +7,8 @@ pub struct Config {
     pub server: ServerConfig,
     pub database_url: String,
     pub meilisearch: MeilisearchConfig,
+    pub github: GithubConfig,
+    pub jwt: JwtConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -19,6 +21,20 @@ pub struct ServerConfig {
 pub struct MeilisearchConfig {
     pub url: String,
     pub master_key: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct GithubConfig {
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_uri: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct JwtConfig {
+    pub secret: String,
+    /// Token time-to-live in seconds (default: 24h).
+    pub ttl_seconds: u64,
 }
 
 #[derive(Debug, Error)]
@@ -49,6 +65,14 @@ impl Config {
         let meilisearch_url = require_env("MEILISEARCH_URL")?;
         let meilisearch_key = require_env("MEILISEARCH_KEY")?;
 
+        let github_client_id = require_env("GITHUB_CLIENT_ID")?;
+        let github_client_secret = require_env("GITHUB_CLIENT_SECRET")?;
+        let github_redirect_uri = std::env::var("GITHUB_REDIRECT_URI")
+            .unwrap_or_else(|_| "http://localhost:8080/api/v1/auth/github/callback".to_string());
+
+        let jwt_secret = require_env("JWT_SECRET")?;
+        let jwt_ttl_seconds = parse_env_var::<u64>("JWT_TTL_SECONDS", 86400)?;
+
         Ok(Config {
             server: ServerConfig {
                 address: SocketAddr::new(ip, port),
@@ -58,6 +82,15 @@ impl Config {
             meilisearch: MeilisearchConfig {
                 url: meilisearch_url,
                 master_key: meilisearch_key,
+            },
+            github: GithubConfig {
+                client_id: github_client_id,
+                client_secret: github_client_secret,
+                redirect_uri: github_redirect_uri,
+            },
+            jwt: JwtConfig {
+                secret: jwt_secret,
+                ttl_seconds: jwt_ttl_seconds,
             },
         })
     }
@@ -74,6 +107,15 @@ impl Default for Config {
             meilisearch: MeilisearchConfig {
                 url: String::new(),
                 master_key: String::new(),
+            },
+            github: GithubConfig {
+                client_id: String::new(),
+                client_secret: String::new(),
+                redirect_uri: "http://localhost:8080/api/v1/auth/github/callback".to_string(),
+            },
+            jwt: JwtConfig {
+                secret: String::new(),
+                ttl_seconds: 86400,
             },
         }
     }
