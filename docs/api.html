@@ -66,8 +66,9 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Work in progress</div>
-        The API is in its initial phase. Only the <code>/health</code> endpoint is currently
-        implemented. The "planned" endpoints listed below are scheduled in the roadmap.
+        The API is in Phase 1. The database layer (models, migrations, seeds) and<br>
+        the <code>/health</code> endpoint are implemented. The "planned" endpoints listed<br>
+        below are scheduled in the roadmap.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -102,7 +103,8 @@
       <h3><span class="badge badge-green">GET</span> &nbsp; <code>/api/v1/health</code></h3>
 
       <p>
-        Returns the service liveness status. Used by Docker healthchecks and load balancers.
+        Returns the service liveness status including database connectivity.
+        Used by Docker healthchecks and load balancers.
       </p>
 
       <h4>Request</h4>
@@ -112,7 +114,16 @@
       <pre><code>{
   "status": "ok",
   "service": "pumpkin-hub-api",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "database": "connected"
+}</code></pre>
+
+      <h4>Response <span class="badge badge-orange">503 Service Unavailable</span></h4>
+      <pre><code>{
+  "status": "degraded",
+  "service": "pumpkin-hub-api",
+  "version": "0.1.0",
+  "database": "disconnected"
 }</code></pre>
 
       <table>
@@ -120,9 +131,10 @@
           <tr><th>Field</th><th>Type</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>status</code></td><td>string</td><td>Service state (<code>"ok"</code>)</td></tr>
+          <tr><td><code>status</code></td><td>string</td><td>Service state: <code>"ok"</code> or <code>"degraded"</code></td></tr>
           <tr><td><code>service</code></td><td>string</td><td>Service name</td></tr>
           <tr><td><code>version</code></td><td>string</td><td>Crate version (from <code>Cargo.toml</code>)</td></tr>
+          <tr><td><code>database</code></td><td>string</td><td>Database connectivity: <code>"connected"</code> or <code>"disconnected"</code></td></tr>
         </tbody>
       </table>
 

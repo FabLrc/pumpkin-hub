@@ -51,6 +51,7 @@
         <a href="#overview" class="sidebar-sublink">Vue d'ensemble</a>
         <a href="#services" class="sidebar-sublink">Services</a>
         <a href="#api-arch" class="sidebar-sublink">API Rust</a>
+        <a href="#database" class="sidebar-sublink">Base de données</a>
         <a href="#frontend-arch" class="sidebar-sublink">Frontend</a>
         <a href="#data" class="sidebar-sublink">Données</a>
         <a href="#middleware" class="sidebar-sublink">Middleware Stack</a>
@@ -116,15 +117,24 @@
       <h2 id="api-arch">API Rust (Axum)</h2>
 
       <h3>Structure du code</h3>
-      <pre><code>api/src/
-├── main.rs          # Point d'entrée, configuration serveur
-├── lib.rs           # build_app() — construction de l'application
-├── config.rs        # Configuration typée (env vars)
-├── state.rs         # AppState partagé entre handlers
-├── error.rs         # AppError — gestion d'erreurs centralisée
-└── routes/
-    ├── mod.rs       # Agrégation des routes v1
-    └── health.rs    # Endpoint /api/v1/health</code></pre>
+      <pre><code>api/
+├── migrations/          # Migrations SQL (up/down)
+└── src/
+    ├── main.rs          # Point d'entrée, init DB, arrêt graceful
+    ├── lib.rs           # build_app() — construction de l'application
+    ├── config.rs        # Configuration typée (env vars)
+    ├── db.rs            # Pool de connexions PostgreSQL &amp; migrations
+    ├── state.rs         # AppState (Config + PgPool)
+    ├── error.rs         # AppError — gestion d'erreurs centralisée
+    ├── models/          # Modèles de données (SQLx FromRow + Serde)
+    │   ├── user.rs      # Utilisateur (profil GitHub OAuth)
+    │   ├── plugin.rs    # Plugin (entrée du registre)
+    │   ├── version.rs   # Version (release semver)
+    │   ├── category.rs  # Catégorie (tag de classification)
+    │   └── plugin_category.rs  # Table de jonction
+    └── routes/
+        ├── mod.rs       # Agrégation des routes v1
+        └── health.rs    # /api/v1/health (+ vérification DB)</code></pre>
 
       <h3>Pattern <code>build_app()</code></h3>
       <p>
@@ -134,12 +144,73 @@
       </p>
 
       <pre><code>// lib.rs (simplifié)
-pub fn build_app(state: AppState) -> Router {
+pub fn build_app(config: Config, pool: PgPool) -> Router {
+    let state = AppState::new(config, pool);
     Router::new()
         .nest("/api/v1", v1_routes())
         .with_state(state)
         .layer(middleware_stack())
 }</code></pre>
+
+      <!-- ── Base de données ─────────────────────────────── -->
+      <h2 id="database">Base de données — PostgreSQL</h2>
+
+      <h3>Schéma</h3>
+      <p>
+        Les migrations sont gérées par <strong>SQLx</strong> et exécutées automatiquement au
+        démarrage. Toutes les tables utilisent des UUID comme clés primaires et des
+        timestamps <code>TIMESTAMPTZ</code>.
+      </p>
+
+      <pre><code>┌────────────────┐       ┌────────────────────┐       ┌────────────────┐
+│     users      │       │      plugins       │       │    versions    │
+├────────────────┤       ├────────────────────┤       ├────────────────┤
+│ id          PK │◄─────│ author_id     FK  │       │ id          PK │
+│ github_id  UQ │       │ id            PK  │◄─────│ plugin_id   FK │
+│ username   UQ │       │ slug          UQ  │       │ version        │
+│ display_name   │       │ name              │       │ changelog      │
+│ email          │       │ short_description │       │ pumpkin_min    │
+│ avatar_url     │       │ description       │       │ pumpkin_max    │
+│ bio            │       │ license           │       │ downloads      │
+│ role       CHK │       │ downloads_total   │       │ is_yanked      │
+│ created_at     │       │ is_active         │       │ published_at   │
+└────────────────┘       └────────────────────┘       └────────────────┘
+                          │                    │
+                    ┌─────┴──────────────────┤
+                    │  plugin_categories   │       ┌────────────────┐
+                    ├────────────────────────┤       │   categories   │
+                    │ plugin_id     FK PK  │       ├────────────────┤
+                    │ category_id   FK PK  │─────►│ id          PK │
+                    └────────────────────────┘       │ name        UQ │
+                                                    │ slug        UQ │
+                                                    │ description    │
+                                                    │ icon           │
+                                                    └────────────────┘</code></pre>
+
+      <h3>Contraintes clés</h3>
+      <table>
+        <thead>
+          <tr><th>Table</th><th>Contrainte</th><th>Type</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>users</code></td><td><code>github_id</code>, <code>username</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>users</code></td><td><code>role</code> IN (admin, moderator, author)</td><td>CHECK</td></tr>
+          <tr><td><code>plugins</code></td><td><code>slug</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>plugins</code></td><td><code>author_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>versions</code></td><td><code>(plugin_id, version)</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>versions</code></td><td><code>plugin_id</code> → <code>plugins(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>plugin_categories</code></td><td><code>(plugin_id, category_id)</code></td><td>PK COMPOSITE</td></tr>
+          <tr><td><code>categories</code></td><td><code>name</code>, <code>slug</code></td><td>UNIQUE</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Migrations</h3>
+      <p>
+        Les migrations SQL se trouvent dans <code>api/migrations/</code> et sont exécutées
+        automatiquement par SQLx au démarrage. Chaque migration possède un script
+        <code>.up.sql</code> et <code>.down.sql</code> pour la réversibilité. Une migration
+        de seed remplit la base avec des données de test réalistes.
+      </p>
 
       <!-- ── Frontend ──────────────────────────────────────── -->
       <h2 id="frontend-arch">Frontend (Next.js)</h2>

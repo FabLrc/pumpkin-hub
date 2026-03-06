@@ -51,6 +51,7 @@
         <a href="#overview" class="sidebar-sublink">Overview</a>
         <a href="#project-structure" class="sidebar-sublink">Project Structure</a>
         <a href="#backend" class="sidebar-sublink">Backend (Rust API)</a>
+        <a href="#database" class="sidebar-sublink">Database (PostgreSQL)</a>
         <a href="#frontend" class="sidebar-sublink">Frontend (Next.js)</a>
         <a href="#infrastructure" class="sidebar-sublink">Infrastructure</a>
         <a href="#ci-cd" class="sidebar-sublink">CI/CD</a>
@@ -99,15 +100,23 @@
 ├── api/                    # Rust backend (Axum)
 │   ├── Cargo.toml          # Dependencies and metadata
 │   ├── Dockerfile.dev      # Development container
+│   ├── migrations/         # SQLx SQL migrations (up/down)
 │   └── src/
-│       ├── main.rs         # Entry point, graceful shutdown
+│       ├── main.rs         # Entry point, DB init, graceful shutdown
 │       ├── lib.rs          # build_app() and middleware stack
 │       ├── config.rs       # Configuration from ENV
+│       ├── db.rs           # PostgreSQL connection pool &amp; migrations
 │       ├── error.rs        # Centralized error type (AppError)
-│       ├── state.rs        # Shared state (AppState)
+│       ├── state.rs        # Shared state (AppState + PgPool)
+│       ├── models/         # Data models (SQLx FromRow + Serde)
+│       │   ├── user.rs     # User (GitHub OAuth profile)
+│       │   ├── plugin.rs   # Plugin (registry entry)
+│       │   ├── version.rs  # Version (semver release)
+│       │   ├── category.rs # Category (classification tag)
+│       │   └── plugin_category.rs # Junction table
 │       └── routes/
 │           ├── mod.rs      # Sub-router assembly
-│           └── health.rs   # GET /api/v1/health
+│           └── health.rs   # GET /api/v1/health (+ DB check)
 │
 ├── frontend/               # Next.js frontend
 │   ├── package.json        # NPM dependencies
@@ -132,7 +141,7 @@
 
       <h3>Guiding Principles</h3>
       <ul>
-        <li><strong>Testability</strong> — <code>build_app(config)</code> in <code>lib.rs</code> builds the app without network binding, enabling integration tests.</li>
+        <li><strong>Testability</strong> — <code>build_app(config, pool)</code> in <code>lib.rs</code> builds the app without network binding, enabling integration tests.</li>
         <li><strong>Separation of Concerns</strong> — Configuration, state, errors and routes live in separate modules.</li>
         <li><strong>Graceful Shutdown</strong> — Listens for CTRL+C and SIGTERM for clean connection teardown.</li>
       </ul>
@@ -184,6 +193,65 @@
         Routes are organized in feature modules and assembled in <code>routes/mod.rs</code>
         under the <code>/api/v1</code> prefix. To add a new feature, create a
         <code>routes/{feature}.rs</code> file and merge it into <code>v1_routes()</code>.
+      </p>
+
+      <!-- ── Database ──────────────────────────────────────── -->
+      <h2 id="database">Database — PostgreSQL</h2>
+
+      <h3>Schema Overview</h3>
+      <p>
+        Migrations are managed by <strong>SQLx</strong> and run automatically on startup.
+        All tables use UUID primary keys and <code>TIMESTAMPTZ</code> timestamps.
+      </p>
+
+      <pre><code>┌────────────────┐       ┌────────────────────┐       ┌────────────────┐
+│     users      │       │      plugins       │       │    versions    │
+├────────────────┤       ├────────────────────┤       ├────────────────┤
+│ id          PK │◄─────│ author_id     FK  │       │ id          PK │
+│ github_id  UQ │       │ id            PK  │◄─────│ plugin_id   FK │
+│ username   UQ │       │ slug          UQ  │       │ version        │
+│ display_name   │       │ name              │       │ changelog      │
+│ email          │       │ short_description │       │ pumpkin_min    │
+│ avatar_url     │       │ description       │       │ pumpkin_max    │
+│ bio            │       │ license           │       │ downloads      │
+│ role       CHK │       │ downloads_total   │       │ is_yanked      │
+│ created_at     │       │ is_active         │       │ published_at   │
+└────────────────┘       └────────────────────┘       └────────────────┘
+                          │                    │
+                    ┌─────┴──────────────────┤
+                    │  plugin_categories   │       ┌────────────────┐
+                    ├────────────────────────┤       │   categories   │
+                    │ plugin_id     FK PK  │       ├────────────────┤
+                    │ category_id   FK PK  │─────►│ id          PK │
+                    └────────────────────────┘       │ name        UQ │
+                                                    │ slug        UQ │
+                                                    │ description    │
+                                                    │ icon           │
+                                                    └────────────────┘</code></pre>
+
+      <h3>Key Constraints</h3>
+      <table>
+        <thead>
+          <tr><th>Table</th><th>Constraint</th><th>Type</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>users</code></td><td><code>github_id</code>, <code>username</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>users</code></td><td><code>role</code> IN (admin, moderator, author)</td><td>CHECK</td></tr>
+          <tr><td><code>plugins</code></td><td><code>slug</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>plugins</code></td><td><code>author_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>versions</code></td><td><code>(plugin_id, version)</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>versions</code></td><td><code>plugin_id</code> → <code>plugins(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>plugin_categories</code></td><td><code>(plugin_id, category_id)</code></td><td>COMPOSITE PK</td></tr>
+          <tr><td><code>categories</code></td><td><code>name</code>, <code>slug</code></td><td>UNIQUE</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Migrations</h3>
+      <p>
+        SQL migrations live in <code>api/migrations/</code> and are executed automatically by
+        SQLx at startup. Each migration has an <code>.up.sql</code> and <code>.down.sql</code>
+        script for reversibility. A seed migration populates the database with realistic test data
+        for local development.
       </p>
 
       <!-- ── Frontend ──────────────────────────────────────── -->
