@@ -67,6 +67,9 @@ time = "0.3"
 # Random bytes for CSRF state
 rand = "0.8"
 
+# Password hashing (Argon2id)
+argon2 = "0.5"
+
 [profile.release]
 opt-level = 3
 lto = true

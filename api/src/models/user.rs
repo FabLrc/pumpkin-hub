@@ -40,16 +40,17 @@ impl TryFrom<&str> for UserRole {
     }
 }
 
-/// Represents a registered user, synchronized from GitHub OAuth.
+/// Represents a registered user. May be linked to multiple auth providers.
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct User {
     pub id: Uuid,
-    pub github_id: i64,
+    pub github_id: Option<i64>,
     pub username: String,
     pub display_name: Option<String>,
     pub email: Option<String>,
     pub avatar_url: Option<String>,
     pub bio: Option<String>,
+    pub password_hash: Option<String>,
     pub role: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

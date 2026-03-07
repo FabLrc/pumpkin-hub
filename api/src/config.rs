@@ -8,6 +8,8 @@ pub struct Config {
     pub database_url: String,
     pub meilisearch: MeilisearchConfig,
     pub github: GithubConfig,
+    pub google: Option<OAuthProviderConfig>,
+    pub discord: Option<OAuthProviderConfig>,
     pub jwt: JwtConfig,
 }
 
@@ -25,6 +27,13 @@ pub struct MeilisearchConfig {
 
 #[derive(Debug, Clone)]
 pub struct GithubConfig {
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_uri: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct OAuthProviderConfig {
     pub client_id: String,
     pub client_secret: String,
     pub redirect_uri: String,
@@ -70,6 +79,9 @@ impl Config {
         let github_redirect_uri = std::env::var("GITHUB_REDIRECT_URI")
             .unwrap_or_else(|_| "http://localhost:8080/api/v1/auth/github/callback".to_string());
 
+        let google = load_oauth_provider("GOOGLE", "http://localhost:8080/api/v1/auth/google/callback")?;
+        let discord = load_oauth_provider("DISCORD", "http://localhost:8080/api/v1/auth/discord/callback")?;
+
         let jwt_secret = require_env("JWT_SECRET")?;
         let jwt_ttl_seconds = parse_env_var::<u64>("JWT_TTL_SECONDS", 86400)?;
 
@@ -88,6 +100,8 @@ impl Config {
                 client_secret: github_client_secret,
                 redirect_uri: github_redirect_uri,
             },
+            google,
+            discord,
             jwt: JwtConfig {
                 secret: jwt_secret,
                 ttl_seconds: jwt_ttl_seconds,
@@ -113,12 +127,39 @@ impl Default for Config {
                 client_secret: String::new(),
                 redirect_uri: "http://localhost:8080/api/v1/auth/github/callback".to_string(),
             },
+            google: None,
+            discord: None,
             jwt: JwtConfig {
                 secret: String::new(),
                 ttl_seconds: 86400,
             },
         }
     }
+}
+
+/// Loads an optional OAuth provider config. Returns `None` if CLIENT_ID is not set.
+fn load_oauth_provider(
+    prefix: &str,
+    default_redirect: &str,
+) -> Result<Option<OAuthProviderConfig>, ConfigError> {
+    let client_id_key = format!("{prefix}_CLIENT_ID");
+    let client_id = match std::env::var(&client_id_key) {
+        Ok(val) if !val.is_empty() => val,
+        _ => return Ok(None),
+    };
+
+    let secret_key = format!("{prefix}_CLIENT_SECRET");
+    let client_secret = require_env(&secret_key)?;
+
+    let redirect_key = format!("{prefix}_REDIRECT_URI");
+    let redirect_uri =
+        std::env::var(&redirect_key).unwrap_or_else(|_| default_redirect.to_string());
+
+    Ok(Some(OAuthProviderConfig {
+        client_id,
+        client_secret,
+        redirect_uri,
+    }))
 }
 
 fn require_env(key: &str) -> Result<String, ConfigError> {
