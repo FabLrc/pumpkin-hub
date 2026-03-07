@@ -103,16 +103,17 @@ export function HeroSection({ totalPlugins }: HeroSectionProps) {
           </div>
 
           {/* Right column — hero image */}
-          <div className="hidden lg:block relative fade-up delay-3">
-            <div className="border border-border-default p-2 bg-bg-elevated">
+          <div className="hidden lg:block relative fade-up delay-3 self-stretch">
+            <div className="relative h-full min-h-[500px] w-[480px]">
               <Image
                 src="/pumpkin-hub-soldier-pumpkin-netherite.png"
                 alt="Pumpkin soldier in netherite armor"
-                width={380}
-                height={380}
+                fill
                 priority
-                className="object-contain"
+                className="object-contain object-bottom"
               />
+              {/* Fade-out gradient at the bottom */}
+              <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
             </div>
           </div>
         </div>
