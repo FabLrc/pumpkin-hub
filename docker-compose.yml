@@ -48,6 +48,7 @@ services:
       - DISCORD_REDIRECT_URI=http://localhost:8080/api/v1/auth/discord/callback
       - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_me_in_production}
       - JWT_TTL_SECONDS=86400
+      - API_PUBLIC_URL=http://localhost:8080
 
   db-dev:
     container_name: pumpkin-hub-db-dev

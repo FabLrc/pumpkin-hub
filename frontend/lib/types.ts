@@ -132,5 +132,4 @@ export interface ListPluginsParams {
 export interface UpdateProfileRequest {
   display_name?: string;
   bio?: string;
-  avatar_url?: string;
 }

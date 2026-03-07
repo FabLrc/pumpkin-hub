@@ -147,6 +147,28 @@ export async function updateProfile(
   });
 }
 
+/**
+ * Upload a new avatar image for the authenticated user.
+ * Uses multipart/form-data — do NOT set Content-Type manually (browser adds boundary).
+ */
+export async function uploadAvatar(file: File): Promise<UserProfile> {
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  const response = await fetch(`${API_PREFIX}/auth/avatar`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "Unknown error");
+    throw new Error(`API ${response.status}: ${errorBody}`);
+  }
+
+  return response.json() as Promise<UserProfile>;
+}
+
 /** Register a new account with email and password. */
 export async function registerWithEmail(
   body: RegisterRequest,

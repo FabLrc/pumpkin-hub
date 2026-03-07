@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { LogOut, User, ChevronDown, LayoutDashboard } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
 import { getLogoutUrl } from "@/lib/api";
@@ -79,12 +78,13 @@ export function Navbar() {
                 className="flex items-center gap-2 px-2 py-1.5 border border-border-default hover:border-border-hover transition-colors cursor-pointer"
               >
                 {user.avatar_url ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={user.avatar_url}
                     alt={user.username}
                     width={24}
                     height={24}
-                    className="w-6 h-6"
+                    className="w-6 h-6 object-cover"
                   />
                 ) : (
                   <User className="w-4 h-4 text-text-dim" />

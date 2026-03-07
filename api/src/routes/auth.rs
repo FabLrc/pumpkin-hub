@@ -1,9 +1,12 @@
 use axum::{
-    extract::{Query, State},
+    body::Body,
+    extract::{Multipart, Path, Query, State},
+    http::{header, StatusCode},
     response::{IntoResponse, Redirect, Response},
     routing::{get, post},
     Json, Router,
 };
+use uuid::Uuid;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_extra::extract::CookieJar;
 use oauth2::{
@@ -55,6 +58,9 @@ pub fn routes() -> Router<AppState> {
         // Session
         .route("/auth/me", get(me).put(update_profile))
         .route("/auth/logout", get(logout))
+        // Avatar upload (authenticated) / serve (public)
+        .route("/auth/avatar", post(upload_avatar))
+        .route("/users/{id}/avatar", get(serve_avatar))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -435,13 +441,11 @@ async fn logout(jar: CookieJar) -> impl IntoResponse {
 
 const DISPLAY_NAME_MAX_LENGTH: usize = 100;
 const BIO_MAX_LENGTH: usize = 500;
-const AVATAR_URL_MAX_LENGTH: usize = 500;
 
 #[derive(Debug, Deserialize)]
 struct UpdateProfileRequest {
     display_name: Option<String>,
     bio: Option<String>,
-    avatar_url: Option<String>,
 }
 
 impl UpdateProfileRequest {
@@ -460,23 +464,11 @@ impl UpdateProfileRequest {
                 )));
             }
         }
-        if let Some(ref url) = self.avatar_url {
-            if url.len() > AVATAR_URL_MAX_LENGTH {
-                return Err(AppError::UnprocessableEntity(format!(
-                    "Avatar URL must be at most {AVATAR_URL_MAX_LENGTH} characters"
-                )));
-            }
-            if !url.starts_with("https://") && !url.starts_with("http://") {
-                return Err(AppError::UnprocessableEntity(
-                    "Avatar URL must start with http:// or https://".to_string(),
-                ));
-            }
-        }
         Ok(())
     }
 
     fn has_changes(&self) -> bool {
-        self.display_name.is_some() || self.bio.is_some() || self.avatar_url.is_some()
+        self.display_name.is_some() || self.bio.is_some()
     }
 }
 
@@ -499,7 +491,6 @@ async fn update_profile(
         UPDATE users SET
             display_name = COALESCE($2, display_name),
             bio = COALESCE($3, bio),
-            avatar_url = COALESCE($4, avatar_url),
             updated_at = now()
         WHERE id = $1
         RETURNING *
@@ -508,12 +499,177 @@ async fn update_profile(
     .bind(auth.user_id)
     .bind(&body.display_name)
     .bind(&body.bio)
-    .bind(&body.avatar_url)
     .fetch_one(&state.db)
     .await
     .map_err(AppError::internal)?;
 
     Ok(Json(UserProfile::from(user)))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Avatar Upload
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Maximum allowed avatar file size.
+const MAX_AVATAR_BYTES: usize = 2 * 1024 * 1024; // 2 MB
+
+const ALLOWED_AVATAR_TYPES: &[&str] = &["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+/// `POST /api/v1/auth/avatar` — upload and store the authenticated user's avatar.
+async fn upload_avatar(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    mut multipart: Multipart,
+) -> Result<Json<UserProfile>, AppError> {
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut file_content_type: Option<String> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| AppError::UnprocessableEntity(format!("Multipart error: {e}")))?  
+    {
+        if field.name() != Some("avatar") {
+            continue;
+        }
+
+        let mime = field
+            .content_type()
+            .ok_or_else(|| {
+                AppError::UnprocessableEntity(
+                    "Missing Content-Type for the avatar field".to_string(),
+                )
+            })?
+            .to_string();
+
+        if !ALLOWED_AVATAR_TYPES.contains(&mime.as_str()) {
+            return Err(AppError::UnprocessableEntity(
+                "Avatar must be a JPEG, PNG, WebP, or GIF image".to_string(),
+            ));
+        }
+
+        let bytes = field
+            .bytes()
+            .await
+            .map_err(|e| AppError::UnprocessableEntity(format!("Failed to read file: {e}")))?;
+
+        if bytes.is_empty() {
+            return Err(AppError::UnprocessableEntity(
+                "Empty file uploaded".to_string(),
+            ));
+        }
+
+        if bytes.len() > MAX_AVATAR_BYTES {
+            return Err(AppError::UnprocessableEntity(format!(
+                "Avatar must be at most 2 MB (received {} KB)",
+                bytes.len() / 1024
+            )));
+        }
+
+        validate_avatar_magic_bytes(&bytes, &mime)?;
+
+        file_bytes = Some(bytes.to_vec());
+        file_content_type = Some(mime);
+        break;
+    }
+
+    let data = file_bytes.ok_or_else(|| {
+        AppError::UnprocessableEntity(
+            "No avatar file provided (expected multipart field named 'avatar')".to_string(),
+        )
+    })?;
+    let content_type = file_content_type.unwrap();
+    let size_bytes = data.len() as i32;
+
+    // Upsert binary data into the dedicated avatars table
+    sqlx::query(
+        r#"
+        INSERT INTO user_avatars (user_id, data, content_type, size_bytes, updated_at)
+        VALUES ($1, $2, $3, $4, now())
+        ON CONFLICT (user_id) DO UPDATE
+            SET data         = EXCLUDED.data,
+                content_type = EXCLUDED.content_type,
+                size_bytes   = EXCLUDED.size_bytes,
+                updated_at   = now()
+        "#,
+    )
+    .bind(auth.user_id)
+    .bind(&data)
+    .bind(&content_type)
+    .bind(size_bytes)
+    .execute(&state.db)
+    .await
+    .map_err(AppError::internal)?;
+
+    // Store a self-referencing URL so existing avatar_url consumers keep working
+    let avatar_url = format!(
+        "{}/api/v1/users/{}/avatar",
+        state.config.server.api_public_url, auth.user_id
+    );
+    let user = sqlx::query_as::<_, crate::models::user::User>(
+        "UPDATE users SET avatar_url = $2, updated_at = now() WHERE id = $1 RETURNING *",
+    )
+    .bind(auth.user_id)
+    .bind(&avatar_url)
+    .fetch_one(&state.db)
+    .await
+    .map_err(AppError::internal)?;
+
+    Ok(Json(UserProfile::from(user)))
+}
+
+/// `GET /api/v1/users/{id}/avatar` — serve a stored avatar image (public, cached).
+async fn serve_avatar(
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+) -> Result<Response, AppError> {
+    #[derive(sqlx::FromRow)]
+    struct AvatarRow {
+        data: Vec<u8>,
+        content_type: String,
+    }
+
+    let row = sqlx::query_as::<_, AvatarRow>(
+        "SELECT data, content_type FROM user_avatars WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(AppError::internal)?;
+
+    match row {
+        Some(r) => Ok(Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, r.content_type)
+            .header(header::CACHE_CONTROL, "public, max-age=3600")
+            .body(Body::from(r.data))
+            .map_err(AppError::internal)?),
+        None => Err(AppError::NotFound),
+    }
+}
+
+/// Verifies that the file's magic bytes match its declared MIME type.
+/// This prevents content-type spoofing attacks.
+fn validate_avatar_magic_bytes(data: &[u8], content_type: &str) -> Result<(), AppError> {
+    let is_valid = match content_type {
+        "image/jpeg" => data.starts_with(&[0xFF, 0xD8, 0xFF]),
+        "image/png" => data.starts_with(&[
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        ]),
+        "image/gif" => data.starts_with(b"GIF87a") || data.starts_with(b"GIF89a"),
+        "image/webp" => {
+            data.len() >= 12 && data.starts_with(b"RIFF") && &data[8..12] == b"WEBP"
+        }
+        _ => false,
+    };
+
+    if is_valid {
+        Ok(())
+    } else {
+        Err(AppError::UnprocessableEntity(
+            "File content does not match its declared type".to_string(),
+        ))
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

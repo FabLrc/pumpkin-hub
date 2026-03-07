@@ -17,6 +17,9 @@ pub struct Config {
 pub struct ServerConfig {
     pub address: SocketAddr,
     pub allowed_origins: Vec<String>,
+    /// Publicly reachable base URL of this API (e.g. "http://localhost:8080").
+    /// Used to construct self-referencing URLs stored in the database.
+    pub api_public_url: String,
 }
 
 #[derive(Debug, Clone)]
@@ -70,6 +73,9 @@ impl Config {
             .map(|s| s.trim().to_string())
             .collect();
 
+        let api_public_url = std::env::var("API_PUBLIC_URL")
+            .unwrap_or_else(|_| "http://localhost:8080".to_string());
+
         let database_url = require_env("DATABASE_URL")?;
         let meilisearch_url = require_env("MEILISEARCH_URL")?;
         let meilisearch_key = require_env("MEILISEARCH_KEY")?;
@@ -95,6 +101,7 @@ impl Config {
             server: ServerConfig {
                 address: SocketAddr::new(ip, port),
                 allowed_origins,
+                api_public_url,
             },
             database_url,
             meilisearch: MeilisearchConfig {
@@ -122,6 +129,7 @@ impl Default for Config {
             server: ServerConfig {
                 address: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080),
                 allowed_origins: vec!["http://localhost:3000".to_string()],
+                api_public_url: "http://localhost:8080".to_string(),
             },
             database_url: String::new(),
             meilisearch: MeilisearchConfig {
