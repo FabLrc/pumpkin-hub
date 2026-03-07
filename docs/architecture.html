@@ -107,13 +107,17 @@
 │       ├── db.rs           # PostgreSQL connection pool &amp; migrations
 │       ├── error.rs        # Centralized error type (AppError)
 │       ├── state.rs        # Shared state (AppState + PgPool)
-│       ├── auth/           # GitHub OAuth &amp; JWT authentication
+│       ├── auth/           # Multi-provider authentication
 │       │   ├── mod.rs      # Auth module exports
-│       │   ├── github.rs   # GitHub OAuth flow (redirect, callback)
+│       │   ├── github.rs   # GitHub API user fetch
+│       │   ├── google.rs   # Google OpenID user fetch
+│       │   ├── discord.rs  # Discord API user fetch
+│       │   ├── password.rs # Argon2id password hashing &amp; verification
 │       │   ├── jwt.rs      # JWT creation &amp; validation
 │       │   └── middleware.rs # AuthUser extractor middleware
 │       ├── models/         # Data models (SQLx FromRow + Serde)
-│       │   ├── user.rs     # User (GitHub OAuth profile)
+│       │   ├── user.rs     # User (multi-provider, optional password)
+│       │   ├── auth_provider.rs # OAuth provider links per user
 │       │   ├── plugin.rs   # Plugin (registry entry)
 │       │   ├── version.rs  # Version (semver release)
 │       │   ├── category.rs # Category (classification tag)
@@ -121,7 +125,7 @@
 │       └── routes/
 │           ├── mod.rs      # Sub-router assembly
 │           ├── health.rs   # GET /api/v1/health (+ DB check)
-│           ├── auth.rs     # Auth routes (login, callback, me, logout)
+│           ├── auth.rs     # Auth routes (register, login, OAuth callbacks, me, logout)
 │           ├── categories/ # Category listing module
 │           │   ├── mod.rs      # Route declarations
 │           │   ├── dto.rs      # CategoryResponse DTO

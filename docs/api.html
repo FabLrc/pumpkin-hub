@@ -205,42 +205,111 @@
       <h2 id="auth">Authentication</h2>
 
       <p>
-        Authentication is based on <strong>GitHub OAuth 2.0</strong>.
-        After the OAuth flow, a signed <strong>JWT is stored in an <code>HttpOnly</code> cookie</strong>
-        (<code>SameSite=Lax</code>). Protected endpoints accept the token either via cookie
-        or via the <code>Authorization: Bearer &lt;jwt&gt;</code> header.
+        Pumpkin Hub supports <strong>multiple authentication methods</strong>:
+        email/password registration, <strong>GitHub OAuth</strong>, <strong>Google OAuth</strong>,
+        and <strong>Discord OAuth</strong>. After authentication, a signed <strong>JWT is stored
+        in an <code>HttpOnly</code> cookie</strong> (<code>SameSite=Lax</code>). Protected
+        endpoints accept the token either via cookie or via the
+        <code>Authorization: Bearer &lt;jwt&gt;</code> header.
       </p>
 
       <div class="callout callout-info">
+        <div class="callout-label">Account Linking</div>
+        When an OAuth provider returns an email that already exists in the database,
+        the provider is linked to the existing account. This allows users to sign in
+        with multiple providers while maintaining a single identity.
+      </div>
+
+      <div class="callout callout-info">
         <div class="callout-label">CSRF Protection</div>
-        A short-lived CSRF state is stored in an HttpOnly cookie during login and validated
+        A short-lived CSRF state is stored in an HttpOnly cookie during OAuth login and validated
         at callback. This prevents CSRF attacks on the OAuth flow.
       </div>
 
-      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/github</code></h3>
-      <p>Redirects the user to GitHub's OAuth authorization page. Scopes requested: <code>read:user</code>, <code>user:email</code>.</p>
-      <h4>Response</h4>
-      <p><code>302 Found</code> — redirect to <code>https://github.com/login/oauth/authorize?...</code></p>
+      <!-- ── Email / Password ────────────────────────────────────── -->
+      <h3>Email / Password</h3>
 
-      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/github/callback</code></h3>
-      <p>Handles the OAuth callback from GitHub. Exchanges the authorization code for an access token,
-      fetches the user's GitHub profile, upserts the user in the database, and issues a JWT cookie.</p>
-      <h4>Query Parameters</h4>
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/register</code></h4>
+      <p>Creates a new account with email and password. Passwords are hashed with <strong>Argon2id</strong>.</p>
+      <h5>Request Body</h5>
+      <pre><code>{
+  "username": "rustcraftdev",
+  "email": "alex@example.com",
+  "password": "my_secure_password"
+}</code></pre>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th></tr></thead>
+        <tbody>
+          <tr><td><code>username</code></td><td>string</td><td>1–39 chars, alphanumeric + hyphens/underscores</td></tr>
+          <tr><td><code>email</code></td><td>string</td><td>Valid email, max 255 chars, case-insensitive unique</td></tr>
+          <tr><td><code>password</code></td><td>string</td><td>8–128 characters</td></tr>
+        </tbody>
+      </table>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <p>Returns the <code>UserProfile</code> and sets the <code>pumpkin_hub_token</code> cookie.</p>
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Username or email already taken</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Validation error (bad username, email or password length)</td></tr>
+        </tbody>
+      </table>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/login</code></h4>
+      <p>Authenticates with email and password.</p>
+      <h5>Request Body</h5>
+      <pre><code>{
+  "email": "alex@example.com",
+  "password": "my_secure_password"
+}</code></pre>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <p>Returns the <code>UserProfile</code> and sets the <code>pumpkin_hub_token</code> cookie.</p>
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Invalid email or password (or account has no password — OAuth-only)</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── OAuth Providers ────────────────────────────────────── -->
+      <h3>OAuth Providers</h3>
+      <p>
+        Each OAuth provider follows the same pattern: <code>GET /auth/{provider}</code> redirects to the
+        provider, and <code>GET /auth/{provider}/callback</code> handles the return.
+      </p>
+
+      <h4><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/github</code></h4>
+      <p>Redirects to GitHub's OAuth page. Scopes: <code>read:user</code>, <code>user:email</code>.</p>
+
+      <h4><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/google</code></h4>
+      <p>Redirects to Google's OAuth page. Scopes: <code>openid</code>, <code>email</code>, <code>profile</code>.</p>
+
+      <h4><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/discord</code></h4>
+      <p>Redirects to Discord's OAuth page. Scopes: <code>identify</code>, <code>email</code>.</p>
+
+      <h4><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/{provider}/callback</code></h4>
+      <p>
+        Handles the OAuth callback. Exchanges the authorization code for an access token,
+        fetches the user's profile, upserts/links in the database, and issues a JWT cookie.
+        Redirects to the frontend after successful authentication.
+      </p>
+      <h5>Query Parameters</h5>
       <table>
         <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><code>code</code></td><td>string</td><td>Authorization code from GitHub</td></tr>
+          <tr><td><code>code</code></td><td>string</td><td>Authorization code from the provider</td></tr>
           <tr><td><code>state</code></td><td>string</td><td>CSRF state to validate against the cookie</td></tr>
         </tbody>
       </table>
-      <h4>Response</h4>
-      <p><code>303 See Other</code> — redirects to the frontend (<code>ALLOWED_ORIGINS</code> first value) and sets the <code>pumpkin_hub_token</code> cookie.</p>
-      <h4>Error Cases</h4>
+      <h5>Error Cases</h5>
       <table>
         <thead><tr><th>Code</th><th>Cause</th></tr></thead>
         <tbody>
           <tr><td><span class="badge badge-yellow">401</span></td><td>Missing CSRF cookie or state mismatch</td></tr>
-          <tr><td><span class="badge badge-red">500</span></td><td>GitHub token exchange or DB error</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Provider not configured (Google/Discord)</td></tr>
+          <tr><td><span class="badge badge-red">500</span></td><td>Token exchange or DB error</td></tr>
         </tbody>
       </table>
 
@@ -261,11 +330,11 @@
         <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>id</code></td><td>UUID</td><td>Internal user identifier</td></tr>
-          <tr><td><code>username</code></td><td>string</td><td>GitHub username (login)</td></tr>
-          <tr><td><code>display_name</code></td><td>string | null</td><td>GitHub display name</td></tr>
-          <tr><td><code>email</code></td><td>string | null</td><td>GitHub email (if public)</td></tr>
-          <tr><td><code>avatar_url</code></td><td>string | null</td><td>GitHub avatar URL</td></tr>
-          <tr><td><code>bio</code></td><td>string | null</td><td>GitHub bio</td></tr>
+          <tr><td><code>username</code></td><td>string</td><td>Unique username</td></tr>
+          <tr><td><code>display_name</code></td><td>string | null</td><td>User's display name</td></tr>
+          <tr><td><code>email</code></td><td>string | null</td><td>User's email address</td></tr>
+          <tr><td><code>avatar_url</code></td><td>string | null</td><td>Avatar URL (from OAuth provider or null)</td></tr>
+          <tr><td><code>bio</code></td><td>string | null</td><td>User bio</td></tr>
           <tr><td><code>role</code></td><td><code>author</code> | <code>moderator</code> | <code>admin</code></td><td>Platform role</td></tr>
           <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Registration date</td></tr>
         </tbody>
@@ -284,7 +353,7 @@
         <thead><tr><th>Claim</th><th>Type</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td><code>sub</code></td><td>UUID</td><td>User's internal identifier</td></tr>
-          <tr><td><code>username</code></td><td>string</td><td>GitHub username at time of issue</td></tr>
+          <tr><td><code>username</code></td><td>string</td><td>Username at time of issue</td></tr>
           <tr><td><code>role</code></td><td>string</td><td>User role at time of issue</td></tr>
           <tr><td><code>iat</code></td><td>Unix timestamp</td><td>Issued at</td></tr>
           <tr><td><code>exp</code></td><td>Unix timestamp</td><td>Expiration</td></tr>
