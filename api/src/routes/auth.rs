@@ -230,11 +230,13 @@ async fn github_callback(
         &state,
         "github",
         &github_user.id.to_string(),
-        &github_user.login,
-        github_user.name.as_deref(),
-        github_user.email.as_deref(),
-        github_user.avatar_url.as_deref(),
-        github_user.bio.as_deref(),
+        OAuthUserInfo {
+            username: &github_user.login,
+            display_name: github_user.name.as_deref(),
+            email: github_user.email.as_deref(),
+            avatar_url: github_user.avatar_url.as_deref(),
+            bio: github_user.bio.as_deref(),
+        },
     )
     .await?;
 
@@ -311,11 +313,13 @@ async fn google_callback(
         &state,
         "google",
         &google_user.sub,
-        username,
-        google_user.name.as_deref(),
-        google_user.email.as_deref(),
-        google_user.picture.as_deref(),
-        None,
+        OAuthUserInfo {
+            username,
+            display_name: google_user.name.as_deref(),
+            email: google_user.email.as_deref(),
+            avatar_url: google_user.picture.as_deref(),
+            bio: None,
+        },
     )
     .await?;
 
@@ -384,11 +388,13 @@ async fn discord_callback(
         &state,
         "discord",
         &discord_user.id,
-        &discord_user.username,
-        discord_user.global_name.as_deref(),
-        discord_user.email.as_deref(),
-        discord_user.avatar_url().as_deref(),
-        None,
+        OAuthUserInfo {
+            username: &discord_user.username,
+            display_name: discord_user.global_name.as_deref(),
+            email: discord_user.email.as_deref(),
+            avatar_url: discord_user.avatar_url().as_deref(),
+            bio: None,
+        },
     )
     .await?;
 
@@ -451,6 +457,15 @@ async fn exchange_oauth_code(
     Ok(token_response.access_token().secret().to_string())
 }
 
+/// Profile data returned by an OAuth provider.
+struct OAuthUserInfo<'a> {
+    username: &'a str,
+    display_name: Option<&'a str>,
+    email: Option<&'a str>,
+    avatar_url: Option<&'a str>,
+    bio: Option<&'a str>,
+}
+
 /// Finds or creates a user from an OAuth provider and links the provider.
 ///
 /// Strategy:
@@ -461,12 +476,15 @@ async fn upsert_oauth_user(
     state: &AppState,
     provider: &str,
     provider_id: &str,
-    username: &str,
-    display_name: Option<&str>,
-    email: Option<&str>,
-    avatar_url: Option<&str>,
-    bio: Option<&str>,
+    info: OAuthUserInfo<'_>,
 ) -> Result<crate::models::user::User, AppError> {
+    let OAuthUserInfo {
+        username,
+        display_name,
+        email,
+        avatar_url,
+        bio,
+    } = info;
     // 1. Check if this provider link already exists.
     let existing = sqlx::query_as::<_, crate::models::user::User>(
         r#"
