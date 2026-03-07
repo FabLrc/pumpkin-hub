@@ -14,6 +14,8 @@ services:
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
 
   api-dev:
     container_name: pumpkin-hub-api-dev
