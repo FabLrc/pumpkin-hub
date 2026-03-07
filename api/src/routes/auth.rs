@@ -94,7 +94,9 @@ async fn register(
         sqlx::Error::Database(ref db_err) if db_err.constraint() == Some("users_username_key") => {
             AppError::Conflict("Username already taken".to_string())
         }
-        sqlx::Error::Database(ref db_err) if db_err.constraint() == Some("idx_users_email_unique") => {
+        sqlx::Error::Database(ref db_err)
+            if db_err.constraint() == Some("idx_users_email_unique") =>
+        {
             AppError::Conflict("Email already registered".to_string())
         }
         other => AppError::internal(other),
@@ -125,7 +127,10 @@ async fn login_email(
     .map_err(AppError::internal)?
     .ok_or(AppError::Unauthorized)?;
 
-    let stored_hash = user.password_hash.as_deref().ok_or(AppError::Unauthorized)?;
+    let stored_hash = user
+        .password_hash
+        .as_deref()
+        .ok_or(AppError::Unauthorized)?;
 
     let is_valid = password::verify_password(&body.password, stored_hash)
         .map_err(|e| AppError::Internal(Box::new(HashError(e.to_string()))))?;
@@ -433,9 +438,7 @@ async fn exchange_oauth_code(
     let client = oauth2::basic::BasicClient::new(ClientId::new(client_id.to_string()))
         .set_client_secret(ClientSecret::new(client_secret.to_string()))
         .set_token_uri(TokenUrl::new(token_url.to_string()).map_err(AppError::internal)?)
-        .set_redirect_uri(
-            RedirectUrl::new(redirect_uri.to_string()).map_err(AppError::internal)?,
-        );
+        .set_redirect_uri(RedirectUrl::new(redirect_uri.to_string()).map_err(AppError::internal)?);
 
     let http_client = reqwest::Client::new();
 
@@ -583,12 +586,11 @@ async fn ensure_unique_username(
         clean[..clean.len().min(35)].to_string()
     };
 
-    let exists: bool =
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
-            .bind(&base)
-            .fetch_one(db)
-            .await
-            .map_err(AppError::internal)?;
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)")
+        .bind(&base)
+        .fetch_one(db)
+        .await
+        .map_err(AppError::internal)?;
 
     if !exists {
         return Ok(base);

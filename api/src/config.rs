@@ -79,8 +79,14 @@ impl Config {
         let github_redirect_uri = std::env::var("GITHUB_REDIRECT_URI")
             .unwrap_or_else(|_| "http://localhost:8080/api/v1/auth/github/callback".to_string());
 
-        let google = load_oauth_provider("GOOGLE", "http://localhost:8080/api/v1/auth/google/callback")?;
-        let discord = load_oauth_provider("DISCORD", "http://localhost:8080/api/v1/auth/discord/callback")?;
+        let google = load_oauth_provider(
+            "GOOGLE",
+            "http://localhost:8080/api/v1/auth/google/callback",
+        )?;
+        let discord = load_oauth_provider(
+            "DISCORD",
+            "http://localhost:8080/api/v1/auth/discord/callback",
+        )?;
 
         let jwt_secret = require_env("JWT_SECRET")?;
         let jwt_ttl_seconds = parse_env_var::<u64>("JWT_TTL_SECONDS", 86400)?;
