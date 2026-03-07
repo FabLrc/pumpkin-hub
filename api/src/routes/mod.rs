@@ -1,4 +1,5 @@
 pub mod auth;
+mod categories;
 mod health;
 mod plugins;
 
@@ -15,5 +16,6 @@ fn v1_routes() -> Router<AppState> {
     Router::new()
         .merge(health::routes())
         .merge(auth::routes())
+        .merge(categories::routes())
         .merge(plugins::routes())
 }
