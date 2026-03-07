@@ -7,6 +7,7 @@ import type {
   PaginatedResponse,
   PluginResponse,
   PluginSummary,
+  UserProfile,
 } from "./types";
 
 const API_BASE_URL =
@@ -19,6 +20,7 @@ const API_PREFIX = `${API_BASE_URL}/api/v1`;
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_PREFIX}${path}`, {
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     ...init,
   });
 
@@ -77,4 +79,23 @@ export function getCategoriesPath(): string {
 
 export async function fetchCategories(): Promise<CategoryResponse[]> {
   return apiFetch<CategoryResponse[]>(getCategoriesPath());
+}
+
+// ── Auth Endpoints ────────────────────────────────────────────────────────
+
+/** Full URL for the GitHub OAuth login redirect (server-side redirect). */
+export function getGithubLoginUrl(): string {
+  return `${API_PREFIX}/auth/github`;
+}
+
+export function getAuthMePath(): string {
+  return "/auth/me";
+}
+
+export function getLogoutUrl(): string {
+  return `${API_PREFIX}/auth/logout`;
+}
+
+export async function fetchCurrentUser(): Promise<UserProfile> {
+  return apiFetch<UserProfile>(getAuthMePath());
 }

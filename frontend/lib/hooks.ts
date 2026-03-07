@@ -4,13 +4,14 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getCategoriesPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getCategoriesPath, getAuthMePath } from "./api";
 import type {
   CategoryResponse,
   ListPluginsParams,
   PaginatedResponse,
   PluginResponse,
   PluginSummary,
+  UserProfile,
 } from "./types";
 
 export function usePlugins(params: ListPluginsParams = {}) {
@@ -32,5 +33,13 @@ export function useCategories() {
   return useSWR<CategoryResponse[]>(getCategoriesPath(), swrFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 30_000,
+  });
+}
+
+export function useCurrentUser() {
+  return useSWR<UserProfile>(getAuthMePath(), swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 10_000,
+    shouldRetryOnError: false,
   });
 }

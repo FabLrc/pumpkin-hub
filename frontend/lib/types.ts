@@ -1,6 +1,17 @@
 // ── API Types ─────────────────────────────────────────────────────────────
 // Mirror of the Rust API DTOs for type-safe frontend consumption.
 
+export interface UserProfile {
+  id: string;
+  username: string;
+  display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  role: "author" | "moderator" | "admin";
+  created_at: string;
+}
+
 export interface AuthorSummary {
   id: string;
   username: string;
