@@ -4,9 +4,12 @@
 import type {
   CategoryResponse,
   ListPluginsParams,
+  LoginRequest,
+  OAuthProvider,
   PaginatedResponse,
   PluginResponse,
   PluginSummary,
+  RegisterRequest,
   UserProfile,
 } from "./types";
 
@@ -83,9 +86,14 @@ export async function fetchCategories(): Promise<CategoryResponse[]> {
 
 // ── Auth Endpoints ────────────────────────────────────────────────────────
 
-/** Full URL for the GitHub OAuth login redirect (server-side redirect). */
+/** Full URL for an OAuth provider login redirect (server-side redirect). */
+export function getOAuthLoginUrl(provider: OAuthProvider): string {
+  return `${API_PREFIX}/auth/${provider}`;
+}
+
+/** @deprecated Use getOAuthLoginUrl("github") instead. */
 export function getGithubLoginUrl(): string {
-  return `${API_PREFIX}/auth/github`;
+  return getOAuthLoginUrl("github");
 }
 
 export function getAuthMePath(): string {
@@ -98,4 +106,24 @@ export function getLogoutUrl(): string {
 
 export async function fetchCurrentUser(): Promise<UserProfile> {
   return apiFetch<UserProfile>(getAuthMePath());
+}
+
+/** Register a new account with email and password. */
+export async function registerWithEmail(
+  body: RegisterRequest,
+): Promise<UserProfile> {
+  return apiFetch<UserProfile>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** Log in with email and password. */
+export async function loginWithEmail(
+  body: LoginRequest,
+): Promise<UserProfile> {
+  return apiFetch<UserProfile>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { LogOut, User, ChevronDown } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
-import { getGithubLoginUrl, getLogoutUrl } from "@/lib/api";
+import { getLogoutUrl } from "@/lib/api";
 
 export function Navbar() {
   const { data: user, isLoading } = useCurrentUser();
@@ -116,12 +116,12 @@ export function Navbar() {
               )}
             </div>
           ) : (
-            <a
-              href={getGithubLoginUrl()}
+            <Link
+              href="/auth"
               className="text-xs font-mono text-text-subtle hover:text-text-primary transition-colors px-3 py-1.5 border border-border-default hover:border-border-hover"
             >
               Sign In
-            </a>
+            </Link>
           )}
         </div>
       </div>

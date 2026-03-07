@@ -38,6 +38,12 @@ services:
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - GITHUB_REDIRECT_URI=http://localhost:8080/api/v1/auth/github/callback
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=http://localhost:8080/api/v1/auth/google/callback
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
+      - DISCORD_REDIRECT_URI=http://localhost:8080/api/v1/auth/discord/callback
       - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_me_in_production}
       - JWT_TTL_SECONDS=86400
 

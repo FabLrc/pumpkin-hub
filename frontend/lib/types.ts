@@ -12,6 +12,22 @@ export interface UserProfile {
   created_at: string;
 }
 
+// ── Auth Request Types ────────────────────────────────────────────────────
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+/** Supported OAuth providers for the sign-in page. */
+export type OAuthProvider = "github" | "google" | "discord";
+
 export interface AuthorSummary {
   id: string;
   username: string;
