@@ -13,6 +13,16 @@ export interface CategorySummary {
   slug: string;
 }
 
+/** Full category as returned by GET /api/v1/categories. */
+export interface CategoryResponse {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  created_at: string;
+}
+
 export interface PluginSummary {
   id: string;
   author: AuthorSummary;

@@ -2,6 +2,7 @@
 // Centralised fetch wrapper for the Pumpkin Hub REST API.
 
 import type {
+  CategoryResponse,
   ListPluginsParams,
   PaginatedResponse,
   PluginResponse,
@@ -66,4 +67,14 @@ export async function fetchPlugins(
 
 export async function fetchPlugin(slug: string): Promise<PluginResponse> {
   return apiFetch<PluginResponse>(getPluginPath(slug));
+}
+
+// ── Category Endpoints ────────────────────────────────────────────────────
+
+export function getCategoriesPath(): string {
+  return "/categories";
+}
+
+export async function fetchCategories(): Promise<CategoryResponse[]> {
+  return apiFetch<CategoryResponse[]>(getCategoriesPath());
 }

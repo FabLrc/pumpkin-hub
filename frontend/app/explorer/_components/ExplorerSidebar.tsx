@@ -1,19 +1,44 @@
 "use client";
 
-import { Search, Shield, Coins, Map, Users, Gamepad2, Database, MessageSquare } from "lucide-react";
+import {
+  Search,
+  Shield,
+  Coins,
+  Map,
+  Users,
+  Gamepad2,
+  Database,
+  MessageSquare,
+  Globe,
+  Code,
+  Zap,
+  Lock,
+  Tag,
+  type LucideIcon,
+} from "lucide-react";
 import type { SortField } from "@/lib/types";
+import { useCategories } from "@/lib/hooks";
 
-// ── Category Definitions ──────────────────────────────────────────────────
+// ── Icon Mapping ──────────────────────────────────────────────────────────
 
-const CATEGORIES = [
-  { slug: "security", label: "Security", icon: Shield },
-  { slug: "economy", label: "Economy", icon: Coins },
-  { slug: "world-gen", label: "World Gen", icon: Map },
-  { slug: "admin-tools", label: "Admin Tools", icon: Users },
-  { slug: "gameplay", label: "Gameplay", icon: Gamepad2 },
-  { slug: "storage", label: "Storage", icon: Database },
-  { slug: "chat-social", label: "Chat / Social", icon: MessageSquare },
-] as const;
+const ICON_MAP: Record<string, LucideIcon> = {
+  "gamepad-2": Gamepad2,
+  shield: Shield,
+  globe: Globe,
+  coins: Coins,
+  "message-square": MessageSquare,
+  code: Code,
+  zap: Zap,
+  lock: Lock,
+  map: Map,
+  users: Users,
+  database: Database,
+};
+
+function getCategoryIcon(icon: string | null): LucideIcon {
+  if (icon && icon in ICON_MAP) return ICON_MAP[icon];
+  return Tag;
+}
 
 // ── Sort Options ──────────────────────────────────────────────────────────
 
@@ -43,6 +68,8 @@ export function ExplorerSidebar({
   activeCategory,
   onCategoryChange,
 }: ExplorerSidebarProps) {
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+
   return (
     <aside className="w-64 flex-shrink-0 border-r border-border-default min-h-screen hidden md:block">
       <div className="sidebar-scroll p-5 space-y-8">
@@ -100,22 +127,34 @@ export function ExplorerSidebar({
               <span>All</span>
             </button>
 
-            {CATEGORIES.map(({ slug, label, icon: Icon }) => (
-              <button
-                key={slug}
-                onClick={() => onCategoryChange(slug)}
-                className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-                  activeCategory === slug
-                    ? "text-accent border-accent/40 bg-accent/5"
-                    : "text-text-dim border-border-default hover:border-border-hover"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Icon className="w-[11px] h-[11px]" />
-                  <span>{label}</span>
-                </div>
-              </button>
-            ))}
+            {categoriesLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-8 bg-bg-surface border border-border-default animate-pulse"
+                />
+              ))
+            ) : (
+              categories?.map((cat) => {
+                const Icon = getCategoryIcon(cat.icon);
+                return (
+                  <button
+                    key={cat.slug}
+                    onClick={() => onCategoryChange(cat.slug)}
+                    className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+                      activeCategory === cat.slug
+                        ? "text-accent border-accent/40 bg-accent/5"
+                        : "text-text-dim border-border-default hover:border-border-hover"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-[11px] h-[11px]" />
+                      <span>{cat.name}</span>
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
 
