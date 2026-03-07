@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui";
+import { PluginActions } from "@/components/plugins/PluginActions";
 import type { PluginResponse } from "@/lib/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -114,8 +115,9 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
           </div>
         </div>
 
-        {/* Install CTA */}
+        {/* Actions */}
         <div className="flex items-center gap-3 flex-shrink-0">
+          <PluginActions plugin={plugin} />
           {plugin.repository_url && (
             <a
               href={plugin.repository_url}

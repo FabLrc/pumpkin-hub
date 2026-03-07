@@ -91,6 +91,28 @@ export interface PaginatedResponse<T> {
   pagination: PaginationMeta;
 }
 
+// ── Plugin Mutation Types ──────────────────────────────────────────────────
+
+export interface CreatePluginRequest {
+  name: string;
+  short_description?: string;
+  description?: string;
+  repository_url?: string;
+  documentation_url?: string;
+  license?: string;
+  category_ids?: string[];
+}
+
+export interface UpdatePluginRequest {
+  name?: string;
+  short_description?: string;
+  description?: string;
+  repository_url?: string;
+  documentation_url?: string;
+  license?: string;
+  category_ids?: string[];
+}
+
 // ── Query Parameters ──────────────────────────────────────────────────────
 
 export type SortField = "created_at" | "updated_at" | "downloads_total" | "name";

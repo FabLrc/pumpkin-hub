@@ -60,12 +60,12 @@ export function Navbar() {
           <a href="#" className="hover:text-text-primary transition-colors">
             Status
           </a>
-          <a
-            href="#"
+          <Link
+            href="/plugins/new"
             className="text-accent hover:text-accent-light transition-colors"
           >
             Submit Plugin
-          </a>
+          </Link>
         </div>
 
         {/* Auth */}

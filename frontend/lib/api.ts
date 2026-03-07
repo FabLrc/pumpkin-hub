@@ -3,6 +3,7 @@
 
 import type {
   CategoryResponse,
+  CreatePluginRequest,
   ListPluginsParams,
   LoginRequest,
   OAuthProvider,
@@ -10,6 +11,7 @@ import type {
   PluginResponse,
   PluginSummary,
   RegisterRequest,
+  UpdatePluginRequest,
   UserProfile,
 } from "./types";
 
@@ -72,6 +74,31 @@ export async function fetchPlugins(
 
 export async function fetchPlugin(slug: string): Promise<PluginResponse> {
   return apiFetch<PluginResponse>(getPluginPath(slug));
+}
+
+export async function createPlugin(
+  body: CreatePluginRequest,
+): Promise<PluginResponse> {
+  return apiFetch<PluginResponse>("/plugins", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updatePlugin(
+  slug: string,
+  body: UpdatePluginRequest,
+): Promise<PluginResponse> {
+  return apiFetch<PluginResponse>(`/plugins/${encodeURIComponent(slug)}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deletePlugin(slug: string): Promise<void> {
+  await apiFetch<void>(`/plugins/${encodeURIComponent(slug)}`, {
+    method: "DELETE",
+  });
 }
 
 // ── Category Endpoints ────────────────────────────────────────────────────
