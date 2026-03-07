@@ -244,6 +244,24 @@
         </div>
 
         <div class="timeline-item">
+          <div class="timeline-dot in-progress"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Multi-Provider Authentication <span class="badge badge-orange">In Progress</span></span>
+          </div>
+          <ul class="timeline-features">
+            <li>Email/password registration &amp; login with Argon2 password hashing</li>
+            <li>Google OAuth 2.0 — <code>GET /auth/google</code> redirect + callback</li>
+            <li>Discord OAuth 2.0 — <code>GET /auth/discord</code> redirect + callback</li>
+            <li><code>auth_providers</code> table linking multiple providers to a single user (provider + provider_id)</li>
+            <li>Account linking by email — existing users can add new sign-in methods</li>
+            <li>Password hash stored on users table (nullable for OAuth-only accounts)</li>
+            <li><code>POST /auth/register</code> — email/password signup with validation</li>
+            <li><code>POST /auth/login</code> — email/password authentication</li>
+            <li>Dedicated <code>/auth</code> frontend page with sign-in/sign-up forms and OAuth provider buttons</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
           <div class="timeline-dot planned"></div>
           <div class="timeline-header">
             <span class="timeline-title">Plugin Submission &amp; Management Forms</span>
