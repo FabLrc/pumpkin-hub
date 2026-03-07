@@ -148,7 +148,7 @@
         </div>
 
         <!-- ── PHASE 1 — Core Platform ─────────────────────── -->
-        <h2 id="phase-1" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 1 — Core Platform <span class="badge badge-orange">In Progress</span></h2>
+        <h2 id="phase-1" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 1 — Core Platform <span class="badge badge-green">Completed</span></h2>
 
         <div class="timeline-item">
           <div class="timeline-dot completed"></div>
@@ -196,16 +196,19 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
             <span class="timeline-title">Frontend Page Implementation</span>
           </div>
           <ul class="timeline-features">
-            <li>Design system integration (React components from mockups)</li>
-            <li>Landing page with trending plugins and global statistics</li>
-            <li>Explorer page with search and filters</li>
-            <li>Plugin detail page with information and versions</li>
-            <li>API connection via fetch/SWR</li>
+            <li>Design system with Tailwind CSS 4 tokens (Brutalist Industrial: colors, typography, effects, animations)</li>
+            <li>Shared UI components: Navbar, Footer, Badge, Button, PluginCard</li>
+            <li>API layer with SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>) and typed DTOs</li>
+            <li>Landing page: hero section, trending bento grid, features grid, CTA, live ticker</li>
+            <li>Explorer page: sidebar filters (search, sort, categories), paginated results, URL-based state with Suspense boundary</li>
+            <li>Plugin detail page: install panel with copy-to-clipboard, tabbed content (Overview/Versions/Dependencies), sidebar (stats, links, details, author)</li>
+            <li>Optimized fonts via <code>next/font/google</code> (Raleway + JetBrains Mono)</li>
+            <li>Next.js Image optimization for external avatars</li>
           </ul>
         </div>
 

@@ -9,32 +9,61 @@
 
 ## ⚡ About
 
-**Pumpkin Hub** is the central platform dedicated to distribution and discovery of extensions for the [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin) Minecraft server. Because [Pumpkin MC](https://github.com/Pumpkin-MC/Pumpkin) redefines server performance with Rust, Pumpkin Hub redefines content management with a minimalist interface, enhanced binary security, and a frictionless developer experience (DX).
+**Pumpkin Hub** is the central platform for distributing and discovering extensions for the [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin) Minecraft server. Built with Rust and Next.js, it offers a minimalist interface, enhanced binary security, and a frictionless developer experience.
 
 > [!IMPORTANT]
-> **Active development:** We are currently in an intensive building phase. Features are likely to evolve rapidly.
+> **Active development:** Features are evolving rapidly. See the [Roadmap](https://fablrc.github.io/pumpkin-hub/roadmap.html) for details.
 
 ## ✨ Key Features
 
-*   🔍 **Instant Search:** Powered by Meilisearch for millisecond results.
-*   📦 **Crate-Centric:** Native management of compiled binaries and CPU architectures.
-*   🛡️ **Native Security:** Systematic SHA-256 signing and integrity verification.
-*   ⚙️ **Dependency Graph:** Clear visualization of inter-plugin dependencies.
-*   ⌨️ **Brutalist Interface:** "No-Radius" design optimized for technical clarity.
+*   🔍 **Instant Search** — Meilisearch-powered millisecond results
+*   📦 **Crate-Centric** — Native Rust binary and CPU architecture management
+*   🛡️ **Native Security** — SHA-256 signing and integrity verification
+*   🔐 **GitHub OAuth** — Secure authentication with JWT session management
+*   ⌨️ **Brutalist Interface** — Industrial "No-Radius" design for technical clarity
 
 ## 🏗️ Tech Stack
 
-*   **Frontend:** Next.js 16+, Tailwind CSS, Shadcn UI.
-*   **Backend:** Rust (Axum), SQLx, Meilisearch.
-*   **Infrastructure:** Cloudflare R2, PostgreSQL.
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | Next.js 16, React 19, Tailwind CSS 4, SWR, TypeScript |
+| **Backend** | Rust (Axum 0.8), SQLx, Tokio, Tower HTTP |
+| **Data** | PostgreSQL 16, Meilisearch 1.7 |
+| **Infra** | Docker Compose, GitHub Actions CI/CD |
+
+## 🚀 Quick Start
+
+```bash
+git clone https://github.com/FabLrc/pumpkin-hub.git
+cd pumpkin-hub
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API | http://localhost:8080 |
+| API Health | http://localhost:8080/api/v1/health |
+
+> [!NOTE]
+> GitHub OAuth requires a `.env` file with `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. See the [Getting Started guide](https://fablrc.github.io/pumpkin-hub/getting-started.html).
+
+## 📦 Current State
+
+- ✅ Rust API with full middleware stack (CORS, Trace, Compression, RequestId)
+- ✅ PostgreSQL database with SQLx migrations (Users, Plugins, Versions, Categories)
+- ✅ GitHub OAuth 2.0 authentication (JWT + HttpOnly cookies)
+- ✅ Plugin CRUD (list, create, read, update, delete with pagination, sorting, filtering)
+- ✅ Frontend design system (Brutalist Industrial tokens + React components)
+- ✅ Landing page, Explorer page, Plugin detail page
+- ✅ API connection via SWR with typed hooks
+- ✅ CI/CD pipeline (ESLint, TypeScript, Build, cargo fmt, clippy, tests)
+- 🔜 Version & binary upload, full-text search, author dashboard
 
 ## 📖 Documentation
 
-Full documentation is available at [pumpkin-hub docs](https://fablrc.github.io/pumpkin-hub/).
+Full documentation available at **[fablrc.github.io/pumpkin-hub](https://fablrc.github.io/pumpkin-hub/)**.
 
-## 🛠️ Installation (Development)
+## 📄 License
 
-> [!NOTE]
-> **Phase 1 in progress:** Database models, migrations, GitHub OAuth authentication, and full Plugin CRUD (list, create, read, update, delete with validation, pagination, sorting, and category filtering) are implemented. Frontend pages are next.
-
-*Detailed setup instructions available in the [documentation](https://fablrc.github.io/pumpkin-hub/getting-started.html).*
+Open Source under MIT License.

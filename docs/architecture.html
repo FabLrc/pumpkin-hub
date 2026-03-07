@@ -130,12 +130,29 @@
 ├── frontend/               # Next.js frontend
 │   ├── package.json        # NPM dependencies
 │   ├── Dockerfile.dev      # Development container
-│   ├── next.config.ts      # Next.js configuration
+│   ├── .dockerignore       # Docker build context exclusions
+│   ├── next.config.ts      # Next.js configuration (images, remote patterns)
 │   ├── tsconfig.json       # TypeScript configuration
+│   ├── eslint.config.mjs   # ESLint flat config
+│   ├── postcss.config.mjs  # PostCSS with @tailwindcss/postcss
+│   ├── lib/
+│   │   ├── types.ts        # API DTOs (PluginSummary, PluginResponse, etc.)
+│   │   ├── api.ts          # Fetch helpers &amp; SWR key generators
+│   │   └── hooks.ts        # SWR hooks (usePlugins, usePlugin)
+│   ├── components/
+│   │   ├── layout/         # Navbar, Footer
+│   │   └── ui/             # Badge, Button, PluginCard
 │   └── app/
-│       ├── layout.tsx      # Root layout
-│       ├── page.tsx        # Home page
-│       └── globals.css     # Tailwind global styles
+│       ├── layout.tsx      # Root layout (next/font, metadata)
+│       ├── globals.css     # Design tokens (@theme inline) &amp; global styles
+│       ├── page.tsx        # Landing page
+│       ├── _components/    # Landing sub-components (Hero, Trending, Features, CTA, Ticker)
+│       ├── explorer/
+│       │   ├── page.tsx    # Explorer with Suspense boundary
+│       │   └── _components/# ExplorerContent, ExplorerSidebar, ExplorerResults
+│       └── plugins/[slug]/
+│           ├── page.tsx    # Plugin detail page
+│           └── _components/# PluginHeader, PluginContent, PluginSidebar
 │
 ├── docs/                   # Documentation (GitHub Pages)
 │   └── mockup/             # Design system HTML mockups
@@ -271,30 +288,46 @@
       <h3>App Router Structure</h3>
       <p>
         The frontend uses the <strong>App Router</strong> from Next.js 16 with React 19. Styles
-        are managed by Tailwind CSS 4 with the PostCSS plugin.
+        are managed by Tailwind CSS 4 with the PostCSS plugin. Data fetching uses <strong>SWR</strong>
+        with typed hooks. Fonts are loaded via <code>next/font/google</code> for optimal performance.
       </p>
 
       <h3>Design System — Brutalist Industrial</h3>
       <p>The project's design system follows these principles:</p>
       <ul>
-        <li><strong>Typography</strong> — Raleway (headings and body) + JetBrains Mono (code and technical data)</li>
+        <li><strong>Typography</strong> — Raleway (headings and body) + JetBrains Mono (code and technical data), loaded via <code>next/font</code></li>
         <li><strong>Palette</strong> — Black background (#0a0a0a), neutral text (#e5e5e5), orange accent (#f97316)</li>
         <li><strong>Geometry</strong> — Zero border-radius, thin neutral borders (#262626)</li>
         <li><strong>Effects</strong> — Noise texture overlay, subtle scanlines, orange glow on focus</li>
       </ul>
+      <p>
+        Design tokens are defined in <code>globals.css</code> using Tailwind CSS 4 <code>@theme inline</code> blocks.
+        Shared UI components (<code>Badge</code>, <code>Button</code>, <code>PluginCard</code>, <code>Navbar</code>, <code>Footer</code>)
+        live in <code>frontend/components/</code>.
+      </p>
 
-      <h3>Planned Pages</h3>
+      <h3>Pages</h3>
       <table>
         <thead>
           <tr><th>Page</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td>Landing</td><td><code>/</code></td><td>Homepage with trending plugins and bento grid</td></tr>
-          <tr><td>Explorer</td><td><code>/explore</code></td><td>Catalog with faceted filters and search</td></tr>
-          <tr><td>Plugin Detail</td><td><code>/plugin/[slug]</code></td><td>Detail page with install panel and versions</td></tr>
-          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Author space with analytics and management</td></tr>
+          <tr><td>Landing</td><td><code>/</code></td><td>Hero section, trending bento grid, feature cards, CTA, live ticker</td></tr>
+          <tr><td>Explorer</td><td><code>/explorer</code></td><td>Sidebar filters (search, sort, categories), paginated results, URL-based state</td></tr>
+          <tr><td>Plugin Detail</td><td><code>/plugins/[slug]</code></td><td>Install panel, tabbed content (Overview/Versions/Dependencies), sidebar stats</td></tr>
+          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Author space with analytics and management (Phase 3)</td></tr>
         </tbody>
       </table>
+
+      <h3>API Layer</h3>
+      <p>
+        The frontend communicates with the Rust API via a typed layer in <code>frontend/lib/</code>:
+      </p>
+      <ul>
+        <li><code>types.ts</code> — TypeScript DTOs mirroring the API response shapes</li>
+        <li><code>api.ts</code> — Fetch helpers and SWR key generators</li>
+        <li><code>hooks.ts</code> — SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>) with typed parameters</li>
+      </ul>
 
       <!-- ── Infrastructure ────────────────────────────────── -->
       <h2 id="infrastructure">Docker Infrastructure</h2>
