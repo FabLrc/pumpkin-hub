@@ -53,7 +53,7 @@ pub fn routes() -> Router<AppState> {
         .route("/auth/discord", get(discord_login))
         .route("/auth/discord/callback", get(discord_callback))
         // Session
-        .route("/auth/me", get(me))
+        .route("/auth/me", get(me).put(update_profile))
         .route("/auth/logout", get(logout))
 }
 
@@ -427,6 +427,93 @@ async fn logout(jar: CookieJar) -> impl IntoResponse {
     let jar = jar.add(remove_cookie);
 
     (jar, Json(serde_json::json!({ "message": "Logged out" })))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Profile Update
+// ═══════════════════════════════════════════════════════════════════════════
+
+const DISPLAY_NAME_MAX_LENGTH: usize = 100;
+const BIO_MAX_LENGTH: usize = 500;
+const AVATAR_URL_MAX_LENGTH: usize = 500;
+
+#[derive(Debug, Deserialize)]
+struct UpdateProfileRequest {
+    display_name: Option<String>,
+    bio: Option<String>,
+    avatar_url: Option<String>,
+}
+
+impl UpdateProfileRequest {
+    fn validate(&self) -> Result<(), AppError> {
+        if let Some(ref name) = self.display_name {
+            if name.len() > DISPLAY_NAME_MAX_LENGTH {
+                return Err(AppError::UnprocessableEntity(format!(
+                    "Display name must be at most {DISPLAY_NAME_MAX_LENGTH} characters"
+                )));
+            }
+        }
+        if let Some(ref bio) = self.bio {
+            if bio.len() > BIO_MAX_LENGTH {
+                return Err(AppError::UnprocessableEntity(format!(
+                    "Bio must be at most {BIO_MAX_LENGTH} characters"
+                )));
+            }
+        }
+        if let Some(ref url) = self.avatar_url {
+            if url.len() > AVATAR_URL_MAX_LENGTH {
+                return Err(AppError::UnprocessableEntity(format!(
+                    "Avatar URL must be at most {AVATAR_URL_MAX_LENGTH} characters"
+                )));
+            }
+            if !url.starts_with("https://") && !url.starts_with("http://") {
+                return Err(AppError::UnprocessableEntity(
+                    "Avatar URL must start with http:// or https://".to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn has_changes(&self) -> bool {
+        self.display_name.is_some() || self.bio.is_some() || self.avatar_url.is_some()
+    }
+}
+
+/// `PUT /api/v1/auth/me` — update the authenticated user's profile.
+async fn update_profile(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(body): Json<UpdateProfileRequest>,
+) -> Result<Json<UserProfile>, AppError> {
+    body.validate()?;
+
+    if !body.has_changes() {
+        return Err(AppError::UnprocessableEntity(
+            "No fields to update".to_string(),
+        ));
+    }
+
+    let user = sqlx::query_as::<_, crate::models::user::User>(
+        r#"
+        UPDATE users SET
+            display_name = COALESCE($2, display_name),
+            bio = COALESCE($3, bio),
+            avatar_url = COALESCE($4, avatar_url),
+            updated_at = now()
+        WHERE id = $1
+        RETURNING *
+        "#,
+    )
+    .bind(auth.user_id)
+    .bind(&body.display_name)
+    .bind(&body.bio)
+    .bind(&body.avatar_url)
+    .fetch_one(&state.db)
+    .await
+    .map_err(AppError::internal)?;
+
+    Ok(Json(UserProfile::from(user)))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

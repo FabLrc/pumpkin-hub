@@ -12,6 +12,7 @@ import type {
   PluginSummary,
   RegisterRequest,
   UpdatePluginRequest,
+  UpdateProfileRequest,
   UserProfile,
 } from "./types";
 
@@ -53,6 +54,7 @@ function buildPluginQueryString(params: ListPluginsParams): string {
   if (params.sort_by) searchParams.set("sort_by", params.sort_by);
   if (params.order) searchParams.set("order", params.order);
   if (params.category) searchParams.set("category", params.category);
+  if (params.author) searchParams.set("author", params.author);
 
   const queryString = searchParams.toString();
   return queryString ? `?${queryString}` : "";
@@ -133,6 +135,16 @@ export function getLogoutUrl(): string {
 
 export async function fetchCurrentUser(): Promise<UserProfile> {
   return apiFetch<UserProfile>(getAuthMePath());
+}
+
+/** Update the authenticated user's profile. */
+export async function updateProfile(
+  body: UpdateProfileRequest,
+): Promise<UserProfile> {
+  return apiFetch<UserProfile>("/auth/me", {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
 }
 
 /** Register a new account with email and password. */

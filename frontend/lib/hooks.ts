@@ -43,3 +43,11 @@ export function useCurrentUser() {
     shouldRetryOnError: false,
   });
 }
+
+/** Fetch all plugins published by the given author username. */
+export function useAuthorPlugins(username: string | null) {
+  const path = username ? getPluginsPath({ author: username, per_page: 100 }) : null;
+  return useSWR<PaginatedResponse<PluginSummary>>(path, swrFetcher, {
+    revalidateOnFocus: false,
+  });
+}

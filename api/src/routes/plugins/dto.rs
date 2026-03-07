@@ -99,6 +99,7 @@ pub struct ListPluginsParams {
     pub sort_by: Option<SortField>,
     pub order: Option<SortOrder>,
     pub category: Option<String>,
+    pub author: Option<String>,
 }
 
 impl ListPluginsParams {

@@ -270,26 +270,30 @@ fn build_plugin_summary(
 
 // ── Handlers ────────────────────────────────────────────────────────────────
 
-/// GET /api/v1/plugins — paginated list with optional category filter.
+/// GET /api/v1/plugins — paginated list with optional category and author filters.
 pub async fn list_plugins(
     State(state): State<AppState>,
     Query(params): Query<ListPluginsParams>,
 ) -> Result<Json<PaginatedResponse<PluginSummary>>, AppError> {
     let pool = &state.db;
     let category_slug = params.category.clone();
+    let author_username = params.author.clone();
 
     // Count total matching plugins
     let total: Option<i64> = sqlx::query_scalar(
         "SELECT COUNT(*)
          FROM plugins p
+         JOIN users u ON p.author_id = u.id
          WHERE p.is_active = true
            AND ($1::text IS NULL OR EXISTS (
                SELECT 1 FROM plugin_categories pc
                JOIN categories c ON pc.category_id = c.id
                WHERE pc.plugin_id = p.id AND c.slug = $1
-           ))",
+           ))
+           AND ($2::text IS NULL OR u.username = $2)",
     )
     .bind(&category_slug)
+    .bind(&author_username)
     .fetch_one(pool)
     .await
     .map_err(AppError::internal)?;
@@ -316,14 +320,16 @@ pub async fn list_plugins(
                JOIN categories c ON pc.category_id = c.id
                WHERE pc.plugin_id = p.id AND c.slug = $1
            ))
+           AND ($2::text IS NULL OR u.username = $2)
          ORDER BY {} {}
-         LIMIT $2 OFFSET $3",
+         LIMIT $3 OFFSET $4",
         params.sort_column(),
         params.sort_direction(),
     );
 
     let rows: Vec<PluginWithAuthorRow> = sqlx::query_as(&query)
         .bind(&category_slug)
+        .bind(&author_username)
         .bind(per_page as i64)
         .bind(params.offset() as i64)
         .fetch_all(pool)

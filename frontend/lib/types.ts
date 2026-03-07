@@ -124,4 +124,13 @@ export interface ListPluginsParams {
   sort_by?: SortField;
   order?: SortOrder;
   category?: string;
+  author?: string;
+}
+
+// ── Profile Mutation Types ─────────────────────────────────────────────────
+
+export interface UpdateProfileRequest {
+  display_name?: string;
+  bio?: string;
+  avatar_url?: string;
 }
