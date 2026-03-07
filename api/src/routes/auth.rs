@@ -94,7 +94,7 @@ async fn register(
         sqlx::Error::Database(ref db_err) if db_err.constraint() == Some("users_username_key") => {
             AppError::Conflict("Username already taken".to_string())
         }
-        sqlx::Error::Database(ref db_err) if db_err.constraint() == Some("users_email_key") => {
+        sqlx::Error::Database(ref db_err) if db_err.constraint() == Some("idx_users_email_unique") => {
             AppError::Conflict("Email already registered".to_string())
         }
         other => AppError::internal(other),
@@ -209,15 +209,14 @@ async fn github_callback(
 
     let github = &state.config.github;
 
-    let client = oauth2::basic::BasicClient::new(ClientId::new(github.client_id.clone()))
-        .set_client_secret(ClientSecret::new(github.client_secret.clone()))
-        .set_auth_uri(AuthUrl::new(GITHUB_AUTH_URL.to_string()).map_err(AppError::internal)?)
-        .set_token_uri(TokenUrl::new(GITHUB_TOKEN_URL.to_string()).map_err(AppError::internal)?)
-        .set_redirect_uri(
-            RedirectUrl::new(github.redirect_uri.clone()).map_err(AppError::internal)?,
-        );
-
-    let access_token = exchange_code(&client, params.code).await?;
+    let access_token = exchange_oauth_code(
+        &github.client_id,
+        &github.client_secret,
+        GITHUB_TOKEN_URL,
+        &github.redirect_uri,
+        params.code,
+    )
+    .await?;
     let github_user = fetch_github_user(&access_token)
         .await
         .map_err(AppError::internal)?;
@@ -284,15 +283,14 @@ async fn google_callback(
             "Google OAuth is not configured".to_string(),
         ))?;
 
-    let client = oauth2::basic::BasicClient::new(ClientId::new(google.client_id.clone()))
-        .set_client_secret(ClientSecret::new(google.client_secret.clone()))
-        .set_auth_uri(AuthUrl::new(GOOGLE_AUTH_URL.to_string()).map_err(AppError::internal)?)
-        .set_token_uri(TokenUrl::new(GOOGLE_TOKEN_URL.to_string()).map_err(AppError::internal)?)
-        .set_redirect_uri(
-            RedirectUrl::new(google.redirect_uri.clone()).map_err(AppError::internal)?,
-        );
-
-    let access_token = exchange_code(&client, params.code).await?;
+    let access_token = exchange_oauth_code(
+        &google.client_id,
+        &google.client_secret,
+        GOOGLE_TOKEN_URL,
+        &google.redirect_uri,
+        params.code,
+    )
+    .await?;
     let google_user = fetch_google_user(&access_token)
         .await
         .map_err(AppError::internal)?;
@@ -365,17 +363,14 @@ async fn discord_callback(
             "Discord OAuth is not configured".to_string(),
         ))?;
 
-    let client = oauth2::basic::BasicClient::new(ClientId::new(discord.client_id.clone()))
-        .set_client_secret(ClientSecret::new(discord.client_secret.clone()))
-        .set_auth_uri(AuthUrl::new(DISCORD_AUTH_URL.to_string()).map_err(AppError::internal)?)
-        .set_token_uri(
-            TokenUrl::new(DISCORD_TOKEN_URL.to_string()).map_err(AppError::internal)?,
-        )
-        .set_redirect_uri(
-            RedirectUrl::new(discord.redirect_uri.clone()).map_err(AppError::internal)?,
-        );
-
-    let access_token = exchange_code(&client, params.code).await?;
+    let access_token = exchange_oauth_code(
+        &discord.client_id,
+        &discord.client_secret,
+        DISCORD_TOKEN_URL,
+        &discord.redirect_uri,
+        params.code,
+    )
+    .await?;
     let discord_user = fetch_discord_user(&access_token)
         .await
         .map_err(AppError::internal)?;
@@ -427,11 +422,21 @@ async fn logout(jar: CookieJar) -> impl IntoResponse {
 // Shared Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Exchanges an OAuth authorization code for an access token.
-async fn exchange_code(
-    client: &oauth2::basic::BasicClient,
+/// Builds an OAuth2 client and exchanges an authorization code for an access token.
+async fn exchange_oauth_code(
+    client_id: &str,
+    client_secret: &str,
+    token_url: &str,
+    redirect_uri: &str,
     code: String,
 ) -> Result<String, AppError> {
+    let client = oauth2::basic::BasicClient::new(ClientId::new(client_id.to_string()))
+        .set_client_secret(ClientSecret::new(client_secret.to_string()))
+        .set_token_uri(TokenUrl::new(token_url.to_string()).map_err(AppError::internal)?)
+        .set_redirect_uri(
+            RedirectUrl::new(redirect_uri.to_string()).map_err(AppError::internal)?,
+        );
+
     let http_client = reqwest::Client::new();
 
     let token_response = client

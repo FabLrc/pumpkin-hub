@@ -244,26 +244,35 @@
 │     users      │       │      plugins       │       │    versions    │
 ├────────────────┤       ├────────────────────┤       ├────────────────┤
 │ id          PK │◄─────│ author_id     FK  │       │ id          PK │
-│ github_id  UQ │       │ id            PK  │◄─────│ plugin_id   FK │
+│ github_id      │       │ id            PK  │◄─────│ plugin_id   FK │
 │ username   UQ │       │ slug          UQ  │       │ version        │
 │ display_name   │       │ name              │       │ changelog      │
-│ email          │       │ short_description │       │ pumpkin_min    │
+│ email     UQ* │       │ short_description │       │ pumpkin_min    │
 │ avatar_url     │       │ description       │       │ pumpkin_max    │
 │ bio            │       │ license           │       │ downloads      │
-│ role       CHK │       │ downloads_total   │       │ is_yanked      │
-│ created_at     │       │ is_active         │       │ published_at   │
-└────────────────┘       └────────────────────┘       └────────────────┘
-                          │                    │
-                    ┌─────┴──────────────────┤
-                    │  plugin_categories   │       ┌────────────────┐
-                    ├────────────────────────┤       │   categories   │
-                    │ plugin_id     FK PK  │       ├────────────────┤
-                    │ category_id   FK PK  │─────►│ id          PK │
-                    └────────────────────────┘       │ name        UQ │
-                                                    │ slug        UQ │
-                                                    │ description    │
-                                                    │ icon           │
-                                                    └────────────────┘</code></pre>
+│ password_hash  │       │ downloads_total   │       │ is_yanked      │
+│ role       CHK │       │ is_active         │       │ published_at   │
+│ created_at     │       └────────────────────┘       └────────────────┘
+└───────┬────────┘        │                    │
+        │           ┌─────┴──────────────────┤
+        │           │  plugin_categories   │       ┌────────────────┐
+        │           ├────────────────────────┤       │   categories   │
+        │           │ plugin_id     FK PK  │       ├────────────────┤
+        │           │ category_id   FK PK  │─────►│ id          PK │
+        │           └────────────────────────┘       │ name        UQ │
+        │                                           │ slug        UQ │
+┌───────┴────────┐                                  │ description    │
+│ auth_providers │                                  │ icon           │
+├────────────────┤                                  └────────────────┘
+│ id          PK │
+│ user_id     FK │
+│ provider   CHK │  (github, google, discord)
+│ provider_id    │
+│ created_at     │
+│ UQ(provider,   │
+│   provider_id) │
+└────────────────┘
+* email: unique partial index (WHERE email IS NOT NULL)</code></pre>
 
       <h3>Key Constraints</h3>
       <table>
@@ -271,8 +280,12 @@
           <tr><th>Table</th><th>Constraint</th><th>Type</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>users</code></td><td><code>github_id</code>, <code>username</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>users</code></td><td><code>username</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>users</code></td><td><code>email</code> (case-insensitive, WHERE NOT NULL)</td><td>UNIQUE INDEX</td></tr>
           <tr><td><code>users</code></td><td><code>role</code> IN (admin, moderator, author)</td><td>CHECK</td></tr>
+          <tr><td><code>auth_providers</code></td><td><code>(provider, provider_id)</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>auth_providers</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>auth_providers</code></td><td><code>provider</code> IN (github, google, discord)</td><td>CHECK</td></tr>
           <tr><td><code>plugins</code></td><td><code>slug</code></td><td>UNIQUE</td></tr>
           <tr><td><code>plugins</code></td><td><code>author_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>versions</code></td><td><code>(plugin_id, version)</code></td><td>UNIQUE</td></tr>
