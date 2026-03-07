@@ -106,7 +106,7 @@ export function HeroSection({ totalPlugins }: HeroSectionProps) {
           <div className="hidden lg:block relative fade-up delay-3">
             <div className="border border-border-default p-2 bg-bg-elevated">
               <Image
-                src="/pumpkin-hub-soldier-pumpkin-netherite.webp"
+                src="/pumpkin-hub-soldier-pumpkin-netherite.png"
                 alt="Pumpkin soldier in netherite armor"
                 width={380}
                 height={380}
