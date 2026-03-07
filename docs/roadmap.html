@@ -244,9 +244,9 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot in-progress"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
-            <span class="timeline-title">Multi-Provider Authentication <span class="badge badge-orange">In Progress</span></span>
+            <span class="timeline-title">Multi-Provider Authentication <span class="badge badge-green">Completed</span></span>
           </div>
           <ul class="timeline-features">
             <li>Email/password registration &amp; login with Argon2 password hashing</li>
@@ -262,15 +262,33 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
-            <span class="timeline-title">Plugin Submission &amp; Management Forms</span>
+            <span class="timeline-title">Plugin Submission &amp; Management Forms <span class="badge badge-green">Completed</span></span>
           </div>
           <ul class="timeline-features">
-            <li>Authenticated "Publish a Plugin" form (create)</li>
-            <li>Fields: name, description, categories, license, repository URL, documentation URL</li>
-            <li>Client-side validation mirroring backend rules</li>
-            <li>Edit and delete actions accessible to plugin authors</li>
+            <li>Authenticated "Publish a Plugin" form at <code>/plugins/new</code> (create)</li>
+            <li>Fields: name, short description, description (Markdown), categories picker, license, repository URL, documentation URL</li>
+            <li>Client-side validation module mirroring backend rules (name 3-100 chars, URL format, max 5 categories, etc.)</li>
+            <li>Reusable <code>PluginForm</code> component shared between create and edit flows</li>
+            <li>Edit page at <code>/plugins/{slug}/edit</code> — pre-populated form with ownership enforcement</li>
+            <li>Delete action with confirmation modal — soft-delete via API</li>
+            <li><code>PluginActions</code> component (Edit/Delete) visible only to plugin authors and admins</li>
+            <li>Navbar "Submit Plugin" link wired to <code>/plugins/new</code></li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot in-progress"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">User Profile &amp; Creator Dashboard <span class="badge badge-orange">In Progress</span></span>
+          </div>
+          <ul class="timeline-features">
+            <li><code>PUT /api/v1/auth/me</code> — profile update endpoint (display name, bio, avatar URL)</li>
+            <li>User profile page at <code>/profile</code> with editable fields and connected providers display</li>
+            <li>Creator dashboard at <code>/dashboard</code> — published plugins list with statistics overview</li>
+            <li>Per-plugin download stats, creation date, and quick-action links (edit, view)</li>
+            <li>Responsive layout consistent with Brutalist Industrial design system</li>
           </ul>
         </div>
 
@@ -375,13 +393,13 @@
         <div class="timeline-item">
           <div class="timeline-dot planned"></div>
           <div class="timeline-header">
-            <span class="timeline-title">Author Dashboard</span>
+            <span class="timeline-title">Advanced Author Dashboard</span>
           </div>
           <ul class="timeline-features">
-            <li>Dashboard with KPIs: downloads, active users, trends</li>
-            <li>Published plugin management (editing, new versions, unpublishing)</li>
-            <li>Download charts over time</li>
+            <li>Advanced KPIs: active users, trends, retention analytics</li>
+            <li>Download charts over time (weekly/monthly)</li>
             <li>API key management for CI/CD integration</li>
+            <li>Notification center for plugin reviews, downloads milestones</li>
           </ul>
         </div>
 
