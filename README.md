@@ -54,11 +54,13 @@ docker compose up --build
 - ✅ PostgreSQL database with SQLx migrations (Users, Plugins, Versions, Categories)
 - ✅ GitHub OAuth 2.0 authentication (JWT + HttpOnly cookies)
 - ✅ Plugin CRUD (list, create, read, update, delete with pagination, sorting, filtering)
+- ✅ Categories API — dynamic `GET /api/v1/categories` endpoint
 - ✅ Frontend design system (Brutalist Industrial tokens + React components)
 - ✅ Landing page, Explorer page, Plugin detail page
-- ✅ API connection via SWR with typed hooks
+- ✅ API connection via SWR with typed hooks (`usePlugins`, `useCategories`, `useCurrentUser`)
+- ✅ Frontend auth integration (Sign In via GitHub, user profile dropdown, logout)
 - ✅ CI/CD pipeline (ESLint, TypeScript, Build, cargo fmt, clippy, tests)
-- 🔜 Version & binary upload, full-text search, author dashboard
+- 🔜 Plugin submission forms, version management, full-text search, author dashboard
 
 ## 📖 Documentation
 

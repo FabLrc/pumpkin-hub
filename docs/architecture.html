@@ -122,6 +122,10 @@
 │           ├── mod.rs      # Sub-router assembly
 │           ├── health.rs   # GET /api/v1/health (+ DB check)
 │           ├── auth.rs     # Auth routes (login, callback, me, logout)
+│           ├── categories/ # Category listing module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # CategoryResponse DTO
+│           │   └── handlers.rs # list_categories handler
 │           └── plugins/    # Plugin CRUD module
 │               ├── mod.rs      # Route declarations
 │               ├── dto.rs      # Request/response DTOs &amp; validation
@@ -136,9 +140,9 @@
 │   ├── eslint.config.mjs   # ESLint flat config
 │   ├── postcss.config.mjs  # PostCSS with @tailwindcss/postcss
 │   ├── lib/
-│   │   ├── types.ts        # API DTOs (PluginSummary, PluginResponse, etc.)
-│   │   ├── api.ts          # Fetch helpers &amp; SWR key generators
-│   │   └── hooks.ts        # SWR hooks (usePlugins, usePlugin)
+│   │   ├── types.ts        # API DTOs (UserProfile, PluginSummary, CategoryResponse, etc.)
+│   │   ├── api.ts          # Fetch helpers &amp; SWR key generators (plugins, categories, auth)
+│   │   └── hooks.ts        # SWR hooks (usePlugins, usePlugin, useCategories, useCurrentUser)
 │   ├── components/
 │   │   ├── layout/         # Navbar, Footer
 │   │   └── ui/             # Badge, Button, PluginCard
@@ -324,9 +328,9 @@
         The frontend communicates with the Rust API via a typed layer in <code>frontend/lib/</code>:
       </p>
       <ul>
-        <li><code>types.ts</code> — TypeScript DTOs mirroring the API response shapes</li>
-        <li><code>api.ts</code> — Fetch helpers and SWR key generators</li>
-        <li><code>hooks.ts</code> — SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>) with typed parameters</li>
+        <li><code>types.ts</code> — TypeScript DTOs mirroring the API response shapes (<code>UserProfile</code>, <code>PluginSummary</code>, <code>CategoryResponse</code>, etc.)</li>
+        <li><code>api.ts</code> — Fetch helpers and SWR key generators with <code>credentials: "include"</code> for cookie auth</li>
+        <li><code>hooks.ts</code> — SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>, <code>useCategories</code>, <code>useCurrentUser</code>) with typed parameters</li>
       </ul>
 
       <!-- ── Infrastructure ────────────────────────────────── -->
