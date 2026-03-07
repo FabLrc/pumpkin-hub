@@ -53,6 +53,8 @@
         <a href="#errors" class="sidebar-sublink">Error Handling</a>
         <a href="#cors" class="sidebar-sublink">CORS Policy</a>
         <a href="#auth" class="sidebar-sublink">Authentication</a>
+        <a href="#categories" class="sidebar-sublink">Categories</a>
+        <a href="#categories-list" class="sidebar-sublink" style="padding-left:2rem;">List Categories</a>
         <a href="#plugins" class="sidebar-sublink">Plugins</a>
         <a href="#plugins-list" class="sidebar-sublink" style="padding-left:2rem;">List Plugins</a>
         <a href="#plugins-create" class="sidebar-sublink" style="padding-left:2rem;">Create Plugin</a>
@@ -72,7 +74,7 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Work in progress</div>
-        The API is in Phase 1. Health check, GitHub OAuth authentication and Plugin CRUD are implemented.<br>
+        The API is in Phase 1.5. Health check, GitHub OAuth authentication, Plugin CRUD and Categories are implemented.<br>
         Version management, search and user endpoints are planned for upcoming phases.
       </div>
 
@@ -286,6 +288,43 @@
           <tr><td><code>role</code></td><td>string</td><td>User role at time of issue</td></tr>
           <tr><td><code>iat</code></td><td>Unix timestamp</td><td>Issued at</td></tr>
           <tr><td><code>exp</code></td><td>Unix timestamp</td><td>Expiration</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                       CATEGORIES                              -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="categories">Categories</h2>
+      <p>
+        Categories are classification tags that can be assigned to plugins.
+        This is a read-only public endpoint — categories are managed via database seeds.
+      </p>
+
+      <!-- ── List Categories ─────────────────────────────── -->
+      <h3 id="categories-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/categories</code></h3>
+      <p>Returns all available categories, ordered alphabetically by name.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>[
+  {
+    "id": "c2000000-0000-0000-0000-000000000001",
+    "name": "Gameplay",
+    "slug": "gameplay",
+    "description": "Mechanics, game modes and player experience enhancements.",
+    "icon": "gamepad-2",
+    "created_at": "2026-03-06T12:00:00Z"
+  }
+]</code></pre>
+
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>UUID</td><td>Category identifier</td></tr>
+          <tr><td><code>name</code></td><td>string</td><td>Display name</td></tr>
+          <tr><td><code>slug</code></td><td>string</td><td>URL-safe slug for filtering</td></tr>
+          <tr><td><code>description</code></td><td>string | null</td><td>Short description of the category</td></tr>
+          <tr><td><code>icon</code></td><td>string | null</td><td>Lucide icon name (e.g. <code>gamepad-2</code>, <code>shield</code>)</td></tr>
+          <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Creation timestamp</td></tr>
         </tbody>
       </table>
 
