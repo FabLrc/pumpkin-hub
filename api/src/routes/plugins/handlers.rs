@@ -540,14 +540,13 @@ pub async fn list_versions(
     let pool = &state.db;
 
     // Verify the plugin exists and is active
-    let plugin_id: Uuid = sqlx::query_scalar(
-        "SELECT id FROM plugins WHERE slug = $1 AND is_active = true",
-    )
-    .bind(&slug)
-    .fetch_optional(pool)
-    .await
-    .map_err(AppError::internal)?
-    .ok_or(AppError::NotFound)?;
+    let plugin_id: Uuid =
+        sqlx::query_scalar("SELECT id FROM plugins WHERE slug = $1 AND is_active = true")
+            .bind(&slug)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?
+            .ok_or(AppError::NotFound)?;
 
     let rows: Vec<VersionRow> = sqlx::query_as(
         "SELECT id, version, changelog, pumpkin_version_min, pumpkin_version_max,

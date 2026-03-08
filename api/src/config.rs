@@ -73,8 +73,8 @@ impl Config {
             .map(|s| s.trim().to_string())
             .collect();
 
-        let api_public_url = std::env::var("API_PUBLIC_URL")
-            .unwrap_or_else(|_| "http://localhost:8080".to_string());
+        let api_public_url =
+            std::env::var("API_PUBLIC_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
 
         let database_url = require_env("DATABASE_URL")?;
         let meilisearch_url = require_env("MEILISEARCH_URL")?;

@@ -63,8 +63,7 @@ pub async fn create_test_user(pool: &PgPool, username: &str) -> (uuid::Uuid, Str
     };
 
     let token =
-        pumpkin_hub_api::auth::jwt::encode_token(&jwt_config, user_id, username, "author")
-            .unwrap();
+        pumpkin_hub_api::auth::jwt::encode_token(&jwt_config, user_id, username, "author").unwrap();
 
     (user_id, token)
 }
@@ -84,11 +83,13 @@ pub async fn cleanup_test_data(pool: &PgPool, user_ids: &[uuid::Uuid]) {
             .execute(pool)
             .await
             .ok();
-        sqlx::query("DELETE FROM versions WHERE plugin_id IN (SELECT id FROM plugins WHERE author_id = $1)")
-            .bind(user_id)
-            .execute(pool)
-            .await
-            .ok();
+        sqlx::query(
+            "DELETE FROM versions WHERE plugin_id IN (SELECT id FROM plugins WHERE author_id = $1)",
+        )
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .ok();
         sqlx::query("DELETE FROM plugins WHERE author_id = $1")
             .bind(user_id)
             .execute(pool)

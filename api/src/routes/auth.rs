@@ -6,7 +6,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use uuid::Uuid;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_extra::extract::CookieJar;
 use oauth2::{
@@ -14,6 +13,7 @@ use oauth2::{
     TokenUrl,
 };
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
     auth::{
@@ -527,7 +527,7 @@ async fn upload_avatar(
     while let Some(field) = multipart
         .next_field()
         .await
-        .map_err(|e| AppError::UnprocessableEntity(format!("Multipart error: {e}")))?  
+        .map_err(|e| AppError::UnprocessableEntity(format!("Multipart error: {e}")))?
     {
         if field.name() != Some("avatar") {
             continue;
@@ -653,13 +653,9 @@ async fn serve_avatar(
 fn validate_avatar_magic_bytes(data: &[u8], content_type: &str) -> Result<(), AppError> {
     let is_valid = match content_type {
         "image/jpeg" => data.starts_with(&[0xFF, 0xD8, 0xFF]),
-        "image/png" => data.starts_with(&[
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        ]),
+        "image/png" => data.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
         "image/gif" => data.starts_with(b"GIF87a") || data.starts_with(b"GIF89a"),
-        "image/webp" => {
-            data.len() >= 12 && data.starts_with(b"RIFF") && &data[8..12] == b"WEBP"
-        }
+        "image/webp" => data.len() >= 12 && data.starts_with(b"RIFF") && &data[8..12] == b"WEBP",
         _ => false,
     };
 
