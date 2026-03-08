@@ -12,9 +12,9 @@ use uuid::Uuid;
 use crate::{auth::middleware::AuthUser, error::AppError, state::AppState};
 
 use super::dto::{
-    AuthorSummary, CategorySummary, CreatePluginRequest, ListPluginsParams, PaginatedResponse,
-    PaginationMeta, PluginResponse, PluginSummary, UpdatePluginRequest, VersionResponse,
-    VersionsListResponse,
+    AuthorSummary, CategorySummary, CreatePluginRequest, CreateVersionRequest, ListPluginsParams,
+    PaginatedResponse, PaginationMeta, PluginResponse, PluginSummary, UpdatePluginRequest,
+    VersionResponse, VersionsListResponse, YankVersionRequest,
 };
 
 // ── SQL Row Types ───────────────────────────────────────────────────────────
@@ -578,6 +578,154 @@ pub async fn list_versions(
         plugin_slug: slug,
         total: versions.len(),
         versions,
+    }))
+}
+
+/// POST /api/v1/plugins/:slug/versions — publish a new version (owner or admin only).
+pub async fn create_version(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(slug): Path<String>,
+    Json(payload): Json<CreateVersionRequest>,
+) -> Result<(StatusCode, Json<VersionResponse>), AppError> {
+    payload.validate()?;
+
+    let pool = &state.db;
+    let row = fetch_plugin_by_slug(pool, &slug).await?;
+    require_ownership(&auth, row.author_id)?;
+
+    let version_str = payload.version.trim().to_string();
+
+    // Check for duplicate version
+    let exists: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM versions WHERE plugin_id = $1 AND version = $2")
+            .bind(row.id)
+            .bind(&version_str)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?;
+
+    if exists.is_some() {
+        return Err(AppError::Conflict(format!(
+            "Version {version_str} already exists for this plugin"
+        )));
+    }
+
+    let version_row: VersionRow = sqlx::query_as(
+        "INSERT INTO versions (plugin_id, version, changelog, pumpkin_version_min, pumpkin_version_max)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, version, changelog, pumpkin_version_min, pumpkin_version_max,
+                   downloads, is_yanked, published_at",
+    )
+    .bind(row.id)
+    .bind(&version_str)
+    .bind(&payload.changelog)
+    .bind(&payload.pumpkin_version_min)
+    .bind(&payload.pumpkin_version_max)
+    .fetch_one(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(VersionResponse {
+            id: version_row.id,
+            version: version_row.version,
+            changelog: version_row.changelog,
+            pumpkin_version_min: version_row.pumpkin_version_min,
+            pumpkin_version_max: version_row.pumpkin_version_max,
+            downloads: version_row.downloads,
+            is_yanked: version_row.is_yanked,
+            published_at: version_row.published_at,
+        }),
+    ))
+}
+
+/// GET /api/v1/plugins/:slug/versions/:version — single version detail + download counter increment.
+pub async fn get_version(
+    State(state): State<AppState>,
+    Path((slug, version)): Path<(String, String)>,
+) -> Result<Json<VersionResponse>, AppError> {
+    let pool = &state.db;
+
+    // Verify the plugin exists and is active
+    let plugin_id: Uuid =
+        sqlx::query_scalar("SELECT id FROM plugins WHERE slug = $1 AND is_active = true")
+            .bind(&slug)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?
+            .ok_or(AppError::NotFound)?;
+
+    // Fetch version and atomically increment downloads
+    let version_row: Option<VersionRow> = sqlx::query_as(
+        "UPDATE versions SET downloads = downloads + 1
+         WHERE plugin_id = $1 AND version = $2
+         RETURNING id, version, changelog, pumpkin_version_min, pumpkin_version_max,
+                   downloads, is_yanked, published_at",
+    )
+    .bind(plugin_id)
+    .bind(&version)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let row = version_row.ok_or(AppError::NotFound)?;
+
+    // Also increment the plugin-level total downloads
+    sqlx::query("UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1")
+        .bind(plugin_id)
+        .execute(pool)
+        .await
+        .map_err(AppError::internal)?;
+
+    Ok(Json(VersionResponse {
+        id: row.id,
+        version: row.version,
+        changelog: row.changelog,
+        pumpkin_version_min: row.pumpkin_version_min,
+        pumpkin_version_max: row.pumpkin_version_max,
+        downloads: row.downloads,
+        is_yanked: row.is_yanked,
+        published_at: row.published_at,
+    }))
+}
+
+/// PATCH /api/v1/plugins/:slug/versions/:version/yank — toggle yank status (owner or admin only).
+pub async fn yank_version(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path((slug, version)): Path<(String, String)>,
+    Json(payload): Json<YankVersionRequest>,
+) -> Result<Json<VersionResponse>, AppError> {
+    let pool = &state.db;
+    let plugin_row = fetch_plugin_by_slug(pool, &slug).await?;
+    require_ownership(&auth, plugin_row.author_id)?;
+
+    let version_row: Option<VersionRow> = sqlx::query_as(
+        "UPDATE versions SET is_yanked = $1
+         WHERE plugin_id = $2 AND version = $3
+         RETURNING id, version, changelog, pumpkin_version_min, pumpkin_version_max,
+                   downloads, is_yanked, published_at",
+    )
+    .bind(payload.yanked)
+    .bind(plugin_row.id)
+    .bind(&version)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let row = version_row.ok_or(AppError::NotFound)?;
+
+    Ok(Json(VersionResponse {
+        id: row.id,
+        version: row.version,
+        changelog: row.changelog,
+        pumpkin_version_min: row.pumpkin_version_min,
+        pumpkin_version_max: row.pumpkin_version_max,
+        downloads: row.downloads,
+        is_yanked: row.is_yanked,
+        published_at: row.published_at,
     }))
 }
 

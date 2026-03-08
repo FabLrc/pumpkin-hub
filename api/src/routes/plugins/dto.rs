@@ -20,6 +20,9 @@ const DEFAULT_PAGE: u32 = 1;
 const DEFAULT_PER_PAGE: u32 = 20;
 const MAX_PER_PAGE: u32 = 100;
 
+const VERSION_MAX_LENGTH: usize = 50;
+const CHANGELOG_MAX_LENGTH: usize = 50_000;
+
 // ── Request DTOs ────────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -252,8 +255,72 @@ pub struct VersionsListResponse {
     pub versions: Vec<VersionResponse>,
 }
 
-// ── Validation Helpers ──────────────────────────────────────────────────────
+// ── Version Request DTOs ────────────────────────────────────────────────
 
+#[derive(Debug, Deserialize)]
+pub struct CreateVersionRequest {
+    pub version: String,
+    pub changelog: Option<String>,
+    pub pumpkin_version_min: Option<String>,
+    pub pumpkin_version_max: Option<String>,
+}
+
+impl CreateVersionRequest {
+    pub fn validate(&self) -> Result<(), AppError> {
+        validate_semver(&self.version, "version")?;
+        validate_optional_length(&self.changelog, "changelog", CHANGELOG_MAX_LENGTH)?;
+        if let Some(ref min) = self.pumpkin_version_min {
+            validate_semver(min, "pumpkin_version_min")?;
+        }
+        if let Some(ref max) = self.pumpkin_version_max {
+            validate_semver(max, "pumpkin_version_max")?;
+        }
+        validate_pumpkin_range(&self.pumpkin_version_min, &self.pumpkin_version_max)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct YankVersionRequest {
+    pub yanked: bool,
+}
+
+// ── Validation Helpers ──────────────────────────────────────────────────────
+fn validate_semver(value: &str, field_name: &str) -> Result<(), AppError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::UnprocessableEntity(format!(
+            "{field_name} must not be empty"
+        )));
+    }
+    if trimmed.len() > VERSION_MAX_LENGTH {
+        return Err(AppError::UnprocessableEntity(format!(
+            "{field_name} must be at most {VERSION_MAX_LENGTH} characters"
+        )));
+    }
+    semver::Version::parse(trimmed).map_err(|_| {
+        AppError::UnprocessableEntity(format!(
+            "{field_name} must be a valid semantic version (e.g. 1.0.0)"
+        ))
+    })?;
+    Ok(())
+}
+
+fn validate_pumpkin_range(min: &Option<String>, max: &Option<String>) -> Result<(), AppError> {
+    if let (Some(min_str), Some(max_str)) = (min, max) {
+        let min_ver = semver::Version::parse(min_str.trim()).ok();
+        let max_ver = semver::Version::parse(max_str.trim()).ok();
+        if let (Some(min_v), Some(max_v)) = (min_ver, max_ver) {
+            if min_v > max_v {
+                return Err(AppError::UnprocessableEntity(
+                    "pumpkin_version_min must be less than or equal to pumpkin_version_max"
+                        .to_string(),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
 fn validate_name(name: &str) -> Result<(), AppError> {
     let trimmed = name.trim();
     if trimmed.len() < NAME_MIN_LENGTH {
@@ -585,5 +652,122 @@ mod tests {
     fn sort_order_maps_to_sql() {
         assert_eq!(SortOrder::Asc.as_sql(), "ASC");
         assert_eq!(SortOrder::Desc.as_sql(), "DESC");
+    }
+
+    // ── CreateVersionRequest validation ─────────────────────────────────
+
+    fn valid_version_request() -> CreateVersionRequest {
+        CreateVersionRequest {
+            version: "1.0.0".to_string(),
+            changelog: None,
+            pumpkin_version_min: None,
+            pumpkin_version_max: None,
+        }
+    }
+
+    #[test]
+    fn version_valid_request_passes() {
+        assert!(valid_version_request().validate().is_ok());
+    }
+
+    #[test]
+    fn version_with_changelog_passes() {
+        let mut req = valid_version_request();
+        req.changelog = Some("## Changes\n- Fixed a bug".to_string());
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn version_with_pumpkin_range_passes() {
+        let mut req = valid_version_request();
+        req.pumpkin_version_min = Some("0.1.0".to_string());
+        req.pumpkin_version_max = Some("1.0.0".to_string());
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn version_invalid_semver_rejected() {
+        let mut req = valid_version_request();
+        req.version = "not-a-version".to_string();
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_empty_string_rejected() {
+        let mut req = valid_version_request();
+        req.version = "".to_string();
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_v_prefix_rejected() {
+        let mut req = valid_version_request();
+        req.version = "v1.0.0".to_string();
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_partial_semver_rejected() {
+        let mut req = valid_version_request();
+        req.version = "1.0".to_string();
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_prerelease_passes() {
+        let mut req = valid_version_request();
+        req.version = "1.0.0-alpha.1".to_string();
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn version_build_metadata_passes() {
+        let mut req = valid_version_request();
+        req.version = "1.0.0+build.42".to_string();
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn version_invalid_pumpkin_min_rejected() {
+        let mut req = valid_version_request();
+        req.pumpkin_version_min = Some("invalid".to_string());
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_invalid_pumpkin_max_rejected() {
+        let mut req = valid_version_request();
+        req.pumpkin_version_max = Some("invalid".to_string());
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_min_greater_than_max_rejected() {
+        let mut req = valid_version_request();
+        req.pumpkin_version_min = Some("2.0.0".to_string());
+        req.pumpkin_version_max = Some("1.0.0".to_string());
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_min_equals_max_passes() {
+        let mut req = valid_version_request();
+        req.pumpkin_version_min = Some("1.0.0".to_string());
+        req.pumpkin_version_max = Some("1.0.0".to_string());
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn version_changelog_too_long_rejected() {
+        let mut req = valid_version_request();
+        req.changelog = Some("x".repeat(50_001));
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn version_string_too_long_rejected() {
+        let mut req = valid_version_request();
+        req.version = format!("1.0.0-{}", "a".repeat(50));
+        assert!(req.validate().is_err());
     }
 }

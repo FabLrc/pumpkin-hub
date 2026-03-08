@@ -1,7 +1,10 @@
 pub(crate) mod dto;
 pub(crate) mod handlers;
 
-use axum::{routing::get, Router};
+use axum::{
+    routing::{get, patch},
+    Router,
+};
 
 use crate::state::AppState;
 
@@ -17,5 +20,16 @@ pub fn routes() -> Router<AppState> {
                 .put(handlers::update_plugin)
                 .delete(handlers::delete_plugin),
         )
-        .route("/plugins/{slug}/versions", get(handlers::list_versions))
+        .route(
+            "/plugins/{slug}/versions",
+            get(handlers::list_versions).post(handlers::create_version),
+        )
+        .route(
+            "/plugins/{slug}/versions/{version}",
+            get(handlers::get_version),
+        )
+        .route(
+            "/plugins/{slug}/versions/{version}/yank",
+            patch(handlers::yank_version),
+        )
 }

@@ -70,6 +70,9 @@ rand = "0.8"
 # Password hashing (Argon2id)
 argon2 = "0.5"
 
+# Semantic versioning validation
+semver = "1"
+
 [profile.release]
 opt-level = 3
 lto = true
