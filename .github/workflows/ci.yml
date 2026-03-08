@@ -41,12 +41,33 @@ jobs:
       - name: Test de Build
         run: npm run build
 
+      - name: Tests unitaires et composants
+        run: npm test
+
   backend-ci:
     name: Validation de l'API Rust
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: api
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pumpkin_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: pumpkin_hub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
 
     steps:
       - name: Checkout du code
@@ -68,5 +89,15 @@ jobs:
       - name: Analyse statique (Clippy)
         run: cargo clippy -- -D warnings
 
-      - name: Tests unitaires
+      - name: Installation de sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
+      - name: Application des migrations
+        run: sqlx migrate run --source ./migrations
+        env:
+          DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
+
+      - name: Tests unitaires et intégration
         run: cargo test
+        env:
+          TEST_DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
