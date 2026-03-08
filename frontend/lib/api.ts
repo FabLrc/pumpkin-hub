@@ -4,6 +4,7 @@
 import type {
   CategoryResponse,
   CreatePluginRequest,
+  CreateVersionRequest,
   ListPluginsParams,
   LoginRequest,
   OAuthProvider,
@@ -14,7 +15,9 @@ import type {
   UpdatePluginRequest,
   UpdateProfileRequest,
   UserProfile,
+  VersionResponse,
   VersionsListResponse,
+  YankVersionRequest,
 } from "./types";
 
 const API_BASE_URL =
@@ -114,6 +117,44 @@ export async function fetchPluginVersions(
   slug: string,
 ): Promise<VersionsListResponse> {
   return apiFetch<VersionsListResponse>(getPluginVersionsPath(slug));
+}
+
+export function getPluginVersionPath(slug: string, version: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}`;
+}
+
+export async function fetchPluginVersion(
+  slug: string,
+  version: string,
+): Promise<VersionResponse> {
+  return apiFetch<VersionResponse>(getPluginVersionPath(slug, version));
+}
+
+export async function createVersion(
+  slug: string,
+  body: CreateVersionRequest,
+): Promise<VersionResponse> {
+  return apiFetch<VersionResponse>(
+    `/plugins/${encodeURIComponent(slug)}/versions`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function yankVersion(
+  slug: string,
+  version: string,
+  body: YankVersionRequest,
+): Promise<VersionResponse> {
+  return apiFetch<VersionResponse>(
+    `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/yank`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 // ── Category Endpoints ────────────────────────────────────────────────────

@@ -5,9 +5,13 @@ import {
   validateOptionalUrl,
   validateCategoryIds,
   validatePluginForm,
+  validateSemver,
+  validatePumpkinRange,
+  validateVersionForm,
   PLUGIN_RULES,
+  VERSION_RULES,
 } from "./validation";
-import type { PluginFormData } from "./validation";
+import type { PluginFormData, VersionFormData } from "./validation";
 
 // ── validatePluginName ──────────────────────────────────────────────────────
 
@@ -174,5 +178,123 @@ describe("PLUGIN_RULES constants", () => {
     expect(PLUGIN_RULES.LICENSE_MAX_LENGTH).toBe(50);
     expect(PLUGIN_RULES.URL_MAX_LENGTH).toBe(500);
     expect(PLUGIN_RULES.MAX_CATEGORIES).toBe(5);
+  });
+});
+
+// ── validateSemver ──────────────────────────────────────────────────────────
+
+describe("validateSemver", () => {
+  it("accepts valid semver", () => {
+    expect(validateSemver("1.0.0", "Version")).toBeNull();
+  });
+
+  it("accepts pre-release version", () => {
+    expect(validateSemver("1.0.0-alpha.1", "Version")).toBeNull();
+  });
+
+  it("accepts build metadata", () => {
+    expect(validateSemver("1.0.0+build.42", "Version")).toBeNull();
+  });
+
+  it("rejects empty string", () => {
+    expect(validateSemver("", "Version")).toContain("empty");
+  });
+
+  it("rejects v-prefixed version", () => {
+    expect(validateSemver("v1.0.0", "Version")).toContain("valid semantic");
+  });
+
+  it("rejects partial semver", () => {
+    expect(validateSemver("1.0", "Version")).toContain("valid semantic");
+  });
+
+  it("rejects non-numeric version", () => {
+    expect(validateSemver("abc", "Version")).toContain("valid semantic");
+  });
+
+  it("rejects version exceeding max length", () => {
+    expect(validateSemver(`1.0.0-${"a".repeat(50)}`, "Version")).toContain(
+      "at most",
+    );
+  });
+});
+
+// ── validatePumpkinRange ────────────────────────────────────────────────────
+
+describe("validatePumpkinRange", () => {
+  it("returns null when both undefined", () => {
+    expect(validatePumpkinRange(undefined, undefined)).toBeNull();
+  });
+
+  it("returns null when only min set", () => {
+    expect(validatePumpkinRange("1.0.0", undefined)).toBeNull();
+  });
+
+  it("returns null for valid range", () => {
+    expect(validatePumpkinRange("0.1.0", "1.0.0")).toBeNull();
+  });
+
+  it("returns null for equal values", () => {
+    expect(validatePumpkinRange("1.0.0", "1.0.0")).toBeNull();
+  });
+
+  it("rejects min > max", () => {
+    expect(validatePumpkinRange("2.0.0", "1.0.0")).toContain(
+      "less than or equal",
+    );
+  });
+});
+
+// ── validateVersionForm ─────────────────────────────────────────────────────
+
+describe("validateVersionForm", () => {
+  const validForm: VersionFormData = {
+    version: "1.0.0",
+    changelog: "Initial release",
+    pumpkinVersionMin: "",
+    pumpkinVersionMax: "",
+  };
+
+  it("returns no errors for valid data", () => {
+    expect(validateVersionForm(validForm)).toHaveLength(0);
+  });
+
+  it("returns error for invalid version", () => {
+    const errors = validateVersionForm({ ...validForm, version: "bad" });
+    expect(errors.some((e) => e.field === "version")).toBe(true);
+  });
+
+  it("returns error for invalid pumpkin min", () => {
+    const errors = validateVersionForm({
+      ...validForm,
+      pumpkinVersionMin: "invalid",
+    });
+    expect(errors.some((e) => e.field === "pumpkinVersionMin")).toBe(true);
+  });
+
+  it("returns error for min > max range", () => {
+    const errors = validateVersionForm({
+      ...validForm,
+      pumpkinVersionMin: "2.0.0",
+      pumpkinVersionMax: "1.0.0",
+    });
+    expect(errors.some((e) => e.field === "pumpkinVersionMin")).toBe(true);
+  });
+
+  it("returns error for changelog too long", () => {
+    const errors = validateVersionForm({
+      ...validForm,
+      changelog: "x".repeat(50_001),
+    });
+    expect(errors.some((e) => e.field === "changelog")).toBe(true);
+  });
+});
+
+// ── VERSION_RULES constants ─────────────────────────────────────────────────
+
+describe("VERSION_RULES constants", () => {
+  it("has correct boundary values matching backend", () => {
+    expect(VERSION_RULES.VERSION_MAX_LENGTH).toBe(50);
+    expect(VERSION_RULES.CHANGELOG_MAX_LENGTH).toBe(50_000);
   });
 });

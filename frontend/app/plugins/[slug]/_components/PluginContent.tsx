@@ -1,8 +1,13 @@
 "use client";
 
-import { Package, AlertTriangle } from "lucide-react";
-import type { PluginResponse, VersionResponse } from "@/lib/types";
-import { usePluginVersions } from "@/lib/hooks";
+import { useState } from "react";
+import { Package, AlertTriangle, Plus } from "lucide-react";
+import { mutate } from "swr";
+import type { PluginResponse, VersionResponse, CreateVersionRequest } from "@/lib/types";
+import { usePluginVersions, useCurrentUser } from "@/lib/hooks";
+import { createVersion, getPluginVersionsPath } from "@/lib/api";
+import { VersionForm } from "@/components/plugins/VersionForm";
+import { VersionManager } from "@/components/plugins/VersionManager";
 
 type TabId = "overview" | "versions" | "dependencies";
 
@@ -44,7 +49,7 @@ export function PluginContent({
 
       {/* Tab content */}
       {activeTab === "overview" && <OverviewTab plugin={plugin} />}
-      {activeTab === "versions" && <VersionsTab slug={plugin.slug} />}
+      {activeTab === "versions" && <VersionsTab plugin={plugin} />}
       {activeTab === "dependencies" && <DependenciesTab />}
     </div>
   );
@@ -160,8 +165,38 @@ function inlineFormat(text: string): string {
 
 // ── Versions Tab — live API data ──────────────────────────────────────────
 
-function VersionsTab({ slug }: { slug: string }) {
-  const { data, isLoading, error } = usePluginVersions(slug);
+function VersionsTab({ plugin }: { plugin: PluginResponse }) {
+  const { data: user } = useCurrentUser();
+  const { data, isLoading, error } = usePluginVersions(plugin.slug);
+  const [showPublishForm, setShowPublishForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const canManage =
+    user &&
+    (user.id === plugin.author.id ||
+      user.role === "moderator" ||
+      user.role === "admin");
+
+  function revalidateVersions() {
+    mutate(getPluginVersionsPath(plugin.slug));
+  }
+
+  async function handlePublish(formData: import("@/lib/validation").VersionFormData) {
+    setIsSubmitting(true);
+    try {
+      const body: CreateVersionRequest = {
+        version: formData.version,
+        changelog: formData.changelog || undefined,
+        pumpkin_version_min: formData.pumpkinVersionMin || undefined,
+        pumpkin_version_max: formData.pumpkinVersionMax || undefined,
+      };
+      await createVersion(plugin.slug, body);
+      revalidateVersions();
+      setShowPublishForm(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   if (isLoading) {
     return <VersionsTabSkeleton />;
@@ -183,9 +218,30 @@ function VersionsTab({ slug }: { slug: string }) {
         <div className="w-12 h-12 border border-border-default bg-bg-surface flex items-center justify-center mb-4">
           <Package className="text-text-dim w-5 h-5" />
         </div>
-        <p className="font-mono text-xs text-text-dim">
+        <p className="font-mono text-xs text-text-dim mb-4">
           No versions published yet.
         </p>
+        {canManage && !showPublishForm && (
+          <button
+            onClick={() => setShowPublishForm(true)}
+            className="font-mono text-xs bg-accent hover:bg-accent-dark text-black font-bold px-4 py-2 transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Publish First Version
+          </button>
+        )}
+        {canManage && showPublishForm && (
+          <div className="w-full max-w-lg mt-4 border border-border-default bg-bg-elevated p-6">
+            <h3 className="font-raleway font-bold text-sm text-text-primary mb-4">
+              Publish Version
+            </h3>
+            <VersionForm
+              onSubmit={handlePublish}
+              isSubmitting={isSubmitting}
+              onCancel={() => setShowPublishForm(false)}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -208,7 +264,30 @@ function VersionsTab({ slug }: { slug: string }) {
             </>
           )}
         </span>
+        {canManage && !showPublishForm && (
+          <button
+            onClick={() => setShowPublishForm(true)}
+            className="font-mono text-xs bg-accent hover:bg-accent-dark text-black font-bold px-4 py-2 transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Publish Version
+          </button>
+        )}
       </div>
+
+      {/* Publish form */}
+      {canManage && showPublishForm && (
+        <div className="mb-6 border border-accent/30 bg-bg-elevated p-6">
+          <h3 className="font-raleway font-bold text-sm text-text-primary mb-4">
+            Publish New Version
+          </h3>
+          <VersionForm
+            onSubmit={handlePublish}
+            isSubmitting={isSubmitting}
+            onCancel={() => setShowPublishForm(false)}
+          />
+        </div>
+      )}
 
       {/* Versions table */}
       <div className="border border-border-default">
@@ -220,13 +299,13 @@ function VersionsTab({ slug }: { slug: string }) {
           <div className="col-span-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">
             Pumpkin Compat
           </div>
-          <div className="col-span-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+          <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
             Published
           </div>
           <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
             Downloads
           </div>
-          <div className="col-span-1 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+          <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
             Status
           </div>
         </div>
@@ -239,6 +318,9 @@ function VersionsTab({ slug }: { slug: string }) {
               key={version.id}
               version={version}
               isLatest={isLatest}
+              canManage={!!canManage}
+              slug={plugin.slug}
+              onMutated={revalidateVersions}
             />
           );
         })}
@@ -250,9 +332,15 @@ function VersionsTab({ slug }: { slug: string }) {
 function VersionRow({
   version,
   isLatest,
+  canManage,
+  slug,
+  onMutated,
 }: {
   version: VersionResponse;
   isLatest: boolean;
+  canManage: boolean;
+  slug: string;
+  onMutated: () => void;
 }) {
   const compatRange = formatCompatRange(
     version.pumpkin_version_min,
@@ -301,7 +389,7 @@ function VersionRow({
       </div>
 
       {/* Published date */}
-      <div className="col-span-3 font-mono text-xs text-text-dim">
+      <div className="col-span-2 font-mono text-xs text-text-dim">
         {publishedDate}
       </div>
 
@@ -310,12 +398,19 @@ function VersionRow({
         {version.downloads.toLocaleString()}
       </div>
 
-      {/* Status indicator */}
-      <div className="col-span-1">
+      {/* Status indicator + actions */}
+      <div className="col-span-2 flex items-center gap-2">
         {version.is_yanked ? (
           <span className="w-2 h-2 bg-red-400 inline-block" title="Yanked" />
         ) : (
           <span className="w-2 h-2 bg-green-500 inline-block" title="Available" />
+        )}
+        {canManage && (
+          <VersionManager
+            slug={slug}
+            version={version}
+            onMutated={onMutated}
+          />
         )}
       </div>
     </div>

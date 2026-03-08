@@ -132,6 +132,19 @@ export interface VersionsListResponse {
   versions: VersionResponse[];
 }
 
+// ── Version Mutation Types ────────────────────────────────────────────────
+
+export interface CreateVersionRequest {
+  version: string;
+  changelog?: string;
+  pumpkin_version_min?: string;
+  pumpkin_version_max?: string;
+}
+
+export interface YankVersionRequest {
+  yanked: boolean;
+}
+
 // ── Query Parameters ──────────────────────────────────────────────────────
 
 export type SortField = "created_at" | "updated_at" | "downloads_total" | "name";
