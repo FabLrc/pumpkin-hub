@@ -1,6 +1,24 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { ExplorerContent } from "./_components/ExplorerContent";
 import { Navbar, Footer } from "@/components/layout";
+
+export const metadata: Metadata = {
+  title: "Explore Plugins",
+  description:
+    "Browse, search and filter community plugins for the Pumpkin MC Minecraft server. Find the perfect crate for your server.",
+  openGraph: {
+    title: "Explore Plugins",
+    description:
+      "Browse, search and filter community plugins for the Pumpkin MC Minecraft server.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Explore Plugins",
+    description:
+      "Browse, search and filter community plugins for the Pumpkin MC Minecraft server.",
+  },
+};
 
 export default function ExplorerPage() {
   return (
