@@ -65,6 +65,11 @@
         <a href="#plugins-get" class="sidebar-sublink" style="padding-left:2rem;">Get Plugin</a>
         <a href="#plugins-update" class="sidebar-sublink" style="padding-left:2rem;">Update Plugin</a>
         <a href="#plugins-delete" class="sidebar-sublink" style="padding-left:2rem;">Delete Plugin</a>
+        <a href="#versions" class="sidebar-sublink">Versions</a>
+        <a href="#versions-list" class="sidebar-sublink" style="padding-left:2rem;">List Versions</a>
+        <a href="#versions-create" class="sidebar-sublink" style="padding-left:2rem;">Create Version</a>
+        <a href="#versions-get" class="sidebar-sublink" style="padding-left:2rem;">Get Version</a>
+        <a href="#versions-yank" class="sidebar-sublink" style="padding-left:2rem;">Yank / Restore</a>
         <a href="#planned" class="sidebar-sublink">Planned Endpoints</a>
       </div>
     </aside>
@@ -78,8 +83,8 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Active development — Phase 2</div>
-        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard.<br>
-        Planned for upcoming phases: version management, Meilisearch full-text search, public author profile pages.
+        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management (create, get, yank, download counter).<br>
+        Planned for upcoming phases: binary uploads, Meilisearch full-text search, public author profile pages.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -671,6 +676,9 @@
       </table>
 
       <!-- ── Plugin Versions ───────────────────────────────── -->
+      <h2 id="versions">Versions</h2>
+      <p>Endpoints for managing plugin versions. Supports semver validation, Pumpkin compatibility ranges, changelogs, and download counting.</p>
+
       <h3 id="versions-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions</code></h3>
       <p>Returns all published versions for a plugin, ordered by publication date (newest first). Includes Pumpkin compatibility range and yanked status.</p>
 
@@ -719,6 +727,123 @@
         </tbody>
       </table>
 
+      <!-- ── Create Version ───────────────────────────────── -->
+      <h3 id="versions-create"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/plugins/:slug/versions</code></h3>
+      <p>Publish a new version for a plugin. Requires authentication and plugin ownership. Version strings are validated as strict semver.</p>
+
+      <h4>Request</h4>
+      <pre><code>curl -X POST http://localhost:8080/api/v1/plugins/pumpkin-guard/versions \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "version": "1.0.0",
+    "changelog": "## Initial Release\n- Core anti-cheat detection\n- Configurable thresholds",
+    "pumpkin_version_min": "0.1.0",
+    "pumpkin_version_max": "1.0.0"
+  }'</code></pre>
+
+      <h4>Request Body</h4>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>version</code></td><td>string</td><td>Yes</td><td>Strict semver version (e.g. <code>1.0.0</code>, <code>2.1.0-beta.1</code>)</td></tr>
+          <tr><td><code>changelog</code></td><td>string?</td><td>No</td><td>Release notes, Markdown supported (max 50 000 chars)</td></tr>
+          <tr><td><code>pumpkin_version_min</code></td><td>string?</td><td>No</td><td>Minimum compatible Pumpkin version (semver)</td></tr>
+          <tr><td><code>pumpkin_version_max</code></td><td>string?</td><td>No</td><td>Maximum compatible Pumpkin version (semver, must be ≥ min)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">201 Created</span></h4>
+      <pre><code>{
+  "id": "uuid",
+  "version": "1.0.0",
+  "changelog": "## Initial Release\n- Core anti-cheat detection\n- Configurable thresholds",
+  "pumpkin_version_min": "0.1.0",
+  "pumpkin_version_max": "1.0.0",
+  "downloads": 0,
+  "is_yanked": false,
+  "published_at": "2025-12-15T10:30:00Z"
+}</code></pre>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Missing or invalid authentication token</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>User is not the plugin author</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin not found</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Version already exists for this plugin</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Validation error (invalid semver, range inconsistency, etc.)</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Get Version ───────────────────────────────── -->
+      <h3 id="versions-get"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version</code></h3>
+      <p>Fetch a single version by its semver string. <strong>Atomically increments the download counter</strong> for both the version and the parent plugin on each request.</p>
+
+      <h4>Request</h4>
+      <pre><code>curl http://localhost:8080/api/v1/plugins/pumpkin-guard/versions/1.0.0</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "id": "uuid",
+  "version": "1.0.0",
+  "changelog": "## Initial Release\n- Core anti-cheat detection",
+  "pumpkin_version_min": "0.1.0",
+  "pumpkin_version_max": "1.0.0",
+  "downloads": 1,
+  "is_yanked": false,
+  "published_at": "2025-12-15T10:30:00Z"
+}</code></pre>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or version not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Yank / Restore Version ───────────────────────────────── -->
+      <h3 id="versions-yank"><span class="badge badge-orange">PATCH</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/yank</code></h3>
+      <p>Yank or restore a version. Yanked versions remain listed but are flagged as unavailable for new installations. Requires authentication and plugin ownership.</p>
+
+      <h4>Request</h4>
+      <pre><code>curl -X PATCH http://localhost:8080/api/v1/plugins/pumpkin-guard/versions/1.0.0/yank \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{ "yanked": true }'</code></pre>
+
+      <h4>Request Body</h4>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>yanked</code></td><td>boolean</td><td>Yes</td><td><code>true</code> to yank, <code>false</code> to restore</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "id": "uuid",
+  "version": "1.0.0",
+  "changelog": "...",
+  "pumpkin_version_min": "0.1.0",
+  "pumpkin_version_max": "1.0.0",
+  "downloads": 42,
+  "is_yanked": true,
+  "published_at": "2025-12-15T10:30:00Z"
+}</code></pre>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Missing or invalid authentication token</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>User is not the plugin author</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or version not found</td></tr>
+        </tbody>
+      </table>
+
       <!-- ── Planned Endpoints ─────────────────────────────────────────────── -->
       <h2 id="planned">Planned Endpoints</h2>
 
@@ -733,7 +858,6 @@
           <tr><th>Method</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/plugins/:slug/versions</code></td><td>Publish a new version</td></tr>
           <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions/:ver/download</code></td><td>Binary download</td></tr>
         </tbody>
       </table>

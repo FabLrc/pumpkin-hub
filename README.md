@@ -23,6 +23,14 @@
 | **Data** | PostgreSQL 16, Meilisearch 1.7 |
 | **Infra** | Docker Compose, GitHub Actions CI/CD |
 
+## Current Features
+
+- **Multi-provider Authentication** — GitHub, Google, Discord OAuth + email/password
+- **Plugin Registry** — Full CRUD with categories, search, and author management
+- **Version Management** — Publish versions with semver validation, Pumpkin compatibility ranges, changelogs, download counters, and yank/restore
+- **Creator Dashboard** — Profile management, avatar upload, plugin administration
+- **Brutalist UI** — Industrial design system with responsive layouts
+
 ## Quick Start
 
 ```bash
