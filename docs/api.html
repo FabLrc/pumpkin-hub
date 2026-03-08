@@ -53,6 +53,10 @@
         <a href="#errors" class="sidebar-sublink">Error Handling</a>
         <a href="#cors" class="sidebar-sublink">CORS Policy</a>
         <a href="#auth" class="sidebar-sublink">Authentication</a>
+        <a href="#auth-me-get" class="sidebar-sublink" style="padding-left:2rem;">Get Current User</a>
+        <a href="#auth-me-put" class="sidebar-sublink" style="padding-left:2rem;">Update Profile</a>
+        <a href="#auth-avatar" class="sidebar-sublink" style="padding-left:2rem;">Upload Avatar</a>
+        <a href="#users-avatar" class="sidebar-sublink" style="padding-left:2rem;">Serve Avatar</a>
         <a href="#categories" class="sidebar-sublink">Categories</a>
         <a href="#categories-list" class="sidebar-sublink" style="padding-left:2rem;">List Categories</a>
         <a href="#plugins" class="sidebar-sublink">Plugins</a>
@@ -73,10 +77,9 @@
       </p>
 
       <div class="callout callout-warn">
-        <div class="callout-label">Work in progress</div>
-        The API is in Phase 1.5. Multi-provider authentication (email/password, GitHub, Google, Discord),
-        Plugin CRUD and Categories are implemented.<br>
-        Version management, search and user endpoints are planned for upcoming phases.
+        <div class="callout-label">Active development — Phase 2</div>
+        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard.<br>
+        Planned for upcoming phases: version management, Meilisearch full-text search, public author profile pages.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -314,7 +317,7 @@
         </tbody>
       </table>
 
-      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/me</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <h3 id="auth-me-get"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/me</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
       <p>Returns the currently authenticated user's profile. Requires a valid JWT (cookie or Bearer header).</p>
       <h4>Response <span class="badge badge-green">200 OK</span></h4>
       <pre><code>{
@@ -334,10 +337,69 @@
           <tr><td><code>username</code></td><td>string</td><td>Unique username</td></tr>
           <tr><td><code>display_name</code></td><td>string | null</td><td>User's display name</td></tr>
           <tr><td><code>email</code></td><td>string | null</td><td>User's email address</td></tr>
-          <tr><td><code>avatar_url</code></td><td>string | null</td><td>Avatar URL (from OAuth provider or null)</td></tr>
+          <tr><td><code>avatar_url</code></td><td>string | null</td><td>Avatar URL — points to <code>/api/v1/users/{id}/avatar</code> after upload, or to OAuth provider URL on first login</td></tr>
           <tr><td><code>bio</code></td><td>string | null</td><td>User bio</td></tr>
           <tr><td><code>role</code></td><td><code>author</code> | <code>moderator</code> | <code>admin</code></td><td>Platform role</td></tr>
           <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Registration date</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Update Profile ───────────────────────────────────────────────────── -->
+      <h3 id="auth-me-put"><span class="badge badge-orange">PUT</span> &nbsp; <code>/api/v1/auth/me</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <p>Updates the authenticated user's profile fields. All fields are optional — only provided fields are changed.</p>
+      <h4>Request Body <code>application/json</code></h4>
+      <pre><code>{
+  "display_name": "The Octocat",   // optional, max 100 chars
+  "bio": "Minecraft plugin dev."    // optional, max 500 chars
+}</code></pre>
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the updated <code>UserProfile</code> object (same shape as <code>GET /auth/me</code>).</p>
+      <table>
+        <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">200</span></td><td>Profile updated, returns <code>UserProfile</code></td></tr>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>No fields provided / validation error</td></tr>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Not authenticated</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Upload Avatar ─────────────────────────────────────────────────────── -->
+      <h3 id="auth-avatar"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/avatar</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <p>
+        Uploads a new avatar image for the authenticated user using <code>multipart/form-data</code>.
+        The image is stored as binary (BYTEA) in the database. After a successful upload,
+        <code>avatar_url</code> in the UserProfile is updated to point to <code>/api/v1/users/{id}/avatar</code>.
+      </p>
+      <h4>Request <code>multipart/form-data</code></h4>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th></tr></thead>
+        <tbody>
+          <tr><td><code>avatar</code></td><td>file</td><td>Required. MIME: <code>image/jpeg</code>, <code>image/png</code>, <code>image/webp</code>, <code>image/gif</code>. Max <strong>2 MB</strong>. Validated with magic bytes.</td></tr>
+        </tbody>
+      </table>
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the updated <code>UserProfile</code> object with the new <code>avatar_url</code>.</p>
+      <table>
+        <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">200</span></td><td>Avatar stored, returns updated <code>UserProfile</code></td></tr>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Missing field, unsupported MIME type, invalid magic bytes, or file &gt; 2 MB</td></tr>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Not authenticated</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Serve Avatar ─────────────────────────────────────────────────────── -->
+      <h3 id="users-avatar"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/users/{id}/avatar</code></h3>
+      <p>
+        Public endpoint that serves the binary avatar image for the given user UUID.
+        Returns the raw image bytes with the correct <code>Content-Type</code> header.
+        Includes <code>Cache-Control: public, max-age=3600</code>.
+      </p>
+      <table>
+        <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">200</span></td><td>Binary image with <code>Content-Type</code> (e.g. <code>image/png</code>)</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>User has no uploaded avatar</td></tr>
         </tbody>
       </table>
 
@@ -646,7 +708,6 @@
         <tbody>
           <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username</code></td><td>Author public profile</td></tr>
           <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username/plugins</code></td><td>Plugins published by the author</td></tr>
-          <tr><td><span class="badge badge-orange">PATCH</span></td><td><code>/api/v1/me</code></td><td>Update authenticated profile</td></tr>
           <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/me/stats</code></td><td>Author dashboard statistics</td></tr>
         </tbody>
       </table>

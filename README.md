@@ -61,7 +61,13 @@ docker compose up --build
 - ✅ API connection via SWR with typed hooks (`usePlugins`, `useCategories`, `useCurrentUser`)
 - ✅ Frontend auth page with sign-in/sign-up forms and OAuth provider buttons
 - ✅ CI/CD pipeline (ESLint, TypeScript, Build, cargo fmt, clippy, tests)
-- 🔜 Plugin submission forms, version management, full-text search, author dashboard
+- ✅ Plugin submission & management forms (`/plugins/new`, `/plugins/[slug]/edit`, delete with confirm modal)
+- ✅ Creator Dashboard (`/dashboard`) — author's plugins list with edit/delete actions
+- ✅ User Profile page (`/profile`) — edit display name, bio; avatar upload
+- ✅ `PUT /api/v1/auth/me` — update profile (display name, bio)
+- ✅ `POST /api/v1/auth/avatar` — multipart avatar upload with MIME + magic-bytes validation (max 2 MB), stored as BYTEA
+- ✅ `GET /api/v1/users/{id}/avatar` — public binary serving endpoint with cache headers
+- 🔜 Version management, full-text search (Meilisearch), public author profile pages
 
 ## 📖 Documentation
 
