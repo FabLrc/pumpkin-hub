@@ -52,7 +52,7 @@ struct PluginCategoryRow {
 // ── Slug Generation ─────────────────────────────────────────────────────────
 
 /// Converts an arbitrary name into a URL-safe slug.
-fn slugify(input: &str) -> String {
+pub(crate) fn slugify(input: &str) -> String {
     input
         .to_lowercase()
         .chars()
@@ -213,7 +213,7 @@ async fn replace_plugin_categories(
 }
 
 /// Checks whether the authenticated user is allowed to modify this plugin.
-fn require_ownership(auth: &AuthUser, plugin_author_id: Uuid) -> Result<(), AppError> {
+pub(crate) fn require_ownership(auth: &AuthUser, plugin_author_id: Uuid) -> Result<(), AppError> {
     if auth.user_id == plugin_author_id || auth.role == "admin" {
         return Ok(());
     }
@@ -580,4 +580,101 @@ pub async fn list_versions(
         total: versions.len(),
         versions,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── slugify ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn slugify_basic_name() {
+        assert_eq!(slugify("My Plugin"), "my-plugin");
+    }
+
+    #[test]
+    fn slugify_preserves_numbers() {
+        assert_eq!(slugify("Plugin v2"), "plugin-v2");
+    }
+
+    #[test]
+    fn slugify_collapses_consecutive_separators() {
+        assert_eq!(slugify("hello   world"), "hello-world");
+        assert_eq!(slugify("a--b--c"), "a-b-c");
+    }
+
+    #[test]
+    fn slugify_strips_leading_trailing_separators() {
+        assert_eq!(slugify("  hello  "), "hello");
+        assert_eq!(slugify("--hello--"), "hello");
+    }
+
+    #[test]
+    fn slugify_special_characters_become_hyphens() {
+        assert_eq!(slugify("foo@bar!baz"), "foo-bar-baz");
+        assert_eq!(slugify("hello.world#2"), "hello-world-2");
+    }
+
+    #[test]
+    fn slugify_unicode_replaced_by_hyphens() {
+        assert_eq!(slugify("café délice"), "caf-d-lice");
+    }
+
+    #[test]
+    fn slugify_already_clean_input() {
+        assert_eq!(slugify("clean-slug"), "clean-slug");
+        assert_eq!(slugify("abc123"), "abc123");
+    }
+
+    #[test]
+    fn slugify_empty_input() {
+        assert_eq!(slugify(""), "");
+    }
+
+    #[test]
+    fn slugify_all_special_chars() {
+        assert_eq!(slugify("@#$%^&"), "");
+    }
+
+    // ── require_ownership ───────────────────────────────────────────────
+
+    fn make_auth(user_id: Uuid, role: &str) -> AuthUser {
+        AuthUser {
+            user_id,
+            username: "test".to_string(),
+            role: role.to_string(),
+        }
+    }
+
+    #[test]
+    fn owner_is_allowed() {
+        let user_id = Uuid::new_v4();
+        let auth = make_auth(user_id, "author");
+        assert!(require_ownership(&auth, user_id).is_ok());
+    }
+
+    #[test]
+    fn admin_is_always_allowed() {
+        let auth = make_auth(Uuid::new_v4(), "admin");
+        let other_author_id = Uuid::new_v4();
+        assert!(require_ownership(&auth, other_author_id).is_ok());
+    }
+
+    #[test]
+    fn non_owner_non_admin_is_forbidden() {
+        let auth = make_auth(Uuid::new_v4(), "author");
+        let other_author_id = Uuid::new_v4();
+        let result = require_ownership(&auth, other_author_id);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn moderator_is_not_allowed_to_update() {
+        let auth = make_auth(Uuid::new_v4(), "moderator");
+        let other_author_id = Uuid::new_v4();
+        // require_ownership only allows owner or admin, not moderator
+        let result = require_ownership(&auth, other_author_id);
+        assert!(result.is_err());
+    }
 }

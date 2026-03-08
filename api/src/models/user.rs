@@ -61,3 +61,33 @@ impl User {
         UserRole::try_from(self.role.as_str())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn role_roundtrip() {
+        for (input, expected) in [
+            ("admin", UserRole::Admin),
+            ("moderator", UserRole::Moderator),
+            ("author", UserRole::Author),
+        ] {
+            let role = UserRole::try_from(input).unwrap();
+            assert_eq!(role, expected);
+            assert_eq!(role.as_str(), input);
+        }
+    }
+
+    #[test]
+    fn unknown_role_fails() {
+        assert!(UserRole::try_from("superadmin").is_err());
+    }
+
+    #[test]
+    fn display_matches_as_str() {
+        assert_eq!(format!("{}", UserRole::Admin), "admin");
+        assert_eq!(format!("{}", UserRole::Moderator), "moderator");
+        assert_eq!(format!("{}", UserRole::Author), "author");
+    }
+}

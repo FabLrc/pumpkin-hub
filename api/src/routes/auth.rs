@@ -1007,3 +1007,221 @@ impl std::fmt::Display for HashError {
 }
 
 impl std::error::Error for HashError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── validate_registration ───────────────────────────────────────────
+
+    fn valid_registration() -> RegisterRequest {
+        RegisterRequest {
+            username: "testuser".to_string(),
+            email: "test@example.com".to_string(),
+            password: "securepass123".to_string(),
+        }
+    }
+
+    #[test]
+    fn valid_registration_passes() {
+        assert!(validate_registration(&valid_registration()).is_ok());
+    }
+
+    #[test]
+    fn empty_username_rejected() {
+        let mut req = valid_registration();
+        req.username = "".to_string();
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn username_too_long_rejected() {
+        let mut req = valid_registration();
+        req.username = "a".repeat(40);
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn username_39_chars_accepted() {
+        let mut req = valid_registration();
+        req.username = "a".repeat(39);
+        assert!(validate_registration(&req).is_ok());
+    }
+
+    #[test]
+    fn username_special_chars_rejected() {
+        let mut req = valid_registration();
+        req.username = "user@name!".to_string();
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn username_allows_hyphens_underscores() {
+        let mut req = valid_registration();
+        req.username = "user-name_01".to_string();
+        assert!(validate_registration(&req).is_ok());
+    }
+
+    #[test]
+    fn empty_email_rejected() {
+        let mut req = valid_registration();
+        req.email = "".to_string();
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn email_without_at_rejected() {
+        let mut req = valid_registration();
+        req.email = "notemail".to_string();
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn email_too_long_rejected() {
+        let mut req = valid_registration();
+        req.email = format!("{}@example.com", "a".repeat(250));
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn password_too_short_rejected() {
+        let mut req = valid_registration();
+        req.password = "short".to_string();
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn password_too_long_rejected() {
+        let mut req = valid_registration();
+        req.password = "a".repeat(129);
+        assert!(validate_registration(&req).is_err());
+    }
+
+    #[test]
+    fn password_boundary_8_chars_accepted() {
+        let mut req = valid_registration();
+        req.password = "a".repeat(8);
+        assert!(validate_registration(&req).is_ok());
+    }
+
+    #[test]
+    fn password_boundary_128_chars_accepted() {
+        let mut req = valid_registration();
+        req.password = "a".repeat(128);
+        assert!(validate_registration(&req).is_ok());
+    }
+
+    // ── validate_avatar_magic_bytes ─────────────────────────────────────
+
+    #[test]
+    fn jpeg_magic_bytes_accepted() {
+        let data = vec![0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10];
+        assert!(validate_avatar_magic_bytes(&data, "image/jpeg").is_ok());
+    }
+
+    #[test]
+    fn png_magic_bytes_accepted() {
+        let data = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00];
+        assert!(validate_avatar_magic_bytes(&data, "image/png").is_ok());
+    }
+
+    #[test]
+    fn gif89a_magic_bytes_accepted() {
+        let mut data = b"GIF89a".to_vec();
+        data.extend_from_slice(&[0x00; 10]);
+        assert!(validate_avatar_magic_bytes(&data, "image/gif").is_ok());
+    }
+
+    #[test]
+    fn gif87a_magic_bytes_accepted() {
+        let mut data = b"GIF87a".to_vec();
+        data.extend_from_slice(&[0x00; 10]);
+        assert!(validate_avatar_magic_bytes(&data, "image/gif").is_ok());
+    }
+
+    #[test]
+    fn webp_magic_bytes_accepted() {
+        let mut data = b"RIFF".to_vec();
+        data.extend_from_slice(&[0x00; 4]); // file size
+        data.extend_from_slice(b"WEBP");
+        assert!(validate_avatar_magic_bytes(&data, "image/webp").is_ok());
+    }
+
+    #[test]
+    fn mismatched_magic_bytes_rejected() {
+        // PNG header but claimed JPEG
+        let data = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        assert!(validate_avatar_magic_bytes(&data, "image/jpeg").is_err());
+    }
+
+    #[test]
+    fn unknown_type_rejected() {
+        assert!(validate_avatar_magic_bytes(&[0xFF], "image/bmp").is_err());
+    }
+
+    #[test]
+    fn empty_data_rejected() {
+        assert!(validate_avatar_magic_bytes(&[], "image/jpeg").is_err());
+    }
+
+    // ── verify_csrf ─────────────────────────────────────────────────────
+
+    #[test]
+    fn csrf_matching_state_passes() {
+        let mut jar = CookieJar::new();
+        jar = jar.add(Cookie::new(CSRF_COOKIE_NAME, "random-state-value"));
+        assert!(verify_csrf(&jar, "random-state-value").is_ok());
+    }
+
+    #[test]
+    fn csrf_mismatched_state_fails() {
+        let mut jar = CookieJar::new();
+        jar = jar.add(Cookie::new(CSRF_COOKIE_NAME, "correct-state"));
+        assert!(verify_csrf(&jar, "wrong-state").is_err());
+    }
+
+    #[test]
+    fn csrf_missing_cookie_fails() {
+        let jar = CookieJar::new();
+        assert!(verify_csrf(&jar, "some-state").is_err());
+    }
+
+    // ── UpdateProfileRequest validation ─────────────────────────────────
+
+    #[test]
+    fn profile_update_display_name_too_long_rejected() {
+        let req = UpdateProfileRequest {
+            display_name: Some("x".repeat(101)),
+            bio: None,
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn profile_update_bio_too_long_rejected() {
+        let req = UpdateProfileRequest {
+            display_name: None,
+            bio: Some("x".repeat(501)),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn profile_update_no_changes_detected() {
+        let req = UpdateProfileRequest {
+            display_name: None,
+            bio: None,
+        };
+        assert!(!req.has_changes());
+    }
+
+    #[test]
+    fn profile_update_valid_passes() {
+        let req = UpdateProfileRequest {
+            display_name: Some("John Doe".to_string()),
+            bio: Some("A Rust developer.".to_string()),
+        };
+        assert!(req.has_changes());
+        assert!(req.validate().is_ok());
+    }
+}

@@ -325,3 +325,265 @@ fn validate_category_ids(ids: &Option<Vec<Uuid>>) -> Result<(), AppError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── CreatePluginRequest validation ──────────────────────────────────
+
+    fn valid_create_request() -> CreatePluginRequest {
+        CreatePluginRequest {
+            name: "My Plugin".to_string(),
+            short_description: None,
+            description: None,
+            repository_url: None,
+            documentation_url: None,
+            license: None,
+            category_ids: None,
+        }
+    }
+
+    #[test]
+    fn create_valid_request_passes() {
+        assert!(valid_create_request().validate().is_ok());
+    }
+
+    #[test]
+    fn create_name_too_short() {
+        let mut req = valid_create_request();
+        req.name = "ab".to_string();
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_name_too_long() {
+        let mut req = valid_create_request();
+        req.name = "a".repeat(101);
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_name_with_invalid_chars() {
+        let mut req = valid_create_request();
+        req.name = "plugin@name!".to_string();
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_name_boundary_3_chars() {
+        let mut req = valid_create_request();
+        req.name = "abc".to_string();
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn create_name_boundary_100_chars() {
+        let mut req = valid_create_request();
+        req.name = "a".repeat(100);
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn create_name_allows_spaces_hyphens_underscores() {
+        let mut req = valid_create_request();
+        req.name = "My Plugin-Name_v2".to_string();
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn create_short_description_too_long() {
+        let mut req = valid_create_request();
+        req.short_description = Some("x".repeat(256));
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_description_too_long() {
+        let mut req = valid_create_request();
+        req.description = Some("x".repeat(50_001));
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_url_must_have_scheme() {
+        let mut req = valid_create_request();
+        req.repository_url = Some("example.com/repo".to_string());
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_url_with_https_is_valid() {
+        let mut req = valid_create_request();
+        req.repository_url = Some("https://github.com/user/repo".to_string());
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn create_url_too_long() {
+        let mut req = valid_create_request();
+        req.repository_url = Some(format!("https://example.com/{}", "a".repeat(500)));
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_license_too_long() {
+        let mut req = valid_create_request();
+        req.license = Some("x".repeat(51));
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_too_many_categories() {
+        let mut req = valid_create_request();
+        req.category_ids = Some((0..6).map(|_| Uuid::new_v4()).collect());
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn create_max_categories_is_ok() {
+        let mut req = valid_create_request();
+        req.category_ids = Some((0..5).map(|_| Uuid::new_v4()).collect());
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn create_duplicate_categories_rejected() {
+        let mut req = valid_create_request();
+        let id = Uuid::new_v4();
+        req.category_ids = Some(vec![id, id]);
+        assert!(req.validate().is_err());
+    }
+
+    // ── UpdatePluginRequest validation ──────────────────────────────────
+
+    #[test]
+    fn update_empty_request_has_no_changes() {
+        let req = UpdatePluginRequest {
+            name: None,
+            short_description: None,
+            description: None,
+            repository_url: None,
+            documentation_url: None,
+            license: None,
+            category_ids: None,
+        };
+        assert!(!req.has_changes());
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn update_with_valid_name_has_changes() {
+        let req = UpdatePluginRequest {
+            name: Some("New Name".to_string()),
+            short_description: None,
+            description: None,
+            repository_url: None,
+            documentation_url: None,
+            license: None,
+            category_ids: None,
+        };
+        assert!(req.has_changes());
+        assert!(req.validate().is_ok());
+    }
+
+    #[test]
+    fn update_invalid_name_rejected() {
+        let req = UpdatePluginRequest {
+            name: Some("ab".to_string()),
+            short_description: None,
+            description: None,
+            repository_url: None,
+            documentation_url: None,
+            license: None,
+            category_ids: None,
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn update_invalid_url_rejected() {
+        let req = UpdatePluginRequest {
+            name: None,
+            short_description: None,
+            description: None,
+            repository_url: Some("not-a-url".to_string()),
+            documentation_url: None,
+            license: None,
+            category_ids: None,
+        };
+        assert!(req.validate().is_err());
+    }
+
+    // ── ListPluginsParams ───────────────────────────────────────────────
+
+    #[test]
+    fn defaults_applied_when_no_params() {
+        let params = ListPluginsParams {
+            page: None,
+            per_page: None,
+            sort_by: None,
+            order: None,
+            category: None,
+            author: None,
+        };
+        assert_eq!(params.page(), 1);
+        assert_eq!(params.per_page(), 20);
+        assert_eq!(params.offset(), 0);
+        assert_eq!(params.sort_column(), "p.created_at");
+        assert_eq!(params.sort_direction(), "DESC");
+    }
+
+    #[test]
+    fn page_zero_clamped_to_one() {
+        let params = ListPluginsParams {
+            page: Some(0),
+            per_page: None,
+            sort_by: None,
+            order: None,
+            category: None,
+            author: None,
+        };
+        assert_eq!(params.page(), 1);
+    }
+
+    #[test]
+    fn per_page_clamped_to_max() {
+        let params = ListPluginsParams {
+            page: None,
+            per_page: Some(200),
+            sort_by: None,
+            order: None,
+            category: None,
+            author: None,
+        };
+        assert_eq!(params.per_page(), 100);
+    }
+
+    #[test]
+    fn offset_calculation() {
+        let params = ListPluginsParams {
+            page: Some(3),
+            per_page: Some(10),
+            sort_by: None,
+            order: None,
+            category: None,
+            author: None,
+        };
+        assert_eq!(params.offset(), 20);
+    }
+
+    #[test]
+    fn sort_fields_map_to_columns() {
+        assert_eq!(SortField::CreatedAt.as_column(), "p.created_at");
+        assert_eq!(SortField::UpdatedAt.as_column(), "p.updated_at");
+        assert_eq!(SortField::DownloadsTotal.as_column(), "p.downloads_total");
+        assert_eq!(SortField::Name.as_column(), "p.name");
+    }
+
+    #[test]
+    fn sort_order_maps_to_sql() {
+        assert_eq!(SortOrder::Asc.as_sql(), "ASC");
+        assert_eq!(SortOrder::Desc.as_sql(), "DESC");
+    }
+}
