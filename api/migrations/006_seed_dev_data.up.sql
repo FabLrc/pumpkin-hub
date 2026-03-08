@@ -129,3 +129,6 @@ INSERT INTO versions (id, plugin_id, version, changelog, pumpkin_version_min, pu
     ('d4000000-0000-0000-0000-000000000010', 'b3000000-0000-0000-0000-000000000005', '0.1.0', 'Beta: basic chat formatting.', '0.2.0', '0.3.x', 1800, '2025-11-20T13:00:00Z'),
     ('d4000000-0000-0000-0000-000000000011', 'b3000000-0000-0000-0000-000000000005', '0.2.0', E'- Private channels\n- Markdown rendering', '0.2.0', '0.3.x', 1350, '2026-01-08T15:00:00Z')
 ON CONFLICT DO NOTHING;
+
+-- Mark EconoMine 1.0.0 as yanked (known memory-leak regression)
+UPDATE versions SET is_yanked = true WHERE id = 'd4000000-0000-0000-0000-000000000004';

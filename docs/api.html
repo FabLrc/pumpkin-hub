@@ -670,6 +670,55 @@
         </tbody>
       </table>
 
+      <!-- ── Plugin Versions ───────────────────────────────── -->
+      <h3 id="versions-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions</code></h3>
+      <p>Returns all published versions for a plugin, ordered by publication date (newest first). Includes Pumpkin compatibility range and yanked status.</p>
+
+      <h4>Request</h4>
+      <pre><code>curl http://localhost:8080/api/v1/plugins/pumpkin-guard/versions</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "plugin_slug": "pumpkin-guard",
+  "total": 3,
+  "versions": [
+    {
+      "id": "uuid",
+      "version": "0.3.0",
+      "changelog": "- Configurable thresholds via TOML\n- False-positive reduction",
+      "pumpkin_version_min": "0.2.0",
+      "pumpkin_version_max": "0.3.x",
+      "downloads": 3150,
+      "is_yanked": false,
+      "published_at": "2025-11-01T09:00:00Z"
+    }
+  ]
+}</code></pre>
+
+      <h4>Response Fields</h4>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>plugin_slug</code></td><td>string</td><td>Slug of the parent plugin</td></tr>
+          <tr><td><code>total</code></td><td>number</td><td>Total number of versions</td></tr>
+          <tr><td><code>versions[].version</code></td><td>string</td><td>Semver version string</td></tr>
+          <tr><td><code>versions[].changelog</code></td><td>string?</td><td>Release notes</td></tr>
+          <tr><td><code>versions[].pumpkin_version_min</code></td><td>string?</td><td>Minimum compatible Pumpkin version</td></tr>
+          <tr><td><code>versions[].pumpkin_version_max</code></td><td>string?</td><td>Maximum compatible Pumpkin version</td></tr>
+          <tr><td><code>versions[].downloads</code></td><td>number</td><td>Download count for this version</td></tr>
+          <tr><td><code>versions[].is_yanked</code></td><td>boolean</td><td>Whether the version has been yanked</td></tr>
+          <tr><td><code>versions[].published_at</code></td><td>string</td><td>ISO 8601 publication timestamp</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin not found or inactive</td></tr>
+        </tbody>
+      </table>
+
       <!-- ── Planned Endpoints ─────────────────────────────────────────────── -->
       <h2 id="planned">Planned Endpoints</h2>
 
@@ -684,7 +733,6 @@
           <tr><th>Method</th><th>Route</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions</code></td><td>Version history</td></tr>
           <tr><td><span class="badge badge-green">POST</span></td><td><code>/api/v1/plugins/:slug/versions</code></td><td>Publish a new version</td></tr>
           <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions/:ver/download</code></td><td>Binary download</td></tr>
         </tbody>
