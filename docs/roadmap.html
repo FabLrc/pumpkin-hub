@@ -214,7 +214,7 @@
         </div>
 
         <!-- ── PHASE 1.5 — Integration & Quality ────────────── -->
-        <h2 id="phase-1-5" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 1.5 — Integration &amp; Quality <span class="badge badge-orange">In Progress</span></h2>
+        <h2 id="phase-1-5" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 1.5 — Integration &amp; Quality <span class="badge badge-green">Completed</span></h2>
 
         <div class="timeline-item">
           <div class="timeline-dot completed"></div>
@@ -279,15 +279,16 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot in-progress"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
-            <span class="timeline-title">User Profile &amp; Creator Dashboard <span class="badge badge-orange">In Progress</span></span>
+            <span class="timeline-title">User Profile &amp; Creator Dashboard <span class="badge badge-green">Completed</span></span>
           </div>
           <ul class="timeline-features">
-            <li><code>PUT /api/v1/auth/me</code> — profile update endpoint (display name, bio, avatar URL)</li>
-            <li>User profile page at <code>/profile</code> with editable fields and connected providers display</li>
-            <li>Creator dashboard at <code>/dashboard</code> — published plugins list with statistics overview</li>
-            <li>Per-plugin download stats, creation date, and quick-action links (edit, view)</li>
+            <li><code>PUT /api/v1/auth/me</code> — profile update endpoint (display name, bio)</li>
+            <li><code>POST /api/v1/auth/avatar</code> — multipart avatar upload with MIME + magic-bytes validation (max 2 MB), stored as BYTEA</li>
+            <li><code>GET /api/v1/users/{id}/avatar</code> — public binary serving with cache headers</li>
+            <li>User profile page at <code>/profile</code> with editable display name, bio and avatar upload</li>
+            <li>Creator dashboard at <code>/dashboard</code> — published plugins list with stats and quick-action links (edit, view, delete)</li>
             <li>Responsive layout consistent with Brutalist Industrial design system</li>
           </ul>
         </div>
@@ -318,14 +319,16 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
-            <span class="timeline-title">SEO &amp; Metadata</span>
+            <span class="timeline-title">SEO &amp; Metadata <span class="badge badge-green">Completed</span></span>
           </div>
           <ul class="timeline-features">
             <li>Dynamic <code>generateMetadata()</code> on Explorer and Plugin Detail pages</li>
-            <li>Open Graph and Twitter Card tags for plugin pages</li>
-            <li>Structured data (JSON-LD) for plugin entries</li>
+            <li>Open Graph and Twitter Card tags with plugin name and description</li>
+            <li>Structured data (JSON-LD / <code>schema.org/SoftwareApplication</code>) for plugin entries</li>
+            <li>Plugin Detail page refactored from client to server component</li>
+            <li><code>metadataBase</code> and title template in root layout, configurable via <code>NEXT_PUBLIC_SITE_URL</code></li>
           </ul>
         </div>
 
