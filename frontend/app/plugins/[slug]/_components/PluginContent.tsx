@@ -1,7 +1,8 @@
 "use client";
 
-import { Package } from "lucide-react";
-import type { PluginResponse } from "@/lib/types";
+import { Package, AlertTriangle } from "lucide-react";
+import type { PluginResponse, VersionResponse } from "@/lib/types";
+import { usePluginVersions } from "@/lib/hooks";
 
 type TabId = "overview" | "versions" | "dependencies";
 
@@ -43,7 +44,7 @@ export function PluginContent({
 
       {/* Tab content */}
       {activeTab === "overview" && <OverviewTab plugin={plugin} />}
-      {activeTab === "versions" && <VersionsTab />}
+      {activeTab === "versions" && <VersionsTab slug={plugin.slug} />}
       {activeTab === "dependencies" && <DependenciesTab />}
     </div>
   );
@@ -157,23 +158,55 @@ function inlineFormat(text: string): string {
   );
 }
 
-// ── Versions Tab (placeholder until API supports version listing) ─────────
+// ── Versions Tab — live API data ──────────────────────────────────────────
 
-function VersionsTab() {
-  const PLACEHOLDER_VERSIONS = [
-    { version: "2.1.3", api: "0.4.x", arch: "x86_64, arm64", size: "2.1 MB", latest: true },
-    { version: "2.1.2", api: "0.4.x", arch: "x86_64, arm64", size: "2.1 MB", latest: false },
-    { version: "2.0.0", api: "0.4.x", arch: "x86_64", size: "1.9 MB", latest: false },
-    { version: "1.8.4", api: "0.3.x", arch: "x86_64", size: "1.7 MB", latest: false },
-  ];
+function VersionsTab({ slug }: { slug: string }) {
+  const { data, isLoading, error } = usePluginVersions(slug);
+
+  if (isLoading) {
+    return <VersionsTabSkeleton />;
+  }
+
+  if (error || !data) {
+    return (
+      <p className="font-mono text-xs text-red-400">
+        Failed to load versions. Please try again later.
+      </p>
+    );
+  }
+
+  const { versions, total } = data;
+
+  if (total === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="w-12 h-12 border border-border-default bg-bg-surface flex items-center justify-center mb-4">
+          <Package className="text-text-dim w-5 h-5" />
+        </div>
+        <p className="font-mono text-xs text-text-dim">
+          No versions published yet.
+        </p>
+      </div>
+    );
+  }
+
+  // First non-yanked version is the latest
+  const latestVersion = versions.find((v) => !v.is_yanked);
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <span className="font-mono text-xs text-text-dim">
-          {PLACEHOLDER_VERSIONS.length} releases ·{" "}
-          <span className="text-text-primary">v{PLACEHOLDER_VERSIONS[0].version}</span>{" "}
-          is latest
+          {total} release{total !== 1 ? "s" : ""}
+          {latestVersion && (
+            <>
+              {" · "}
+              <span className="text-text-primary">
+                v{latestVersion.version}
+              </span>{" "}
+              is latest
+            </>
+          )}
         </span>
       </div>
 
@@ -184,67 +217,137 @@ function VersionsTab() {
           <div className="col-span-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">
             Version
           </div>
-          <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
-            API Compat
+          <div className="col-span-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            Pumpkin Compat
           </div>
           <div className="col-span-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">
-            Architecture
+            Published
           </div>
           <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
-            Size
+            Downloads
           </div>
-          <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
-            Download
+          <div className="col-span-1 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            Status
           </div>
         </div>
 
         {/* Rows */}
-        {PLACEHOLDER_VERSIONS.map((version) => (
+        {versions.map((version) => {
+          const isLatest = latestVersion?.id === version.id;
+          return (
+            <VersionRow
+              key={version.id}
+              version={version}
+              isLatest={isLatest}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function VersionRow({
+  version,
+  isLatest,
+}: {
+  version: VersionResponse;
+  isLatest: boolean;
+}) {
+  const compatRange = formatCompatRange(
+    version.pumpkin_version_min,
+    version.pumpkin_version_max,
+  );
+  const publishedDate = new Date(version.published_at).toLocaleDateString(
+    "en-US",
+    { year: "numeric", month: "short", day: "numeric" },
+  );
+
+  return (
+    <div
+      className={`ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-border-default items-center last:border-b-0 ${
+        version.is_yanked ? "opacity-60" : ""
+      }`}
+    >
+      {/* Version number + badges */}
+      <div className="col-span-3 flex items-center gap-2 flex-wrap">
+        <span
+          className={`font-mono text-sm font-bold ${
+            version.is_yanked
+              ? "text-text-dim line-through"
+              : isLatest
+                ? "text-text-primary"
+                : "text-text-dim"
+          }`}
+        >
+          {version.version}
+        </span>
+        {isLatest && !version.is_yanked && (
+          <span className="font-mono text-[9px] bg-accent/10 text-accent border border-accent/30 px-1.5 py-0.5">
+            LATEST
+          </span>
+        )}
+        {version.is_yanked && (
+          <span className="font-mono text-[9px] bg-red-500/10 text-red-400 border border-red-500/30 px-1.5 py-0.5 inline-flex items-center gap-1">
+            <AlertTriangle className="w-2.5 h-2.5" />
+            YANKED
+          </span>
+        )}
+      </div>
+
+      {/* Pumpkin compatibility range */}
+      <div className="col-span-3 font-mono text-xs text-text-dim">
+        {compatRange}
+      </div>
+
+      {/* Published date */}
+      <div className="col-span-3 font-mono text-xs text-text-dim">
+        {publishedDate}
+      </div>
+
+      {/* Downloads */}
+      <div className="col-span-2 font-mono text-xs text-text-dim">
+        {version.downloads.toLocaleString()}
+      </div>
+
+      {/* Status indicator */}
+      <div className="col-span-1">
+        {version.is_yanked ? (
+          <span className="w-2 h-2 bg-red-400 inline-block" title="Yanked" />
+        ) : (
+          <span className="w-2 h-2 bg-green-500 inline-block" title="Available" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Formats the Pumpkin compatibility range from min/max fields. */
+function formatCompatRange(
+  min: string | null,
+  max: string | null,
+): string {
+  if (min && max) return `${min} — ${max}`;
+  if (min) return `≥ ${min}`;
+  if (max) return `≤ ${max}`;
+  return "Any";
+}
+
+function VersionsTabSkeleton() {
+  return (
+    <div className="animate-pulse space-y-3">
+      <div className="h-3 bg-bg-surface w-48 mb-6" />
+      <div className="border border-border-default">
+        <div className="h-8 bg-bg-surface/50 border-b border-border-default" />
+        {Array.from({ length: 4 }).map((_, i) => (
           <div
-            key={version.version}
-            className="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-border-default items-center last:border-b-0"
+            key={i}
+            className="h-12 border-b border-border-default last:border-b-0 flex items-center px-4"
           >
-            <div className="col-span-3 flex items-center gap-2">
-              <span
-                className={`font-mono text-sm font-bold ${
-                  version.latest ? "text-text-primary" : "text-text-dim"
-                }`}
-              >
-                {version.version}
-              </span>
-              {version.latest && (
-                <span className="font-mono text-[9px] bg-accent/10 text-accent border border-accent/30 px-1.5 py-0.5">
-                  LATEST
-                </span>
-              )}
-            </div>
-            <div className="col-span-2 font-mono text-xs text-text-dim">
-              {version.api}
-            </div>
-            <div className="col-span-3 font-mono text-xs text-text-dim">
-              {version.arch}
-            </div>
-            <div className="col-span-2 font-mono text-xs text-text-dim">
-              {version.size}
-            </div>
-            <div className="col-span-2">
-              <button
-                className={`dl-btn font-mono text-[10px] font-bold px-3 py-1 transition-colors cursor-pointer ${
-                  version.latest
-                    ? "bg-accent hover:bg-accent-hover text-bg-base"
-                    : "border border-border-hover text-text-dim hover:border-accent hover:text-accent"
-                }`}
-              >
-                ↓ Download
-              </button>
-            </div>
+            <div className="h-3 bg-bg-surface w-full" />
           </div>
         ))}
       </div>
-
-      <p className="font-mono text-[10px] text-text-dim mt-4">
-        Version details and download links will be available once the Versions API is implemented.
-      </p>
     </div>
   );
 }

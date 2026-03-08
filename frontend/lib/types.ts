@@ -113,6 +113,25 @@ export interface UpdatePluginRequest {
   category_ids?: string[];
 }
 
+// ── Version Types ─────────────────────────────────────────────────────────
+
+export interface VersionResponse {
+  id: string;
+  version: string;
+  changelog: string | null;
+  pumpkin_version_min: string | null;
+  pumpkin_version_max: string | null;
+  downloads: number;
+  is_yanked: boolean;
+  published_at: string;
+}
+
+export interface VersionsListResponse {
+  plugin_slug: string;
+  total: number;
+  versions: VersionResponse[];
+}
+
 // ── Query Parameters ──────────────────────────────────────────────────────
 
 export type SortField = "created_at" | "updated_at" | "downloads_total" | "name";

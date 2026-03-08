@@ -14,6 +14,7 @@ import type {
   UpdatePluginRequest,
   UpdateProfileRequest,
   UserProfile,
+  VersionsListResponse,
 } from "./types";
 
 const API_BASE_URL =
@@ -101,6 +102,18 @@ export async function deletePlugin(slug: string): Promise<void> {
   await apiFetch<void>(`/plugins/${encodeURIComponent(slug)}`, {
     method: "DELETE",
   });
+}
+
+// ── Version Endpoints ─────────────────────────────────────────────────────
+
+export function getPluginVersionsPath(slug: string): string {
+  return `/plugins/${slug}/versions`;
+}
+
+export async function fetchPluginVersions(
+  slug: string,
+): Promise<VersionsListResponse> {
+  return apiFetch<VersionsListResponse>(getPluginVersionsPath(slug));
 }
 
 // ── Category Endpoints ────────────────────────────────────────────────────
