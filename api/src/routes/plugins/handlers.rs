@@ -13,7 +13,8 @@ use crate::{auth::middleware::AuthUser, error::AppError, state::AppState};
 
 use super::dto::{
     AuthorSummary, CategorySummary, CreatePluginRequest, ListPluginsParams, PaginatedResponse,
-    PaginationMeta, PluginResponse, PluginSummary, UpdatePluginRequest,
+    PaginationMeta, PluginResponse, PluginSummary, UpdatePluginRequest, VersionResponse,
+    VersionsListResponse,
 };
 
 // ── SQL Row Types ───────────────────────────────────────────────────────────
@@ -515,4 +516,68 @@ pub async fn delete_plugin(
         .map_err(AppError::internal)?;
 
     Ok(Json(serde_json::json!({ "message": "Plugin deleted" })))
+}
+
+// ── Version Row ─────────────────────────────────────────────────────────
+
+#[derive(Debug, FromRow)]
+struct VersionRow {
+    id: Uuid,
+    version: String,
+    changelog: Option<String>,
+    pumpkin_version_min: Option<String>,
+    pumpkin_version_max: Option<String>,
+    downloads: i64,
+    is_yanked: bool,
+    published_at: DateTime<Utc>,
+}
+
+/// GET /api/v1/plugins/:slug/versions — all versions for a plugin.
+pub async fn list_versions(
+    State(state): State<AppState>,
+    Path(slug): Path<String>,
+) -> Result<Json<VersionsListResponse>, AppError> {
+    let pool = &state.db;
+
+    // Verify the plugin exists and is active
+    let plugin_id: Uuid = sqlx::query_scalar(
+        "SELECT id FROM plugins WHERE slug = $1 AND is_active = true",
+    )
+    .bind(&slug)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?
+    .ok_or(AppError::NotFound)?;
+
+    let rows: Vec<VersionRow> = sqlx::query_as(
+        "SELECT id, version, changelog, pumpkin_version_min, pumpkin_version_max,
+                downloads, is_yanked, published_at
+         FROM versions
+         WHERE plugin_id = $1
+         ORDER BY published_at DESC",
+    )
+    .bind(plugin_id)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let versions: Vec<VersionResponse> = rows
+        .into_iter()
+        .map(|r| VersionResponse {
+            id: r.id,
+            version: r.version,
+            changelog: r.changelog,
+            pumpkin_version_min: r.pumpkin_version_min,
+            pumpkin_version_max: r.pumpkin_version_max,
+            downloads: r.downloads,
+            is_yanked: r.is_yanked,
+            published_at: r.published_at,
+        })
+        .collect();
+
+    Ok(Json(VersionsListResponse {
+        plugin_slug: slug,
+        total: versions.len(),
+        versions,
+    }))
 }

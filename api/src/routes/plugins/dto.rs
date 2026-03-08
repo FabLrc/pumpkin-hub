@@ -229,6 +229,29 @@ pub struct PaginationMeta {
     pub total_pages: u32,
 }
 
+// ── Version DTOs ────────────────────────────────────────────────────────────
+
+/// Single version entry returned by the versions endpoint.
+#[derive(Debug, Serialize)]
+pub struct VersionResponse {
+    pub id: Uuid,
+    pub version: String,
+    pub changelog: Option<String>,
+    pub pumpkin_version_min: Option<String>,
+    pub pumpkin_version_max: Option<String>,
+    pub downloads: i64,
+    pub is_yanked: bool,
+    pub published_at: DateTime<Utc>,
+}
+
+/// Aggregate response for all versions of a plugin.
+#[derive(Debug, Serialize)]
+pub struct VersionsListResponse {
+    pub plugin_slug: String,
+    pub total: usize,
+    pub versions: Vec<VersionResponse>,
+}
+
 // ── Validation Helpers ──────────────────────────────────────────────────────
 
 fn validate_name(name: &str) -> Result<(), AppError> {

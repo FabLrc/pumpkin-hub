@@ -17,4 +17,8 @@ pub fn routes() -> Router<AppState> {
                 .put(handlers::update_plugin)
                 .delete(handlers::delete_plugin),
         )
+        .route(
+            "/plugins/{slug}/versions",
+            get(handlers::list_versions),
+        )
 }
