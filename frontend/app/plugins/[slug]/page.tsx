@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { fetchPlugin } from "@/lib/api";
 import { PluginPageClient } from "./_components/PluginPageClient";
+import { PluginJsonLd } from "./_components/PluginJsonLd";
 
 interface PluginPageProps {
   params: Promise<{ slug: string }>;
@@ -44,5 +45,17 @@ export async function generateMetadata({
 export default async function PluginPage({ params }: PluginPageProps) {
   const { slug } = await params;
 
-  return <PluginPageClient slug={slug} />;
+  let plugin = null;
+  try {
+    plugin = await fetchPlugin(slug);
+  } catch {
+    // Plugin not found — PluginPageClient will handle the error state
+  }
+
+  return (
+    <>
+      {plugin && <PluginJsonLd plugin={plugin} />}
+      <PluginPageClient slug={slug} />
+    </>
+  );
 }
