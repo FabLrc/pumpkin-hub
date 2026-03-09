@@ -74,6 +74,13 @@
         <a href="#binaries-list" class="sidebar-sublink" style="padding-left:2rem;">List Binaries</a>
         <a href="#binaries-upload" class="sidebar-sublink" style="padding-left:2rem;">Upload Binary</a>
         <a href="#binaries-download" class="sidebar-sublink" style="padding-left:2rem;">Download Binary</a>
+        <a href="#dependencies" class="sidebar-sublink">Dependencies</a>
+        <a href="#dependencies-list" class="sidebar-sublink" style="padding-left:2rem;">List Dependencies</a>
+        <a href="#dependencies-declare" class="sidebar-sublink" style="padding-left:2rem;">Declare Dependency</a>
+        <a href="#dependencies-update" class="sidebar-sublink" style="padding-left:2rem;">Update Dependency</a>
+        <a href="#dependencies-remove" class="sidebar-sublink" style="padding-left:2rem;">Remove Dependency</a>
+        <a href="#dependencies-graph" class="sidebar-sublink" style="padding-left:2rem;">Resolve Graph</a>
+        <a href="#dependencies-dependants" class="sidebar-sublink" style="padding-left:2rem;">List Dependants</a>
         <a href="#search" class="sidebar-sublink">Search</a>
         <a href="#planned" class="sidebar-sublink">Planned Endpoints</a>
       </div>
@@ -990,6 +997,137 @@
           <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid or missing <code>platform</code> parameter</td></tr>
         </tbody>
       </table>
+
+      <!-- ── Dependencies ────────────────────────────────────────────────── -->
+      <h2 id="dependencies">Dependencies</h2>
+      <p>Endpoints for managing inter-plugin dependency declarations, resolving the full dependency graph and detecting conflicts.</p>
+
+      <h3 id="dependencies-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/dependencies</code></h3>
+      <p>Returns all declared dependencies for a specific version of a plugin.</p>
+      <pre><code>curl http://localhost:8080/api/v1/plugins/pumpkin-guard/versions/0.3.0/dependencies</code></pre>
+      <details>
+        <summary>Response 200</summary>
+        <pre><code>{
+  "plugin_slug": "pumpkin-guard",
+  "version": "0.3.0",
+  "total": 1,
+  "dependencies": [
+    {
+      "id": "e5000000-...",
+      "dependency_plugin": {
+        "id": "b3000000-...",
+        "name": "PumpkinCore",
+        "slug": "pumpkin-core"
+      },
+      "version_req": ">=0.1.0",
+      "is_optional": false,
+      "created_at": "2025-06-15T10:00:00Z"
+    }
+  ]
+}</code></pre>
+      </details>
+
+      <h3 id="dependencies-declare"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/dependencies</code></h3>
+      <p>Declare a new dependency for a version. Requires authentication as the plugin owner. Validates semver range syntax, prevents self-dependencies and circular dependencies.</p>
+      <pre><code>curl -X POST http://localhost:8080/api/v1/plugins/pumpkin-guard/versions/0.3.0/dependencies \
+  -H "Content-Type: application/json" \
+  -d '{"dependency_plugin_id": "b3000000-...", "version_req": ">=0.2.0", "is_optional": false}'</code></pre>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>dependency_plugin_id</code></td><td>UUID</td><td>ID of the plugin to depend on</td></tr>
+          <tr><td><code>version_req</code></td><td>string</td><td>Semver requirement (e.g. <code>>=0.2.0</code>, <code>^1.0</code>, <code>~0.3</code>)</td></tr>
+          <tr><td><code>is_optional</code></td><td>boolean</td><td>Whether the dependency is optional (default: false)</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Status</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-green">201</span></td><td>Dependency created</td></tr>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Invalid semver range, self-dependency, or circular dependency</td></tr>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Unauthenticated</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin owner</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin, version, or dependency plugin not found</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Dependency already declared</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="dependencies-update"><span class="badge badge-orange">PUT</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/dependencies/:dependency_id</code></h3>
+      <p>Update a dependency's version requirement or optional flag. Requires authentication as the plugin owner.</p>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>version_req</code></td><td>string?</td><td>New semver requirement</td></tr>
+          <tr><td><code>is_optional</code></td><td>boolean?</td><td>New optional flag</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="dependencies-remove"><span class="badge badge-red">DELETE</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/dependencies/:dependency_id</code></h3>
+      <p>Remove a dependency declaration. Requires authentication as the plugin owner.</p>
+
+      <h3 id="dependencies-graph"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/dependencies/graph</code></h3>
+      <p>Resolves the complete dependency graph via BFS traversal. For each dependency, finds the best matching version using semver compatibility. Returns the full graph and any detected conflicts.</p>
+      <pre><code>curl http://localhost:8080/api/v1/plugins/economine/versions/1.1.0/dependencies/graph</code></pre>
+      <details>
+        <summary>Response 200</summary>
+        <pre><code>{
+  "plugin_slug": "economine",
+  "version": "1.1.0",
+  "graph": [
+    {
+      "plugin_id": "b3000000-...",
+      "plugin_name": "EconoMine",
+      "plugin_slug": "economine",
+      "version": "1.1.0",
+      "version_id": "d4000000-...",
+      "dependencies": [
+        {
+          "dependency_plugin_id": "b3000000-...",
+          "dependency_plugin_name": "PumpkinCore",
+          "dependency_plugin_slug": "pumpkin-core",
+          "version_req": ">=0.2.0",
+          "is_optional": false,
+          "resolved_version": "0.2.0",
+          "is_compatible": true
+        }
+      ]
+    }
+  ],
+  "conflicts": []
+}</code></pre>
+      </details>
+      <p><strong>Conflict types:</strong></p>
+      <table>
+        <thead><tr><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>no_matching_version</code></td><td>No published version satisfies the semver requirement</td></tr>
+          <tr><td><code>incompatible_ranges</code></td><td>Multiple paths require incompatible version ranges of the same plugin</td></tr>
+          <tr><td><code>circular_dependency</code></td><td>A cycle is detected in the dependency chain</td></tr>
+          <tr><td><code>inactive_plugin</code></td><td>A required plugin has been deactivated or deleted</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="dependencies-dependants"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/dependants</code></h3>
+      <p>Returns all plugins (and their versions) that declare a dependency on this plugin. Useful for impact analysis before breaking changes.</p>
+      <pre><code>curl http://localhost:8080/api/v1/plugins/pumpkin-core/dependants</code></pre>
+      <details>
+        <summary>Response 200</summary>
+        <pre><code>{
+  "plugin_slug": "pumpkin-core",
+  "plugin_name": "PumpkinCore",
+  "total": 4,
+  "dependants": [
+    {
+      "plugin_id": "b3000000-...",
+      "plugin_name": "PumpkinGuard",
+      "plugin_slug": "pumpkin-guard",
+      "version": "0.3.0",
+      "version_req": ">=0.1.0",
+      "is_optional": false
+    }
+  ]
+}</code></pre>
+      </details>
 
       <!-- ── Search Endpoints ────────────────────────────────────────────── -->
       <h2 id="search">Search</h2>
