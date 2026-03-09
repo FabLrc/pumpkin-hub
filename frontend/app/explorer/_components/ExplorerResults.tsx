@@ -1,28 +1,32 @@
 "use client";
 
 import { List, LayoutGrid } from "lucide-react";
-import { PluginCard } from "@/components/ui";
-import type { PluginSummary, PaginationMeta } from "@/lib/types";
+import type { SearchHit, SearchSortOption } from "@/lib/types";
+import { SearchHitCard } from "./SearchHitCard";
 
 interface ExplorerResultsProps {
-  plugins: PluginSummary[];
-  pagination: PaginationMeta | undefined;
+  hits: SearchHit[];
+  estimatedTotal: number | null;
+  processingTimeMs: number | null;
   isLoading: boolean;
   currentPage: number;
+  perPage: number;
   onPageChange: (page: number) => void;
-  activeCategory: string | undefined;
-  sortBy: string;
+  searchQuery: string;
+  sortBy: SearchSortOption;
 }
 
 export function ExplorerResults({
-  plugins,
-  pagination,
+  hits,
+  estimatedTotal,
+  processingTimeMs,
   isLoading,
   currentPage,
+  perPage,
   onPageChange,
 }: ExplorerResultsProps) {
-  const totalPlugins = pagination?.total ?? 0;
-  const totalPages = pagination?.total_pages ?? 1;
+  const totalHits = estimatedTotal ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalHits / perPage));
 
   return (
     <main className="flex-1 min-w-0">
@@ -32,9 +36,14 @@ export function ExplorerResults({
           <span className="font-mono text-xs text-text-dim">
             Showing{" "}
             <span className="text-text-primary">
-              {totalPlugins.toLocaleString()}
+              {totalHits.toLocaleString()}
             </span>{" "}
             plugins
+            {processingTimeMs !== null && (
+              <span className="ml-2 text-text-dim">
+                in {processingTimeMs}ms
+              </span>
+            )}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -58,14 +67,14 @@ export function ExplorerResults({
       <div className="p-6 space-y-3">
         {isLoading ? (
           <LoadingSkeleton />
-        ) : plugins.length === 0 ? (
+        ) : hits.length === 0 ? (
           <EmptyState />
         ) : (
           <>
-            {plugins.map((plugin, index) => (
-              <PluginCard
-                key={plugin.id}
-                plugin={plugin}
+            {hits.map((hit, index) => (
+              <SearchHitCard
+                key={hit.id}
+                hit={hit}
                 featured={index === 0 && currentPage === 1}
               />
             ))}

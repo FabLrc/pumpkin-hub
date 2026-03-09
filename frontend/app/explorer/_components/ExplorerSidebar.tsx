@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Search,
   Shield,
   Coins,
   Map,
@@ -16,8 +15,10 @@ import {
   Tag,
   type LucideIcon,
 } from "lucide-react";
-import type { SortField } from "@/lib/types";
-import { useCategories } from "@/lib/hooks";
+import type { SearchSortOption, FacetDistribution } from "@/lib/types";
+import { useCategories, usePumpkinVersions } from "@/lib/hooks";
+import { PLATFORMS } from "@/lib/types";
+import { SearchBar } from "./SearchBar";
 
 // ── Icon Mapping ──────────────────────────────────────────────────────────
 
@@ -42,11 +43,14 @@ function getCategoryIcon(icon: string | null): LucideIcon {
 
 // ── Sort Options ──────────────────────────────────────────────────────────
 
-const SORT_OPTIONS: { value: SortField; label: string }[] = [
-  { value: "downloads_total", label: "Downloads ↓" },
-  { value: "created_at", label: "Newest" },
-  { value: "updated_at", label: "Updated" },
-  { value: "name", label: "Name A–Z" },
+const SORT_OPTIONS: { value: SearchSortOption; label: string }[] = [
+  { value: "relevance", label: "Relevance" },
+  { value: "downloads", label: "Downloads ↓" },
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "updated", label: "Updated" },
+  { value: "name_asc", label: "Name A–Z" },
+  { value: "name_desc", label: "Name Z–A" },
 ];
 
 // ── Props ─────────────────────────────────────────────────────────────────
@@ -54,10 +58,16 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
 interface ExplorerSidebarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  sortBy: SortField;
-  onSortChange: (sort: SortField) => void;
+  sortBy: SearchSortOption;
+  onSortChange: (sort: SearchSortOption) => void;
   activeCategory: string | undefined;
   onCategoryChange: (category: string | undefined) => void;
+  activePlatform: string | undefined;
+  onPlatformChange: (platform: string | undefined) => void;
+  activePumpkinVersion: string | undefined;
+  onPumpkinVersionChange: (version: string | undefined) => void;
+  facets: FacetDistribution | null;
+  onClearFilters: () => void;
 }
 
 export function ExplorerSidebar({
@@ -67,25 +77,24 @@ export function ExplorerSidebar({
   onSortChange,
   activeCategory,
   onCategoryChange,
+  activePlatform,
+  onPlatformChange,
+  activePumpkinVersion,
+  onPumpkinVersionChange,
+  facets,
+  onClearFilters,
 }: ExplorerSidebarProps) {
   const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const { data: pumpkinVersions } = usePumpkinVersions();
+
+  const hasActiveFilters =
+    activeCategory || activePlatform || activePumpkinVersion;
 
   return (
     <aside className="w-64 flex-shrink-0 border-r border-border-default min-h-screen hidden md:block">
       <div className="sidebar-scroll p-5 space-y-8">
-        {/* Search in sidebar */}
-        <div>
-          <div className="flex items-center gap-2 border border-border-default bg-bg-elevated px-3 py-2.5 focus-within:border-accent transition-colors">
-            <Search className="text-text-dim flex-shrink-0 w-[14px] h-[14px]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Filter plugins..."
-              className="search-input flex-1 bg-transparent font-mono text-xs text-text-primary placeholder-text-dim border-0 outline-none"
-            />
-          </div>
-        </div>
+        {/* Search with autocomplete */}
+        <SearchBar value={searchQuery} onChange={onSearchChange} />
 
         {/* Sort */}
         <div>
@@ -135,8 +144,9 @@ export function ExplorerSidebar({
                 />
               ))
             ) : (
-              categories?.map((cat) => {
+              categories?.map((cat: { slug: string; name: string; icon: string | null }) => {
                 const Icon = getCategoryIcon(cat.icon);
+                const count = facets?.categories[cat.slug];
                 return (
                   <button
                     key={cat.slug}
@@ -151,6 +161,9 @@ export function ExplorerSidebar({
                       <Icon className="w-[11px] h-[11px]" />
                       <span>{cat.name}</span>
                     </div>
+                    {count !== undefined && (
+                      <span className="text-text-dim text-[10px]">{count}</span>
+                    )}
                   </button>
                 );
               })
@@ -158,13 +171,93 @@ export function ExplorerSidebar({
           </div>
         </div>
 
+        {/* Platform Filter */}
+        <div>
+          <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+            Platform
+          </div>
+          <div className="space-y-1.5">
+            <button
+              onClick={() => onPlatformChange(undefined)}
+              className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+                !activePlatform
+                  ? "text-accent border-accent/40 bg-accent/5"
+                  : "text-text-subtle border-border-default hover:border-border-hover"
+              }`}
+            >
+              <span>All</span>
+            </button>
+            {PLATFORMS.map((platform) => {
+              const count = facets?.platforms[platform];
+              return (
+                <button
+                  key={platform}
+                  onClick={() => onPlatformChange(platform)}
+                  className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer capitalize ${
+                    activePlatform === platform
+                      ? "text-accent border-accent/40 bg-accent/5"
+                      : "text-text-dim border-border-default hover:border-border-hover"
+                  }`}
+                >
+                  <span>{platform}</span>
+                  {count !== undefined && (
+                    <span className="text-text-dim text-[10px]">{count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Pumpkin Version Filter */}
+        {pumpkinVersions && pumpkinVersions.length > 0 && (
+          <div>
+            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+              Pumpkin Version
+            </div>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              <button
+                onClick={() => onPumpkinVersionChange(undefined)}
+                className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+                  !activePumpkinVersion
+                    ? "text-accent border-accent/40 bg-accent/5"
+                    : "text-text-subtle border-border-default hover:border-border-hover"
+                }`}
+              >
+                <span>All</span>
+              </button>
+              {pumpkinVersions.map((ver: { version: string }) => {
+                const count = facets?.pumpkin_versions[ver.version];
+                return (
+                  <button
+                    key={ver.version}
+                    onClick={() => onPumpkinVersionChange(ver.version)}
+                    className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+                      activePumpkinVersion === ver.version
+                        ? "text-accent border-accent/40 bg-accent/5"
+                        : "text-text-dim border-border-default hover:border-border-hover"
+                    }`}
+                  >
+                    <span>{ver.version}</span>
+                    {count !== undefined && (
+                      <span className="text-text-dim text-[10px]">{count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Clear filters */}
-        <button
-          onClick={() => onCategoryChange(undefined)}
-          className="w-full font-mono text-xs text-text-dim hover:text-accent border border-border-default hover:border-accent/30 px-3 py-2 transition-colors cursor-pointer"
-        >
-          Clear all filters
-        </button>
+        {hasActiveFilters && (
+          <button
+            onClick={onClearFilters}
+            className="w-full font-mono text-xs text-text-dim hover:text-accent border border-border-default hover:border-accent/30 px-3 py-2 transition-colors cursor-pointer"
+          >
+            Clear all filters
+          </button>
+        )}
       </div>
     </aside>
   );

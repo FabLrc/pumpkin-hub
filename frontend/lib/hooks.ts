@@ -4,7 +4,7 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath } from "./api";
 import type {
   BinariesListResponse,
   CategoryResponse,
@@ -12,6 +12,9 @@ import type {
   PaginatedResponse,
   PluginResponse,
   PluginSummary,
+  PumpkinVersion,
+  SearchParams,
+  SearchResponse,
   UserProfile,
   VersionsListResponse,
 } from "./types";
@@ -66,5 +69,23 @@ export function useBinaries(slug: string | null, version: string | null) {
   const path = slug && version ? getBinariesPath(slug, version) : null;
   return useSWR<BinariesListResponse>(path, swrFetcher, {
     revalidateOnFocus: false,
+  });
+}
+
+/** Full-text search across plugins with faceted filters and sorting. */
+export function useSearch(params: SearchParams) {
+  const path = getSearchPath(params);
+  return useSWR<SearchResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 2000,
+    keepPreviousData: true,
+  });
+}
+
+/** Fetch all known Pumpkin MC versions from the official GitHub repo. */
+export function usePumpkinVersions() {
+  return useSWR<PumpkinVersion[]>(getPumpkinVersionsPath(), swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
   });
 }

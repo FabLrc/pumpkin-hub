@@ -14,7 +14,11 @@ import type {
   PaginatedResponse,
   PluginResponse,
   PluginSummary,
+  PumpkinVersion,
   RegisterRequest,
+  SearchParams,
+  SearchResponse,
+  SearchSuggestion,
   UpdatePluginRequest,
   UpdateProfileRequest,
   UserProfile,
@@ -319,4 +323,53 @@ export async function fetchBinaryDownload(
   return apiFetch<BinaryDownloadResponse>(
     `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download?platform=${encodeURIComponent(platform)}`,
   );
+}
+
+// ── Search Endpoints ──────────────────────────────────────────────────────
+
+function buildSearchQueryString(params: SearchParams): string {
+  const searchParams = new URLSearchParams();
+
+  if (params.q) searchParams.set("q", params.q);
+  if (params.category) searchParams.set("category", params.category);
+  if (params.platform) searchParams.set("platform", params.platform);
+  if (params.pumpkin_version)
+    searchParams.set("pumpkin_version", params.pumpkin_version);
+  if (params.sort) searchParams.set("sort", params.sort);
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.per_page) searchParams.set("per_page", String(params.per_page));
+
+  const queryString = searchParams.toString();
+  return queryString ? `?${queryString}` : "";
+}
+
+export function getSearchPath(params: SearchParams = {}): string {
+  return `/search${buildSearchQueryString(params)}`;
+}
+
+export async function fetchSearch(
+  params: SearchParams = {},
+): Promise<SearchResponse> {
+  return apiFetch<SearchResponse>(getSearchPath(params));
+}
+
+export function getSuggestPath(query: string, limit?: number): string {
+  const params = new URLSearchParams({ q: query });
+  if (limit) params.set("limit", String(limit));
+  return `/search/suggest?${params.toString()}`;
+}
+
+export async function fetchSuggestions(
+  query: string,
+  limit?: number,
+): Promise<SearchSuggestion[]> {
+  return apiFetch<SearchSuggestion[]>(getSuggestPath(query, limit));
+}
+
+export function getPumpkinVersionsPath(): string {
+  return "/pumpkin-versions";
+}
+
+export async function fetchPumpkinVersions(): Promise<PumpkinVersion[]> {
+  return apiFetch<PumpkinVersion[]>(getPumpkinVersionsPath());
 }

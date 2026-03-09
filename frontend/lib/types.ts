@@ -203,3 +203,67 @@ export interface UpdateProfileRequest {
   display_name?: string;
   bio?: string;
 }
+
+// ── Search Types ──────────────────────────────────────────────────────────
+
+export interface SearchHit {
+  id: string;
+  name: string;
+  slug: string;
+  short_description: string | null;
+  author_username: string;
+  license: string | null;
+  downloads_total: number;
+  categories: string[];
+  category_slugs: string[];
+  platforms: string[];
+  pumpkin_versions: string[];
+  created_at_timestamp: number;
+  updated_at_timestamp: number;
+}
+
+export interface FacetDistribution {
+  categories: Record<string, number>;
+  platforms: Record<string, number>;
+  pumpkin_versions: Record<string, number>;
+}
+
+export interface SearchResponse {
+  hits: SearchHit[];
+  query: string;
+  processing_time_ms: number;
+  estimated_total_hits: number | null;
+  facet_distribution: FacetDistribution | null;
+  page: number;
+  per_page: number;
+}
+
+export interface SearchParams {
+  q?: string;
+  category?: string;
+  platform?: string;
+  pumpkin_version?: string;
+  sort?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export interface SearchSuggestion {
+  name: string;
+  slug: string;
+}
+
+export interface PumpkinVersion {
+  version: string;
+  tag_name: string;
+  published_at: string | null;
+}
+
+export type SearchSortOption =
+  | "relevance"
+  | "downloads"
+  | "newest"
+  | "oldest"
+  | "updated"
+  | "name_asc"
+  | "name_desc";
