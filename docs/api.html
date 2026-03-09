@@ -853,7 +853,7 @@
 
       <p>
         Binary distribution endpoints allow uploading compiled plugin artifacts per
-        architecture and version. Files are stored on S3-compatible storage (MinIO in
+        platform and version. Files are stored on S3-compatible storage (MinIO in
         development, Cloudflare R2 in production) with automatic SHA-256 checksum
         generation. Downloads use pre-signed URLs for direct client-to-storage transfer.
       </p>
@@ -861,8 +861,8 @@
       <div class="callout callout-info">
         <div class="callout-label">Storage</div>
         Binaries are stored on S3-compatible object storage. The key pattern is
-        <code>plugins/{slug}/{version}/{architecture}/{filename}</code>.
-        Each (version, architecture) pair allows at most one binary.
+        <code>plugins/{slug}/{version}/{platform}/{filename}</code>.
+        Each (version, platform) pair allows at most one binary.
       </div>
 
       <!-- List Binaries -->
@@ -887,11 +887,11 @@
     {
       "id": "uuid",
       "version_id": "uuid",
-      "architecture": "x86_64",
-      "file_name": "my-plugin.so",
+      "platform": "windows",
+      "file_name": "my-plugin.dll",
       "file_size": 2048576,
       "checksum_sha256": "a1b2c3d4…",
-      "storage_key": "plugins/my-plugin/1.0.0/x86_64/my-plugin.so",
+      "storage_key": "plugins/my-plugin/1.0.0/windows/my-plugin.dll",
       "content_type": "application/octet-stream",
       "uploaded_at": "2025-01-15T10:30:00Z"
     }
@@ -902,7 +902,7 @@
       <h3 id="binaries-upload"><span class="badge badge-orange">POST</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/binaries</code></h3>
 
       <p>
-        Upload a compiled binary for a specific version and architecture.
+        Upload a compiled binary for a specific version and platform.
         Requires authentication and plugin ownership. The file is validated
         against MIME type allowlist and a configurable size limit (default 100 MB).
       </p>
@@ -914,7 +914,7 @@
           <tr><th>Field</th><th>Type</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>architecture</code></td><td>text</td><td><code>x86_64</code> or <code>aarch64</code></td></tr>
+          <tr><td><code>platform</code></td><td>text</td><td><code>windows</code>, <code>macos</code> or <code>linux</code></td></tr>
           <tr><td><code>file</code></td><td>file</td><td>Binary file (max 100 MB by default)</td></tr>
         </tbody>
       </table>
@@ -924,11 +924,11 @@
   "binary": {
     "id": "uuid",
     "version_id": "uuid",
-    "architecture": "x86_64",
-    "file_name": "my-plugin.so",
+    "platform": "windows",
+    "file_name": "my-plugin.dll",
     "file_size": 2048576,
     "checksum_sha256": "a1b2c3d4…",
-    "storage_key": "plugins/my-plugin/1.0.0/x86_64/my-plugin.so",
+    "storage_key": "plugins/my-plugin/1.0.0/windows/my-plugin.dll",
     "content_type": "application/octet-stream",
     "uploaded_at": "2025-01-15T10:30:00Z"
   },
@@ -945,17 +945,17 @@
           <tr><td><span class="badge badge-yellow">401</span></td><td>Missing or invalid authentication</td></tr>
           <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin author</td></tr>
           <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or version not found</td></tr>
-          <tr><td><span class="badge badge-yellow">409</span></td><td>Binary already exists for this (version, architecture) pair</td></tr>
-          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid architecture, MIME type, file name or file too large</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Binary already exists for this (version, platform) pair</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid platform, MIME type, file name or file too large</td></tr>
         </tbody>
       </table>
 
       <!-- Download Binary -->
-      <h3 id="binaries-download"><span class="badge badge-green">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/download?arch=x86_64</code></h3>
+      <h3 id="binaries-download"><span class="badge badge-green">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/download?platform=windows</code></h3>
 
       <p>
         Returns a pre-signed download URL for the binary matching the requested
-        architecture. Also increments the download counters on both the version
+        platform. Also increments the download counters on both the version
         and the plugin.
       </p>
 
@@ -965,7 +965,7 @@
           <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>arch</code></td><td>string</td><td>Yes</td><td><code>x86_64</code> or <code>aarch64</code></td></tr>
+          <tr><td><code>platform</code></td><td>string</td><td>Yes</td><td><code>windows</code>, <code>macos</code> or <code>linux</code></td></tr>
         </tbody>
       </table>
 
@@ -973,8 +973,9 @@
       <pre><code>{
   "download_url": "https://…presigned-url…",
   "checksum_sha256": "a1b2c3d4…",
-  "file_name": "my-plugin.so",
+  "file_name": "my-plugin.dll",
   "file_size": 2048576,
+  "platform": "windows",
   "expires_in_seconds": 3600
 }</code></pre>
 
@@ -984,8 +985,8 @@
           <tr><th>Status</th><th>Condition</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin, version, or binary for the requested architecture not found</td></tr>
-          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid or missing <code>arch</code> parameter</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin, version, or binary for the requested platform not found</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid or missing <code>platform</code> parameter</td></tr>
         </tbody>
       </table>
 

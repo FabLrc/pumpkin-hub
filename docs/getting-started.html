@@ -88,12 +88,13 @@ cd pumpkin-hub</code></pre>
       <!-- ── Docker ────────────────────────────────────────── -->
       <h2 id="docker">Launch with Docker Compose</h2>
 
-      <p>The recommended method for development. Docker Compose orchestrates 4 services:</p>
+      <p>The recommended method for development. Docker Compose orchestrates 5 services:</p>
       <ul>
         <li><code>frontend-dev</code> — Next.js with hot-reload (port 3000)</li>
         <li><code>api-dev</code> — Rust API with cargo-watch (port 8080)</li>
         <li><code>db-dev</code> — PostgreSQL 16 Alpine (port 5432)</li>
         <li><code>meilisearch-dev</code> — Meilisearch v1.7 (port 7700)</li>
+        <li><code>minio-dev</code> — MinIO S3-compatible object storage (ports 9000/9001)</li>
       </ul>
 
       <pre><code># Build and start all services
@@ -121,6 +122,8 @@ docker compose logs -f api-dev</code></pre>
           <tr><td>API</td><td><code>http://localhost:8080</code></td><td>Axum backend</td></tr>
           <tr><td>PostgreSQL</td><td><code>localhost:5432</code></td><td>Database</td></tr>
           <tr><td>Meilisearch</td><td><code>http://localhost:7700</code></td><td>Search engine</td></tr>
+          <tr><td>MinIO</td><td><code>http://localhost:9000</code></td><td>Object storage (binary artifacts)</td></tr>
+          <tr><td>MinIO Console</td><td><code>http://localhost:9001</code></td><td>MinIO admin console</td></tr>
         </tbody>
       </table>
 
@@ -177,7 +180,14 @@ npm run build</code></pre>
           <tr><td><code>SERVER_PORT</code></td><td>No</td><td><code>8080</code></td><td>Listening port</td></tr>
           <tr><td><code>ALLOWED_ORIGINS</code></td><td>No</td><td><code>http://localhost:3000</code></td><td>CORS origins (comma-separated)</td></tr>
           <tr><td><code>RUST_LOG</code></td><td>No</td><td><code>pumpkin_hub_api=info</code></td><td>Log verbosity level</td></tr>
-          <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>No</td><td>—</td><td>API URL for the frontend</td></tr>
+          <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>No</td><td>—</td><td>API URL for the frontend (browser-side)</td></tr>
+          <tr><td><code>NEXT_INTERNAL_API_URL</code></td><td>No</td><td>—</td><td>API URL for server-side proxy routes (Docker internal network)</td></tr>
+          <tr><td><code>S3_ENDPOINT_URL</code></td><td>Yes</td><td>—</td><td>S3-compatible endpoint (e.g. <code>http://minio-dev:9000</code>)</td></tr>
+          <tr><td><code>S3_PUBLIC_URL</code></td><td>No</td><td>—</td><td>Browser-accessible S3 URL; rewrites internal endpoint in presigned download links</td></tr>
+          <tr><td><code>S3_BUCKET</code></td><td>Yes</td><td>—</td><td>S3 bucket name for binary storage</td></tr>
+          <tr><td><code>S3_ACCESS_KEY_ID</code></td><td>Yes</td><td>—</td><td>S3 access key</td></tr>
+          <tr><td><code>S3_SECRET_ACCESS_KEY</code></td><td>Yes</td><td>—</td><td>S3 secret key</td></tr>
+          <tr><td><code>S3_REGION</code></td><td>No</td><td><code>us-east-1</code></td><td>S3 region</td></tr>
         </tbody>
       </table>
 
@@ -187,7 +197,12 @@ MEILISEARCH_URL=http://localhost:7700
 MEILISEARCH_KEY=dev_master_key
 SERVER_PORT=8080
 ALLOWED_ORIGINS=http://localhost:3000
-RUST_LOG=pumpkin_hub_api=debug,tower_http=debug</code></pre>
+RUST_LOG=pumpkin_hub_api=debug,tower_http=debug
+S3_ENDPOINT_URL=http://localhost:9000
+S3_PUBLIC_URL=http://localhost:9000
+S3_BUCKET=pumpkin-hub-binaries
+S3_ACCESS_KEY_ID=minioadmin
+S3_SECRET_ACCESS_KEY=minioadmin</code></pre>
 
       <!-- ── Verification ──────────────────────────────────── -->
       <h2 id="verify">Installation Verification</h2>
