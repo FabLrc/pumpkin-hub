@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Shield, Cpu, Copy, Check } from "lucide-react";
+import { Download, Shield, Copy, Check } from "lucide-react";
 import type { BinaryResponse, BinaryDownloadResponse } from "@/lib/types";
 import { fetchBinaryDownload } from "@/lib/api";
 
@@ -52,7 +52,7 @@ function BinaryCard({
       const response: BinaryDownloadResponse = await fetchBinaryDownload(
         slug,
         version,
-        binary.architecture,
+        binary.platform,
       );
       // Open the pre-signed URL in a new tab to trigger download
       window.open(response.download_url, "_blank", "noopener,noreferrer");
@@ -71,14 +71,14 @@ function BinaryCard({
 
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-3 flex items-center justify-between gap-4">
-      {/* Left: architecture + file info */}
+      {/* Left: platform + file info */}
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-8 h-8 border border-border-hover flex items-center justify-center flex-shrink-0">
-          <Cpu className="text-text-dim w-[14px] h-[14px]" />
+        <div className="w-8 h-8 border border-border-hover flex items-center justify-center flex-shrink-0 font-mono text-[10px] text-text-dim">
+          {platformIcon(binary.platform)}
         </div>
         <div className="min-w-0">
           <div className="font-mono text-xs text-text-primary flex items-center gap-2">
-            <span className="font-bold">{binary.architecture}</span>
+            <span className="font-bold">{platformLabel(binary.platform)}</span>
             <span className="text-text-dim truncate">{binary.file_name}</span>
           </div>
           <div className="font-mono text-[10px] text-text-dim flex items-center gap-2 mt-0.5">
@@ -123,4 +123,22 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function platformLabel(platform: string): string {
+  switch (platform) {
+    case "windows": return "Windows";
+    case "macos": return "macOS";
+    case "linux": return "Linux";
+    default: return platform;
+  }
+}
+
+function platformIcon(platform: string): string {
+  switch (platform) {
+    case "windows": return ".dll";
+    case "macos": return ".dylib";
+    case "linux": return ".so";
+    default: return "?";
+  }
 }

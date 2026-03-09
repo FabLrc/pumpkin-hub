@@ -147,14 +147,14 @@ export interface YankVersionRequest {
 
 // ── Binary Types ──────────────────────────────────────────────────────────
 
-/** Supported target CPU architectures for plugin binaries. */
-export type Architecture = "x86_64" | "aarch64";
+/** Supported target OS platforms for plugin binaries. */
+export type Platform = "windows" | "macos" | "linux";
 
-export const ARCHITECTURES: Architecture[] = ["x86_64", "aarch64"];
+export const PLATFORMS: Platform[] = ["windows", "macos", "linux"];
 
 export interface BinaryResponse {
   id: string;
-  architecture: string;
+  platform: string;
   file_name: string;
   file_size: number;
   checksum_sha256: string;
@@ -179,7 +179,7 @@ export interface BinaryDownloadResponse {
   file_name: string;
   file_size: number;
   checksum_sha256: string;
-  architecture: string;
+  platform: string;
   expires_in_seconds: number;
 }
 

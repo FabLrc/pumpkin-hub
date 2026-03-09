@@ -289,8 +289,8 @@ pub struct YankVersionRequest {
 
 const FILE_NAME_MAX_LENGTH: usize = 255;
 
-/// Accepted target architectures for plugin binaries.
-const VALID_ARCHITECTURES: &[&str] = &["x86_64", "aarch64"];
+/// Accepted target platforms for plugin binaries.
+const VALID_PLATFORMS: &[&str] = &["windows", "macos", "linux"];
 
 /// Allowed Content-Types for binary uploads.
 const ALLOWED_BINARY_CONTENT_TYPES: &[&str] = &[
@@ -300,14 +300,17 @@ const ALLOWED_BINARY_CONTENT_TYPES: &[&str] = &[
     "application/x-executable",
     "application/x-sharedlib",
     "application/x-mach-binary",
+    // Windows PE format (.dll, .exe) — reported by different browsers/OS combinations
     "application/x-dosexec",
+    "application/x-msdownload",
+    "application/vnd.microsoft.portable-executable",
 ];
 
 /// Response DTO for a single binary artifact.
 #[derive(Debug, Serialize)]
 pub struct BinaryResponse {
     pub id: Uuid,
-    pub architecture: String,
+    pub platform: String,
     pub file_name: String,
     pub file_size: i64,
     pub checksum_sha256: String,
@@ -334,7 +337,7 @@ pub struct BinaryUploadResponse {
 /// Query parameters for the download endpoint.
 #[derive(Debug, Deserialize)]
 pub struct DownloadBinaryParams {
-    pub arch: String,
+    pub platform: String,
 }
 
 /// Response returned with the pre-signed download URL.
@@ -344,15 +347,15 @@ pub struct BinaryDownloadResponse {
     pub file_name: String,
     pub file_size: i64,
     pub checksum_sha256: String,
-    pub architecture: String,
+    pub platform: String,
     pub expires_in_seconds: u64,
 }
 
-pub fn validate_architecture(arch: &str) -> Result<(), AppError> {
-    if !VALID_ARCHITECTURES.contains(&arch) {
+pub fn validate_platform(platform: &str) -> Result<(), AppError> {
+    if !VALID_PLATFORMS.contains(&platform) {
         return Err(AppError::UnprocessableEntity(format!(
-            "Invalid architecture '{arch}'. Supported: {}",
-            VALID_ARCHITECTURES.join(", ")
+            "Invalid platform '{platform}'. Supported: {}",
+            VALID_PLATFORMS.join(", ")
         )));
     }
     Ok(())

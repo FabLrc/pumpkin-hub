@@ -736,7 +736,7 @@ pub async fn yank_version(
 #[derive(Debug, FromRow)]
 struct BinaryRow {
     id: Uuid,
-    architecture: String,
+    platform: String,
     file_name: String,
     file_size: i64,
     checksum_sha256: String,
@@ -750,7 +750,7 @@ struct BinaryRow {
 /// POST /api/v1/plugins/:slug/versions/:version/binaries — upload a binary artifact.
 ///
 /// Expects a `multipart/form-data` body with:
-/// - `architecture` (text field): target CPU architecture (x86_64 | aarch64)
+/// - `platform` (text field): target OS platform (windows | macos | linux)
 /// - `file` (file field): the binary artifact
 pub async fn upload_binary(
     State(state): State<AppState>,
@@ -774,7 +774,7 @@ pub async fn upload_binary(
     .ok_or(AppError::NotFound)?;
 
     // Parse multipart fields
-    let mut architecture: Option<String> = None;
+    let mut platform: Option<String> = None;
     let mut file_data: Option<Vec<u8>> = None;
     let mut file_name: Option<String> = None;
     let mut content_type = "application/octet-stream".to_string();
@@ -787,14 +787,14 @@ pub async fn upload_binary(
         let field_name = field.name().unwrap_or_default().to_string();
 
         match field_name.as_str() {
-            "architecture" => {
-                architecture = Some(
+            "platform" => {
+                platform = Some(
                     field
                         .text()
                         .await
                         .map_err(|e| {
                             AppError::UnprocessableEntity(format!(
-                                "Failed to read architecture field: {e}"
+                                "Failed to read platform field: {e}"
                             ))
                         })?
                         .trim()
@@ -834,31 +834,31 @@ pub async fn upload_binary(
     }
 
     // Validate required fields
-    let architecture = architecture.ok_or_else(|| {
-        AppError::UnprocessableEntity("Missing required field: architecture".to_string())
+    let platform = platform.ok_or_else(|| {
+        AppError::UnprocessableEntity("Missing required field: platform".to_string())
     })?;
     let file_data = file_data.ok_or_else(|| {
         AppError::UnprocessableEntity("Missing required field: file".to_string())
     })?;
     let file_name = file_name.unwrap_or_else(|| "plugin.bin".to_string());
 
-    super::dto::validate_architecture(&architecture)?;
+    super::dto::validate_platform(&platform)?;
     super::dto::validate_binary_content_type(&content_type)?;
     super::dto::validate_file_name(&file_name)?;
 
-    // Check for existing binary with same architecture
+    // Check for existing binary with same platform
     let existing: Option<Uuid> = sqlx::query_scalar(
-        "SELECT id FROM binaries WHERE version_id = $1 AND architecture = $2",
+        "SELECT id FROM binaries WHERE version_id = $1 AND platform = $2",
     )
     .bind(version_id)
-    .bind(&architecture)
+    .bind(&platform)
     .fetch_optional(pool)
     .await
     .map_err(AppError::internal)?;
 
     if existing.is_some() {
         return Err(AppError::Conflict(format!(
-            "A binary for architecture '{architecture}' already exists for version {version}"
+            "A binary for platform '{platform}' already exists for version {version}"
         )));
     }
 
@@ -867,7 +867,7 @@ pub async fn upload_binary(
 
     // Build storage key and upload to S3
     let storage_key =
-        ObjectStorage::build_storage_key(&slug, &version, &architecture, &file_name);
+        ObjectStorage::build_storage_key(&slug, &version, &platform, &file_name);
     let file_size = file_data.len() as i64;
 
     state
@@ -878,12 +878,12 @@ pub async fn upload_binary(
 
     // Insert metadata into database
     let row: BinaryRow = sqlx::query_as(
-        "INSERT INTO binaries (version_id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type)
+        "INSERT INTO binaries (version_id, platform, file_name, file_size, checksum_sha256, storage_key, content_type)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at",
+         RETURNING id, platform, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at",
     )
     .bind(version_id)
-    .bind(&architecture)
+    .bind(&platform)
     .bind(&file_name)
     .bind(file_size)
     .bind(&checksum)
@@ -905,7 +905,7 @@ pub async fn upload_binary(
         Json(BinaryUploadResponse {
             binary: BinaryResponse {
                 id: row.id,
-                architecture: row.architecture,
+                platform: row.platform,
                 file_name: row.file_name,
                 file_size: row.file_size,
                 checksum_sha256: row.checksum_sha256,
@@ -942,8 +942,8 @@ pub async fn list_binaries(
             .ok_or(AppError::NotFound)?;
 
     let rows: Vec<BinaryRow> = sqlx::query_as(
-        "SELECT id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
-         FROM binaries WHERE version_id = $1 ORDER BY architecture",
+        "SELECT id, platform, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
+         FROM binaries WHERE version_id = $1 ORDER BY platform",
     )
     .bind(version_id)
     .fetch_all(pool)
@@ -954,7 +954,7 @@ pub async fn list_binaries(
         .into_iter()
         .map(|r| BinaryResponse {
             id: r.id,
-            architecture: r.architecture,
+            platform: r.platform,
             file_name: r.file_name,
             file_size: r.file_size,
             checksum_sha256: r.checksum_sha256,
@@ -971,7 +971,7 @@ pub async fn list_binaries(
     }))
 }
 
-/// GET /api/v1/plugins/:slug/versions/:version/download?arch=x86_64 — get a pre-signed download URL.
+/// GET /api/v1/plugins/:slug/versions/:version/download?platform=windows — get a pre-signed download URL.
 ///
 /// Also increments version and plugin download counters atomically.
 pub async fn download_binary(
@@ -979,7 +979,7 @@ pub async fn download_binary(
     Path((slug, version)): Path<(String, String)>,
     Query(params): Query<DownloadBinaryParams>,
 ) -> Result<Json<BinaryDownloadResponse>, AppError> {
-    super::dto::validate_architecture(&params.arch)?;
+    super::dto::validate_platform(&params.platform)?;
 
     let pool = &state.db;
 
@@ -1001,11 +1001,11 @@ pub async fn download_binary(
             .ok_or(AppError::NotFound)?;
 
     let binary_row: BinaryRow = sqlx::query_as(
-        "SELECT id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
-         FROM binaries WHERE version_id = $1 AND architecture = $2",
+        "SELECT id, platform, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
+         FROM binaries WHERE version_id = $1 AND platform = $2",
     )
     .bind(version_id)
-    .bind(&params.arch)
+    .bind(&params.platform)
     .fetch_optional(pool)
     .await
     .map_err(AppError::internal)?
@@ -1037,7 +1037,7 @@ pub async fn download_binary(
         file_name: binary_row.file_name,
         file_size: binary_row.file_size,
         checksum_sha256: binary_row.checksum_sha256,
-        architecture: binary_row.architecture,
+        platform: binary_row.platform,
         expires_in_seconds: presigned.expires_in_seconds,
     }))
 }

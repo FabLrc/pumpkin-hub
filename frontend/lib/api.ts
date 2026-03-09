@@ -252,6 +252,15 @@ export function getBinariesPath(slug: string, version: string): string {
   return `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/binaries`;
 }
 
+/**
+ * Proxy path for binary uploads.
+ * Routes through the Next.js App Router handler to avoid ERR_CONNECTION_ABORTED
+ * caused by Chrome + Docker Desktop WSL2 cross-origin large body limitation.
+ */
+function getBinariesProxyPath(slug: string, version: string): string {
+  return `/api/upload/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/binaries`;
+}
+
 export async function fetchBinaries(
   slug: string,
   version: string,
@@ -267,18 +276,18 @@ export async function uploadBinary(
   slug: string,
   version: string,
   file: File,
-  architecture: string,
+  platform: string,
   onProgress?: (progress: number) => void,
 ): Promise<BinaryUploadResponse> {
   const formData = new FormData();
-  formData.append("architecture", architecture);
+  formData.append("platform", platform);
   formData.append("file", file);
 
   // Use XMLHttpRequest for upload progress tracking
   return new Promise<BinaryUploadResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${API_PREFIX}${getBinariesPath(slug, version)}`);
-    xhr.withCredentials = true;
+    // Same-origin proxy path — avoids Chrome + Docker Desktop cross-origin large body abort
+    xhr.open("POST", getBinariesProxyPath(slug, version));
 
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable && onProgress) {
@@ -305,9 +314,9 @@ export async function uploadBinary(
 export async function fetchBinaryDownload(
   slug: string,
   version: string,
-  architecture: string,
+  platform: string,
 ): Promise<BinaryDownloadResponse> {
   return apiFetch<BinaryDownloadResponse>(
-    `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download?arch=${encodeURIComponent(architecture)}`,
+    `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download?platform=${encodeURIComponent(platform)}`,
   );
 }

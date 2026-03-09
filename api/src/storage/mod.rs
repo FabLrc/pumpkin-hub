@@ -17,6 +17,11 @@ use crate::config::S3Config;
 pub struct ObjectStorage {
     client: Client,
     bucket: String,
+    /// Internal S3 endpoint URL (e.g. `http://minio-dev:9000`).
+    endpoint_url: String,
+    /// Optional browser-reachable URL that replaces `endpoint_url` in
+    /// pre-signed download links (e.g. `http://localhost:9000` in dev).
+    public_url: Option<String>,
 }
 
 /// Pre-signed download response returned to callers.
@@ -55,6 +60,8 @@ impl ObjectStorage {
         Self {
             client,
             bucket: config.bucket.clone(),
+            endpoint_url: config.endpoint_url.clone(),
+            public_url: config.public_url.clone(),
         }
     }
 
@@ -79,6 +86,8 @@ impl ObjectStorage {
     }
 
     /// Generates a time-limited pre-signed URL for downloading an object.
+    /// When `public_url` is configured the internal S3 endpoint is replaced
+    /// so the URL is reachable from the browser.
     pub async fn presigned_download_url(
         &self,
         key: &str,
@@ -95,8 +104,18 @@ impl ObjectStorage {
             .presigned(presigning)
             .await?;
 
+        let raw_url = presigned_request.uri().to_string();
+
+        // Rewrite the internal endpoint (e.g. http://minio-dev:9000) with the
+        // browser-reachable public URL (e.g. http://localhost:9000) so the
+        // download link works outside the Docker network.
+        let url = match &self.public_url {
+            Some(public) => raw_url.replacen(&self.endpoint_url, public, 1),
+            None => raw_url,
+        };
+
         Ok(PresignedDownload {
-            url: presigned_request.uri().to_string(),
+            url,
             expires_in_seconds: PRESIGNED_URL_TTL_SECONDS,
         })
     }
@@ -119,13 +138,13 @@ impl ObjectStorage {
     }
 
     /// Builds the canonical S3 object key for a plugin binary.
-    /// Pattern: `plugins/{slug}/{version}/{architecture}/{file_name}`
+    /// Pattern: `plugins/{slug}/{version}/{platform}/{file_name}`
     pub fn build_storage_key(
         plugin_slug: &str,
         version: &str,
-        architecture: &str,
+        platform: &str,
         file_name: &str,
     ) -> String {
-        format!("plugins/{plugin_slug}/{version}/{architecture}/{file_name}")
+        format!("plugins/{plugin_slug}/{version}/{platform}/{file_name}")
     }
 }
