@@ -2,12 +2,7 @@ use std::time::Duration;
 
 use aws_config::BehaviorVersion;
 use aws_credential_types::Credentials;
-use aws_sdk_s3::{
-    config::Region,
-    presigning::PresigningConfig,
-    primitives::ByteStream,
-    Client,
-};
+use aws_sdk_s3::{config::Region, presigning::PresigningConfig, primitives::ByteStream, Client};
 
 use crate::config::S3Config;
 
@@ -92,9 +87,8 @@ impl ObjectStorage {
         &self,
         key: &str,
     ) -> Result<PresignedDownload, Box<dyn std::error::Error + Send + Sync>> {
-        let presigning = PresigningConfig::expires_in(Duration::from_secs(
-            PRESIGNED_URL_TTL_SECONDS,
-        ))?;
+        let presigning =
+            PresigningConfig::expires_in(Duration::from_secs(PRESIGNED_URL_TTL_SECONDS))?;
 
         let presigned_request = self
             .client

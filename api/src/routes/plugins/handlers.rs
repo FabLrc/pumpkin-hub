@@ -763,15 +763,14 @@ pub async fn upload_binary(
     require_ownership(&auth, plugin_row.author_id)?;
 
     // Resolve version
-    let version_id: Uuid = sqlx::query_scalar(
-        "SELECT id FROM versions WHERE plugin_id = $1 AND version = $2",
-    )
-    .bind(plugin_row.id)
-    .bind(&version)
-    .fetch_optional(pool)
-    .await
-    .map_err(AppError::internal)?
-    .ok_or(AppError::NotFound)?;
+    let version_id: Uuid =
+        sqlx::query_scalar("SELECT id FROM versions WHERE plugin_id = $1 AND version = $2")
+            .bind(plugin_row.id)
+            .bind(&version)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?
+            .ok_or(AppError::NotFound)?;
 
     // Parse multipart fields
     let mut platform: Option<String> = None;
@@ -837,9 +836,8 @@ pub async fn upload_binary(
     let platform = platform.ok_or_else(|| {
         AppError::UnprocessableEntity("Missing required field: platform".to_string())
     })?;
-    let file_data = file_data.ok_or_else(|| {
-        AppError::UnprocessableEntity("Missing required field: file".to_string())
-    })?;
+    let file_data = file_data
+        .ok_or_else(|| AppError::UnprocessableEntity("Missing required field: file".to_string()))?;
     let file_name = file_name.unwrap_or_else(|| "plugin.bin".to_string());
 
     super::dto::validate_platform(&platform)?;
@@ -847,14 +845,13 @@ pub async fn upload_binary(
     super::dto::validate_file_name(&file_name)?;
 
     // Check for existing binary with same platform
-    let existing: Option<Uuid> = sqlx::query_scalar(
-        "SELECT id FROM binaries WHERE version_id = $1 AND platform = $2",
-    )
-    .bind(version_id)
-    .bind(&platform)
-    .fetch_optional(pool)
-    .await
-    .map_err(AppError::internal)?;
+    let existing: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM binaries WHERE version_id = $1 AND platform = $2")
+            .bind(version_id)
+            .bind(&platform)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?;
 
     if existing.is_some() {
         return Err(AppError::Conflict(format!(
@@ -866,8 +863,7 @@ pub async fn upload_binary(
     let checksum = compute_sha256(&file_data);
 
     // Build storage key and upload to S3
-    let storage_key =
-        ObjectStorage::build_storage_key(&slug, &version, &platform, &file_name);
+    let storage_key = ObjectStorage::build_storage_key(&slug, &version, &platform, &file_name);
     let file_size = file_data.len() as i64;
 
     state

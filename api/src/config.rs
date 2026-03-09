@@ -125,8 +125,7 @@ impl Config {
             .parse::<bool>()
             .unwrap_or(false);
         let s3_public_url = std::env::var("S3_PUBLIC_URL").ok();
-        let binary_max_size_bytes =
-            parse_env_var::<u64>("BINARY_MAX_SIZE_BYTES", 104_857_600)?;
+        let binary_max_size_bytes = parse_env_var::<u64>("BINARY_MAX_SIZE_BYTES", 104_857_600)?;
 
         Ok(Config {
             server: ServerConfig {
