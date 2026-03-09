@@ -51,6 +51,7 @@ pub async fn build_test_app() -> (Router, PgPool) {
                 .unwrap_or_else(|_| "minioadmin".to_string()),
             region: "us-east-1".to_string(),
             force_path_style: true,
+            public_url: None,
         },
         binary_max_size_bytes: 104_857_600,
     };
