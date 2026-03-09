@@ -73,6 +73,14 @@ argon2 = "0.5"
 # Semantic versioning validation
 semver = "1"
 
+# S3-compatible object storage (MinIO local, Cloudflare R2 production)
+aws-sdk-s3 = "1"
+aws-config = { version = "1", features = ["behavior-version-latest"] }
+aws-credential-types = "1"
+
+# SHA-256 checksum generation
+sha2 = "0.10"
+
 [profile.release]
 opt-level = 3
 lto = true

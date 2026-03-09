@@ -33,6 +33,8 @@ services:
         condition: service_healthy
       meilisearch-dev:
         condition: service_healthy
+      minio-dev:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgres://pumpkin_user:dev_password@db-dev:5432/pumpkin_hub_dev
       - MEILISEARCH_URL=http://meilisearch-dev:7700
@@ -49,6 +51,13 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_me_in_production}
       - JWT_TTL_SECONDS=86400
       - API_PUBLIC_URL=http://localhost:8080
+      - S3_ENDPOINT_URL=http://minio-dev:9000
+      - S3_BUCKET=pumpkin-hub-binaries
+      - S3_ACCESS_KEY_ID=minioadmin
+      - S3_SECRET_ACCESS_KEY=minioadmin
+      - S3_REGION=us-east-1
+      - S3_FORCE_PATH_STYLE=true
+      - BINARY_MAX_SIZE_BYTES=104857600
 
   db-dev:
     container_name: pumpkin-hub-db-dev
@@ -83,7 +92,41 @@ services:
       timeout: 5s
       retries: 5
 
+  minio-dev:
+    container_name: pumpkin-hub-minio-dev
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio-data-dev:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Creates the default bucket on first startup
+  minio-init:
+    container_name: pumpkin-hub-minio-init
+    image: minio/mc:latest
+    depends_on:
+      minio-dev:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio-dev:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/pumpkin-hub-binaries;
+      mc anonymous set download local/pumpkin-hub-binaries;
+      exit 0;
+      "
+
 volumes:
   db-data-dev:
   meili-data-dev:
+  minio-data-dev:
   cargo-cache:

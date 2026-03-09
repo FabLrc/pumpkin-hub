@@ -11,6 +11,8 @@ pub struct Config {
     pub google: Option<OAuthProviderConfig>,
     pub discord: Option<OAuthProviderConfig>,
     pub jwt: JwtConfig,
+    pub s3: S3Config,
+    pub binary_max_size_bytes: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -47,6 +49,17 @@ pub struct JwtConfig {
     pub secret: String,
     /// Token time-to-live in seconds (default: 24h).
     pub ttl_seconds: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct S3Config {
+    pub endpoint_url: String,
+    pub bucket: String,
+    pub access_key_id: String,
+    pub secret_access_key: String,
+    pub region: String,
+    /// Use path-style addressing (required for MinIO, false for R2).
+    pub force_path_style: bool,
 }
 
 #[derive(Debug, Error)]
@@ -97,6 +110,19 @@ impl Config {
         let jwt_secret = require_env("JWT_SECRET")?;
         let jwt_ttl_seconds = parse_env_var::<u64>("JWT_TTL_SECONDS", 86400)?;
 
+        let s3_endpoint_url = require_env("S3_ENDPOINT_URL")?;
+        let s3_bucket =
+            std::env::var("S3_BUCKET").unwrap_or_else(|_| "pumpkin-hub-binaries".to_string());
+        let s3_access_key_id = require_env("S3_ACCESS_KEY_ID")?;
+        let s3_secret_access_key = require_env("S3_SECRET_ACCESS_KEY")?;
+        let s3_region = std::env::var("S3_REGION").unwrap_or_else(|_| "auto".to_string());
+        let s3_force_path_style = std::env::var("S3_FORCE_PATH_STYLE")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse::<bool>()
+            .unwrap_or(false);
+        let binary_max_size_bytes =
+            parse_env_var::<u64>("BINARY_MAX_SIZE_BYTES", 104_857_600)?;
+
         Ok(Config {
             server: ServerConfig {
                 address: SocketAddr::new(ip, port),
@@ -119,6 +145,15 @@ impl Config {
                 secret: jwt_secret,
                 ttl_seconds: jwt_ttl_seconds,
             },
+            s3: S3Config {
+                endpoint_url: s3_endpoint_url,
+                bucket: s3_bucket,
+                access_key_id: s3_access_key_id,
+                secret_access_key: s3_secret_access_key,
+                region: s3_region,
+                force_path_style: s3_force_path_style,
+            },
+            binary_max_size_bytes,
         })
     }
 }
@@ -147,6 +182,15 @@ impl Default for Config {
                 secret: String::new(),
                 ttl_seconds: 86400,
             },
+            s3: S3Config {
+                endpoint_url: "http://localhost:9000".to_string(),
+                bucket: "pumpkin-hub-binaries".to_string(),
+                access_key_id: String::new(),
+                secret_access_key: String::new(),
+                region: "us-east-1".to_string(),
+                force_path_style: true,
+            },
+            binary_max_size_bytes: 104_857_600,
         }
     }
 }
