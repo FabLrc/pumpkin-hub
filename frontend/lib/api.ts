@@ -2,6 +2,7 @@
 // Centralised fetch wrapper for the Pumpkin Hub REST API.
 
 import type {
+  AuthorProfileResponse,
   BinariesListResponse,
   BinaryDownloadResponse,
   BinaryUploadResponse,
@@ -485,4 +486,38 @@ export async function fetchDependants(
   slug: string,
 ): Promise<ReverseDependencyResponse> {
   return apiFetch<ReverseDependencyResponse>(getDependantsPath(slug));
+}
+
+// ── Author Profile Endpoints ──────────────────────────────────────────────
+
+export function getAuthorProfilePath(username: string): string {
+  return `/users/${encodeURIComponent(username)}`;
+}
+
+export async function fetchAuthorProfile(
+  username: string,
+): Promise<AuthorProfileResponse> {
+  return apiFetch<AuthorProfileResponse>(getAuthorProfilePath(username));
+}
+
+export function getAuthorPluginsPath(
+  username: string,
+  page?: number,
+  perPage?: number,
+): string {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (perPage) params.set("per_page", String(perPage));
+  const queryString = params.toString();
+  return `/users/${encodeURIComponent(username)}/plugins${queryString ? `?${queryString}` : ""}`;
+}
+
+export async function fetchAuthorPlugins(
+  username: string,
+  page?: number,
+  perPage?: number,
+): Promise<PaginatedResponse<PluginSummary>> {
+  return apiFetch<PaginatedResponse<PluginSummary>>(
+    getAuthorPluginsPath(username, page, perPage),
+  );
 }

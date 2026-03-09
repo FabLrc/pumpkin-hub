@@ -64,7 +64,13 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
 
           <p className="font-mono text-[10px] text-text-dim mb-2.5">
             by{" "}
-            <span className="text-text-subtle">{plugin.author.username}</span>
+            <Link
+              href={`/users/${plugin.author.username}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-text-subtle hover:text-accent transition-colors"
+            >
+              {plugin.author.username}
+            </Link>
             {" · "}
             Updated {formatTimeAgo(plugin.updated_at)}
           </p>

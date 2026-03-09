@@ -94,9 +94,12 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
             <div className="flex items-center gap-4 font-mono text-xs text-text-dim flex-wrap">
               <span>
                 by{" "}
-                <span className="text-text-subtle hover:text-accent transition-colors cursor-pointer">
+                <Link
+                  href={`/users/${plugin.author.username}`}
+                  className="text-text-subtle hover:text-accent transition-colors"
+                >
                   {plugin.author.username}
-                </span>
+                </Link>
               </span>
               <span>·</span>
               <div className="flex items-center gap-1">

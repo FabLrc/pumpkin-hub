@@ -67,7 +67,11 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
                 {featured.name}
               </h3>
               <p className="font-mono text-xs text-text-dim mb-1">
-                by <span className="text-text-subtle">{featured.author.username}</span>
+                by <Link
+                  href={`/users/${featured.author.username}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-text-subtle hover:text-accent transition-colors"
+                >{featured.author.username}</Link>
               </p>
               {featured.short_description && (
                 <p className="font-raleway text-sm text-text-subtle leading-relaxed mt-4 mb-auto">
@@ -133,7 +137,11 @@ function SmallBentoCard({ plugin }: { plugin: PluginSummary }) {
         {plugin.name}
       </h3>
       <p className="font-mono text-[10px] text-text-dim mb-3 truncate">
-        by <span className="text-text-subtle">{plugin.author.username}</span>
+        by <Link
+          href={`/users/${plugin.author.username}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-text-subtle hover:text-accent transition-colors"
+        >{plugin.author.username}</Link>
       </p>
       {plugin.short_description && (
         <p className="font-raleway text-xs text-text-dim leading-relaxed mb-auto line-clamp-3">

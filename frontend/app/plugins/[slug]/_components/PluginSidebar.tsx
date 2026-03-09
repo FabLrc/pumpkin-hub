@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   Github,
   BookOpen,
@@ -194,7 +195,10 @@ function AuthorCard({ plugin }: { plugin: PluginResponse }) {
   const initials = plugin.author.username.slice(0, 2).toLowerCase();
 
   return (
-    <div className="border border-border-default bg-bg-elevated/30 p-5">
+    <Link
+      href={`/users/${plugin.author.username}`}
+      className="block border border-border-default bg-bg-elevated/30 p-5 hover:border-border-hover transition-colors"
+    >
       <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
         Author
       </div>
@@ -221,6 +225,6 @@ function AuthorCard({ plugin }: { plugin: PluginResponse }) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

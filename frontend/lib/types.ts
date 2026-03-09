@@ -35,6 +35,18 @@ export interface AuthorSummary {
   avatar_url: string | null;
 }
 
+export interface AuthorProfileResponse {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  role: string;
+  plugin_count: number;
+  total_downloads: number;
+  created_at: string;
+}
+
 export interface CategorySummary {
   id: string;
   name: string;

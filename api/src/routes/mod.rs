@@ -4,6 +4,7 @@ mod dependencies;
 mod health;
 mod plugins;
 mod search;
+mod users;
 
 use std::sync::Arc;
 
@@ -31,4 +32,5 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(plugins::routes())
         .merge(dependencies::routes())
         .merge(search::routes())
+        .merge(users::routes())
 }
