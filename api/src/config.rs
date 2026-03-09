@@ -60,6 +60,10 @@ pub struct S3Config {
     pub region: String,
     /// Use path-style addressing (required for MinIO, false for R2).
     pub force_path_style: bool,
+    /// Browser-reachable base URL for pre-signed download links.
+    /// When set, replaces the internal `endpoint_url` in generated URLs.
+    /// Example: "http://localhost:9000" in dev, the R2 public URL in prod.
+    pub public_url: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -120,6 +124,7 @@ impl Config {
             .unwrap_or_else(|_| "false".to_string())
             .parse::<bool>()
             .unwrap_or(false);
+        let s3_public_url = std::env::var("S3_PUBLIC_URL").ok();
         let binary_max_size_bytes =
             parse_env_var::<u64>("BINARY_MAX_SIZE_BYTES", 104_857_600)?;
 
@@ -152,6 +157,7 @@ impl Config {
                 secret_access_key: s3_secret_access_key,
                 region: s3_region,
                 force_path_style: s3_force_path_style,
+                public_url: s3_public_url,
             },
             binary_max_size_bytes,
         })
@@ -189,6 +195,7 @@ impl Default for Config {
                 secret_access_key: String::new(),
                 region: "us-east-1".to_string(),
                 force_path_style: true,
+                public_url: None,
             },
             binary_max_size_bytes: 104_857_600,
         }

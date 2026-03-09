@@ -14,6 +14,9 @@ services:
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8080
+      # Used by the Next.js proxy route (server-side) to reach the API via Docker internal
+      # network, bypassing the Chrome + Docker Desktop WSL2 cross-origin upload limitation.
+      - NEXT_INTERNAL_API_URL=http://api-dev:8080
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
 
@@ -52,6 +55,7 @@ services:
       - JWT_TTL_SECONDS=86400
       - API_PUBLIC_URL=http://localhost:8080
       - S3_ENDPOINT_URL=http://minio-dev:9000
+      - S3_PUBLIC_URL=http://localhost:9000
       - S3_BUCKET=pumpkin-hub-binaries
       - S3_ACCESS_KEY_ID=minioadmin
       - S3_SECRET_ACCESS_KEY=minioadmin
