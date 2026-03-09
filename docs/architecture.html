@@ -53,6 +53,7 @@
         <a href="#database" class="sidebar-sublink">Database (PostgreSQL)</a>
         <a href="#frontend" class="sidebar-sublink">Frontend (Next.js)</a>
         <a href="#infrastructure" class="sidebar-sublink">Infrastructure</a>
+        <a href="#object-storage" class="sidebar-sublink">Object Storage (S3/R2)</a>
         <a href="#ci-cd" class="sidebar-sublink">CI/CD</a>
       </div>
     </aside>
@@ -380,6 +381,151 @@
           <tr><td><code>minio-data-dev</code></td><td>MinIO object storage (binary artifacts)</td></tr>
         </tbody>
       </table>
+
+      <!-- ── Object Storage ────────────────────────────────── -->
+      <h2 id="object-storage">Object Storage — S3 / MinIO / R2</h2>
+
+      <p>
+        Binary artifacts (compiled plugins) are stored in an <strong>S3-compatible object store</strong>.
+        In development, MinIO runs inside Docker. In production, Cloudflare R2 (or any S3-compatible
+        service) is the intended target. The abstraction lives in <code>api/src/storage/mod.rs</code>
+        as the <code>ObjectStorage</code> struct.
+      </p>
+
+      <h3>Two-Client Design</h3>
+      <p>
+        AWS SigV4 (the request signing algorithm used by the AWS SDK) <strong>includes the
+        <code>Host</code> header in the signature calculation</strong>. This means a presigned URL
+        signed for host <code>minio-dev:9000</code> (the Docker-internal endpoint) will be rejected
+        when the browser attempts to use it via <code>localhost:9000</code> — the signatures do not
+        match. To solve this, <code>ObjectStorage</code> maintains two separate S3 clients:
+      </p>
+
+      <pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│                         ObjectStorage                               │
+│                                                                     │
+│   client                          presign_client                    │
+│   endpoint: S3_ENDPOINT_URL       endpoint: S3_PUBLIC_URL           │
+│   (Docker-internal / private)     (browser-reachable / public)      │
+│                                                                     │
+│   ├─ put_object()                 ├─ presigned_download_url()       │
+│   └─ delete_object()             └─ (URL host signed for public)    │
+└─────────────────────────────────────────────────────────────────────┘
+
+  If S3_PUBLIC_URL is not set, both clients share the same endpoint.</code></pre>
+
+      <h3>Upload Flow</h3>
+      <p>
+        Files are uploaded by the API directly — the browser sends the binary to the API via
+        <code>multipart/form-data</code>, and the API streams it to the object store over the
+        internal Docker network.
+      </p>
+
+      <pre><code>   Browser                    API (Axum)                  MinIO / S3
+   (localhost)               (port 8080)             (internal: minio-dev:9000)
+       │                         │                            │
+       │  POST /binaries         │                            │
+       │  multipart/form-data ──►│                            │
+       │                         │  PutObject                 │
+       │                         │  (via `client`)           │
+       │                         │──────────────────────────►│
+       │                         │         200 OK             │
+       │                         │◄──────────────────────────│
+       │  201 Created (binary)  │                            │
+       │◄────────────────────────│                            │</code></pre>
+
+      <h3>Download Flow — Presigned URL</h3>
+      <p>
+        Instead of proxying file downloads through the API, a time-limited presigned URL
+        (1 hour TTL) is returned to the browser. The browser then downloads the file directly
+        from the object store, bypassing the API entirely. The URL is signed using
+        <code>presign_client</code>, whose endpoint is the <em>public</em> URL, so the
+        signature and the host the browser contacts are identical.
+      </p>
+
+      <pre><code>   Browser                    API (Axum)                  MinIO / S3
+   (localhost)               (port 8080)             (public: localhost:9000)
+       │                         │                            │
+       │  GET /binaries/:id      │                            │
+       │  /download ────────────►│                            │
+       │                         │  GetObject presigned       │
+       │                         │  (via `presign_client`,    │
+       │                         │   host = localhost:9000)   │
+       │                         │──────────────────────────►│
+       │                         │  presigned URL             │
+       │                         │◄──────────────────────────│
+       │  { url, expires_in }   │                            │
+       │◄────────────────────────│                            │
+       │                                                      │
+       │  GET https://localhost:9000/pumpkin-hub-binaries/   │
+       │      ...?X-Amz-Signature=&lt;sig&gt;&amp;X-Amz-Expires=3600  │
+       │─────────────────────────────────────────────────────►│
+       │                      binary payload                  │
+       │◄─────────────────────────────────────────────────────│
+
+  ✓ Host in URL (localhost:9000) matches the host used during signing
+    → MinIO accepts the request.</code></pre>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">Common Mistake</div>
+        If <code>S3_PUBLIC_URL</code> is omitted (or wrong) in a Docker environment, the presigned
+        URL will carry the internal hostname (<code>minio-dev:9000</code>) while the browser tries
+        to reach <code>localhost:9000</code>. MinIO will return a
+        <strong>SignatureDoesNotMatch</strong> error because the <code>Host</code> header was
+        included in the signature for a different hostname.
+      </div>
+
+      <h3>Dev vs Production Configuration</h3>
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Dev (Docker / MinIO)</th><th>Prod (Cloudflare R2)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>S3_ENDPOINT_URL</code></td>
+            <td><code>http://minio-dev:9000</code></td>
+            <td><code>https://&lt;account&gt;.r2.cloudflarestorage.com</code></td>
+          </tr>
+          <tr>
+            <td><code>S3_PUBLIC_URL</code></td>
+            <td><code>http://localhost:9000</code></td>
+            <td><code>https://pub-&lt;hash&gt;.r2.dev</code> (R2 public URL) or your custom domain</td>
+          </tr>
+          <tr>
+            <td><code>S3_BUCKET</code></td>
+            <td><code>pumpkin-hub-binaries</code></td>
+            <td>Your R2 bucket name</td>
+          </tr>
+          <tr>
+            <td><code>S3_ACCESS_KEY_ID</code></td>
+            <td><code>minioadmin</code></td>
+            <td>R2 API Token ID</td>
+          </tr>
+          <tr>
+            <td><code>S3_SECRET_ACCESS_KEY</code></td>
+            <td><code>minioadmin</code></td>
+            <td>R2 API Token Secret</td>
+          </tr>
+          <tr>
+            <td><code>S3_REGION</code></td>
+            <td><code>us-east-1</code> (MinIO ignores this)</td>
+            <td><code>auto</code> (R2 requirement)</td>
+          </tr>
+          <tr>
+            <td><code>S3_FORCE_PATH_STYLE</code></td>
+            <td><code>true</code> (required for MinIO)</td>
+            <td><code>false</code> (R2 uses virtual-hosted style)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Object Key Structure</h3>
+      <p>Files are stored with the following canonical key pattern:</p>
+      <pre><code>plugins/{plugin_slug}/{version}/{platform}/{file_name}
+
+# Example
+plugins/pumpkin-voice/0.1.2/windows/pumpkin_voice.dll
+plugins/pumpkin-voice/0.1.2/linux/pumpkin_voice.so</code></pre>
 
       <!-- ── CI/CD ─────────────────────────────────────────── -->
       <h2 id="ci-cd">CI/CD — GitHub Actions</h2>

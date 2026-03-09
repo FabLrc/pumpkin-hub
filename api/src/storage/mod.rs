@@ -11,12 +11,12 @@ use crate::config::S3Config;
 #[derive(Clone)]
 pub struct ObjectStorage {
     client: Client,
+    /// Separate client configured with the public endpoint, used exclusively
+    /// for generating presigned download URLs reachable from the browser.
+    /// SigV4 includes the Host in the signature, so the presigning client
+    /// **must** use the same host the browser will hit.
+    presign_client: Client,
     bucket: String,
-    /// Internal S3 endpoint URL (e.g. `http://minio-dev:9000`).
-    endpoint_url: String,
-    /// Optional browser-reachable URL that replaces `endpoint_url` in
-    /// pre-signed download links (e.g. `http://localhost:9000` in dev).
-    public_url: Option<String>,
 }
 
 /// Pre-signed download response returned to callers.
@@ -41,7 +41,7 @@ impl ObjectStorage {
 
         let sdk_config = aws_config::defaults(BehaviorVersion::latest())
             .endpoint_url(&config.endpoint_url)
-            .credentials_provider(credentials)
+            .credentials_provider(credentials.clone())
             .region(Region::new(config.region.clone()))
             .load()
             .await;
@@ -52,11 +52,27 @@ impl ObjectStorage {
 
         let client = Client::from_conf(s3_config);
 
+        // Build a second client pointing at the public URL (browser-reachable)
+        // so that presigned URLs carry a signature matching the public host.
+        let presign_endpoint = config.public_url.as_deref().unwrap_or(&config.endpoint_url);
+
+        let presign_sdk_config = aws_config::defaults(BehaviorVersion::latest())
+            .endpoint_url(presign_endpoint)
+            .credentials_provider(credentials)
+            .region(Region::new(config.region.clone()))
+            .load()
+            .await;
+
+        let presign_s3_config = aws_sdk_s3::config::Builder::from(&presign_sdk_config)
+            .force_path_style(config.force_path_style)
+            .build();
+
+        let presign_client = Client::from_conf(presign_s3_config);
+
         Self {
             client,
+            presign_client,
             bucket: config.bucket.clone(),
-            endpoint_url: config.endpoint_url.clone(),
-            public_url: config.public_url.clone(),
         }
     }
 
@@ -81,8 +97,8 @@ impl ObjectStorage {
     }
 
     /// Generates a time-limited pre-signed URL for downloading an object.
-    /// When `public_url` is configured the internal S3 endpoint is replaced
-    /// so the URL is reachable from the browser.
+    /// Uses a dedicated client configured with the public endpoint so the
+    /// SigV4 signature matches the host the browser will actually contact.
     pub async fn presigned_download_url(
         &self,
         key: &str,
@@ -91,22 +107,14 @@ impl ObjectStorage {
             PresigningConfig::expires_in(Duration::from_secs(PRESIGNED_URL_TTL_SECONDS))?;
 
         let presigned_request = self
-            .client
+            .presign_client
             .get_object()
             .bucket(&self.bucket)
             .key(key)
             .presigned(presigning)
             .await?;
 
-        let raw_url = presigned_request.uri().to_string();
-
-        // Rewrite the internal endpoint (e.g. http://minio-dev:9000) with the
-        // browser-reachable public URL (e.g. http://localhost:9000) so the
-        // download link works outside the Docker network.
-        let url = match &self.public_url {
-            Some(public) => raw_url.replacen(&self.endpoint_url, public, 1),
-            None => raw_url,
-        };
+        let url = presigned_request.uri().to_string();
 
         Ok(PresignedDownload {
             url,

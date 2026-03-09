@@ -52,6 +52,7 @@
         <a href="#docker" class="sidebar-sublink">Docker Launch</a>
         <a href="#local" class="sidebar-sublink">Local Launch</a>
         <a href="#env" class="sidebar-sublink">Environment Variables</a>
+        <a href="#s3-config" class="sidebar-sublink">S3 / R2 Configuration</a>
         <a href="#verify" class="sidebar-sublink">Verification</a>
       </div>
     </aside>
@@ -182,12 +183,13 @@ npm run build</code></pre>
           <tr><td><code>RUST_LOG</code></td><td>No</td><td><code>pumpkin_hub_api=info</code></td><td>Log verbosity level</td></tr>
           <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>No</td><td>—</td><td>API URL for the frontend (browser-side)</td></tr>
           <tr><td><code>NEXT_INTERNAL_API_URL</code></td><td>No</td><td>—</td><td>API URL for server-side proxy routes (Docker internal network)</td></tr>
-          <tr><td><code>S3_ENDPOINT_URL</code></td><td>Yes</td><td>—</td><td>S3-compatible endpoint (e.g. <code>http://minio-dev:9000</code>)</td></tr>
-          <tr><td><code>S3_PUBLIC_URL</code></td><td>No</td><td>—</td><td>Browser-accessible S3 URL; rewrites internal endpoint in presigned download links</td></tr>
+          <tr><td><code>S3_ENDPOINT_URL</code></td><td>Yes</td><td>—</td><td>Internal S3-compatible endpoint used by the API for uploads &amp; deletes (e.g. <code>http://minio-dev:9000</code> inside Docker)</td></tr>
+          <tr><td><code>S3_PUBLIC_URL</code></td><td>Strongly recommended</td><td>=&nbsp;<code>S3_ENDPOINT_URL</code></td><td>Browser-reachable URL used to <strong>sign</strong> presigned download URLs. Must be reachable by the end-user. See <a href="#s3-config">S3 configuration notes</a>.</td></tr>
           <tr><td><code>S3_BUCKET</code></td><td>Yes</td><td>—</td><td>S3 bucket name for binary storage</td></tr>
-          <tr><td><code>S3_ACCESS_KEY_ID</code></td><td>Yes</td><td>—</td><td>S3 access key</td></tr>
-          <tr><td><code>S3_SECRET_ACCESS_KEY</code></td><td>Yes</td><td>—</td><td>S3 secret key</td></tr>
-          <tr><td><code>S3_REGION</code></td><td>No</td><td><code>us-east-1</code></td><td>S3 region</td></tr>
+          <tr><td><code>S3_ACCESS_KEY_ID</code></td><td>Yes</td><td>—</td><td>S3 access key ID</td></tr>
+          <tr><td><code>S3_SECRET_ACCESS_KEY</code></td><td>Yes</td><td>—</td><td>S3 secret access key</td></tr>
+          <tr><td><code>S3_REGION</code></td><td>No</td><td><code>us-east-1</code></td><td>S3 region. MinIO ignores it; use <code>auto</code> for Cloudflare R2</td></tr>
+          <tr><td><code>S3_FORCE_PATH_STYLE</code></td><td>No</td><td><code>false</code></td><td>Set to <code>true</code> for MinIO (path-style addressing). Must be <code>false</code> for Cloudflare R2</td></tr>
         </tbody>
       </table>
 
@@ -198,11 +200,58 @@ MEILISEARCH_KEY=dev_master_key
 SERVER_PORT=8080
 ALLOWED_ORIGINS=http://localhost:3000
 RUST_LOG=pumpkin_hub_api=debug,tower_http=debug
+
+# Object storage (MinIO — local outside Docker)
 S3_ENDPOINT_URL=http://localhost:9000
 S3_PUBLIC_URL=http://localhost:9000
 S3_BUCKET=pumpkin-hub-binaries
 S3_ACCESS_KEY_ID=minioadmin
-S3_SECRET_ACCESS_KEY=minioadmin</code></pre>
+S3_SECRET_ACCESS_KEY=minioadmin
+S3_FORCE_PATH_STYLE=true</code></pre>
+
+      <!-- ── S3 / R2 Configuration ───────────────────────── -->
+      <h2 id="s3-config">S3 / R2 Configuration Guide</h2>
+
+      <p>
+        Pumpkin Hub uses an S3-compatible object store for binary artifacts. Two separate S3
+        clients are instantiated internally: one for <strong>server-side operations</strong>
+        (upload, delete) using the internal endpoint, and one for generating
+        <strong>presigned download URLs</strong> using the public endpoint.
+      </p>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">Why S3_PUBLIC_URL matters</div>
+        AWS SigV4 embeds the <code>Host</code> header in the request signature. If a presigned URL
+        is generated for host <code>minio-dev:9000</code> (Docker-internal) but opened by a browser
+        at <code>localhost:9000</code>, the store returns a <strong>SignatureDoesNotMatch</strong>
+        error. <code>S3_PUBLIC_URL</code> tells the API which host to use when <em>signing</em>
+        download URLs, ensuring the signed host matches the host the browser will contact.
+      </div>
+
+      <h3>Local Development (Docker + MinIO)</h3>
+      <p>
+        Inside Docker, the API reaches MinIO at <code>http://minio-dev:9000</code> while the
+        browser reaches it at <code>http://localhost:9000</code>. Set both variables to
+        different values:
+      </p>
+      <pre><code>S3_ENDPOINT_URL=http://minio-dev:9000     # used by the API container
+S3_PUBLIC_URL=http://localhost:9000       # used for presigned URL signing
+S3_FORCE_PATH_STYLE=true                  # required for MinIO</code></pre>
+
+      <h3>Production (Cloudflare R2)</h3>
+      <p>
+        With Cloudflare R2, upload traffic goes through the private R2 endpoint while
+        download links are signed for your public R2 subdomain (or custom domain).
+        Note that R2 requires <code>S3_REGION=auto</code> and virtual-hosted style addressing
+        (<code>S3_FORCE_PATH_STYLE=false</code>).
+      </p>
+      <pre><code>S3_ENDPOINT_URL=https://&lt;ACCOUNT_ID&gt;.r2.cloudflarestorage.com
+S3_PUBLIC_URL=https://pub-&lt;HASH&gt;.r2.dev   # or your custom domain
+S3_BUCKET=pumpkin-hub-binaries
+S3_ACCESS_KEY_ID=&lt;R2_TOKEN_ID&gt;
+S3_SECRET_ACCESS_KEY=&lt;R2_TOKEN_SECRET&gt;
+S3_REGION=auto
+S3_FORCE_PATH_STYLE=false</code></pre>
 
       <!-- ── Verification ──────────────────────────────────── -->
       <h2 id="verify">Installation Verification</h2>
