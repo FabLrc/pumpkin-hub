@@ -28,6 +28,7 @@
 - **Multi-provider Authentication** — GitHub, Google, Discord OAuth + email/password
 - **Plugin Registry** — Full CRUD with categories, search, and author management
 - **Version Management** — Publish versions with semver validation, Pumpkin compatibility ranges, changelogs, download counters, and yank/restore
+- **Binary Storage & Distribution** — Multi-platform binary uploads, secure presigned download URLs, S3-compatible storage (MinIO / Cloudflare R2)
 - **Creator Dashboard** — Profile management, avatar upload, plugin administration
 - **Brutalist UI** — Industrial design system with responsive layouts
 

@@ -351,17 +351,18 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot done"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
             <span class="timeline-title">Binary Storage &amp; Distribution</span>
-            <span class="badge badge-green" style="font-size:0.65rem;">Done</span>
+            <span class="badge badge-green" style="font-size:0.65rem;">Completed</span>
           </div>
           <ul class="timeline-features">
-            <li>Binary file upload with multi-platform support (Windows, macOS, Linux)</li>
-            <li>Storage on Cloudflare R2 (S3-compatible object store) — MinIO for local dev</li>
-            <li>Automatic SHA-256 checksum generation and storage</li>
-            <li>Pre-signed download URLs with integrity verification</li>
-            <li>File size limits, MIME-type validation and upload progress UI</li>
+            <li>Binary file upload with multi-platform support (Windows, macOS, Linux) and MIME-type validation</li>
+            <li>S3-compatible object storage: <strong>MinIO</strong> for development, <strong>Cloudflare R2</strong> for production</li>
+            <li>Dual-client architecture for SigV4 signature correctness: separate clients for server-side operations (upload/delete) and presigned URL generation (browser downloads)</li>
+            <li>Pre-signed download URLs with 1-hour TTL, signed for browser-reachable endpoint</li>
+            <li>Automatic SHA-256 checksum generation and storage for integrity verification</li>
+            <li>File size limits (100 MB default) and optimized object key structure (<code>plugins/{slug}/{version}/{platform}/{filename}</code>)</li>
           </ul>
         </div>
 
