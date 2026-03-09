@@ -87,16 +87,16 @@ impl ObjectStorage {
             PRESIGNED_URL_TTL_SECONDS,
         ))?;
 
-        let presigned = self
+        let presigned_request = self
             .client
             .get_object()
             .bucket(&self.bucket)
             .key(key)
-            .presign(presigning)
+            .presigned(presigning)
             .await?;
 
         Ok(PresignedDownload {
-            url: presigned.uri().to_string(),
+            url: presigned_request.uri().to_string(),
             expires_in_seconds: PRESIGNED_URL_TTL_SECONDS,
         })
     }

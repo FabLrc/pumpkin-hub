@@ -32,4 +32,12 @@ pub fn routes() -> Router<AppState> {
             "/plugins/{slug}/versions/{version}/yank",
             patch(handlers::yank_version),
         )
+        .route(
+            "/plugins/{slug}/versions/{version}/binaries",
+            get(handlers::list_binaries).post(handlers::upload_binary),
+        )
+        .route(
+            "/plugins/{slug}/versions/{version}/download",
+            get(handlers::download_binary),
+        )
 }

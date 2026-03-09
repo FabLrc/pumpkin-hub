@@ -285,6 +285,109 @@ pub struct YankVersionRequest {
     pub yanked: bool,
 }
 
+// ── Binary DTOs ─────────────────────────────────────────────────────────────
+
+const FILE_NAME_MAX_LENGTH: usize = 255;
+
+/// Accepted target architectures for plugin binaries.
+const VALID_ARCHITECTURES: &[&str] = &["x86_64", "aarch64"];
+
+/// Allowed Content-Types for binary uploads.
+const ALLOWED_BINARY_CONTENT_TYPES: &[&str] = &[
+    "application/octet-stream",
+    "application/wasm",
+    "application/x-elf",
+    "application/x-executable",
+    "application/x-sharedlib",
+    "application/x-mach-binary",
+    "application/x-dosexec",
+];
+
+/// Response DTO for a single binary artifact.
+#[derive(Debug, Serialize)]
+pub struct BinaryResponse {
+    pub id: Uuid,
+    pub architecture: String,
+    pub file_name: String,
+    pub file_size: i64,
+    pub checksum_sha256: String,
+    pub content_type: String,
+    pub uploaded_at: DateTime<Utc>,
+}
+
+/// Response DTO for all binaries of a version.
+#[derive(Debug, Serialize)]
+pub struct BinariesListResponse {
+    pub plugin_slug: String,
+    pub version: String,
+    pub total: usize,
+    pub binaries: Vec<BinaryResponse>,
+}
+
+/// Response returned after a successful binary upload.
+#[derive(Debug, Serialize)]
+pub struct BinaryUploadResponse {
+    pub binary: BinaryResponse,
+    pub download_url: String,
+}
+
+/// Query parameters for the download endpoint.
+#[derive(Debug, Deserialize)]
+pub struct DownloadBinaryParams {
+    pub arch: String,
+}
+
+/// Response returned with the pre-signed download URL.
+#[derive(Debug, Serialize)]
+pub struct BinaryDownloadResponse {
+    pub download_url: String,
+    pub file_name: String,
+    pub file_size: i64,
+    pub checksum_sha256: String,
+    pub architecture: String,
+    pub expires_in_seconds: u64,
+}
+
+pub fn validate_architecture(arch: &str) -> Result<(), AppError> {
+    if !VALID_ARCHITECTURES.contains(&arch) {
+        return Err(AppError::UnprocessableEntity(format!(
+            "Invalid architecture '{arch}'. Supported: {}",
+            VALID_ARCHITECTURES.join(", ")
+        )));
+    }
+    Ok(())
+}
+
+pub fn validate_binary_content_type(content_type: &str) -> Result<(), AppError> {
+    if !ALLOWED_BINARY_CONTENT_TYPES.contains(&content_type) {
+        return Err(AppError::UnprocessableEntity(format!(
+            "Invalid content type '{content_type}'. Allowed: {}",
+            ALLOWED_BINARY_CONTENT_TYPES.join(", ")
+        )));
+    }
+    Ok(())
+}
+
+pub fn validate_file_name(name: &str) -> Result<(), AppError> {
+    if name.is_empty() {
+        return Err(AppError::UnprocessableEntity(
+            "File name must not be empty".to_string(),
+        ));
+    }
+    if name.len() > FILE_NAME_MAX_LENGTH {
+        return Err(AppError::UnprocessableEntity(format!(
+            "File name must be at most {FILE_NAME_MAX_LENGTH} characters"
+        )));
+    }
+    // Reject path traversal attempts
+    if name.contains("..") || name.contains('/') || name.contains('\\') {
+        return Err(AppError::UnprocessableEntity(
+            "File name must not contain path separators or '..'".to_string(),
+        ));
+    }
+    Ok(())
+}
+
 // ── Validation Helpers ──────────────────────────────────────────────────────
 fn validate_semver(value: &str, field_name: &str) -> Result<(), AppError> {
     let trimmed = value.trim();

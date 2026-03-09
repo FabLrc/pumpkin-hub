@@ -1,20 +1,22 @@
 use std::collections::HashMap;
 
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Multipart, Path, Query, State},
     http::StatusCode,
     Json,
 };
 use chrono::{DateTime, Utc};
+use sha2::{Digest, Sha256};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
-use crate::{auth::middleware::AuthUser, error::AppError, state::AppState};
+use crate::{auth::middleware::AuthUser, error::AppError, state::AppState, storage::ObjectStorage};
 
 use super::dto::{
-    AuthorSummary, CategorySummary, CreatePluginRequest, CreateVersionRequest, ListPluginsParams,
-    PaginatedResponse, PaginationMeta, PluginResponse, PluginSummary, UpdatePluginRequest,
-    VersionResponse, VersionsListResponse, YankVersionRequest,
+    AuthorSummary, BinariesListResponse, BinaryDownloadResponse, BinaryResponse,
+    BinaryUploadResponse, CategorySummary, CreatePluginRequest, CreateVersionRequest,
+    DownloadBinaryParams, ListPluginsParams, PaginatedResponse, PaginationMeta, PluginResponse,
+    PluginSummary, UpdatePluginRequest, VersionResponse, VersionsListResponse, YankVersionRequest,
 };
 
 // ── SQL Row Types ───────────────────────────────────────────────────────────
@@ -727,6 +729,330 @@ pub async fn yank_version(
         is_yanked: row.is_yanked,
         published_at: row.published_at,
     }))
+}
+
+// ── Binary Row ──────────────────────────────────────────────────────────
+
+#[derive(Debug, FromRow)]
+struct BinaryRow {
+    id: Uuid,
+    architecture: String,
+    file_name: String,
+    file_size: i64,
+    checksum_sha256: String,
+    storage_key: String,
+    content_type: String,
+    uploaded_at: DateTime<Utc>,
+}
+
+// ── Binary Handlers ─────────────────────────────────────────────────────
+
+/// POST /api/v1/plugins/:slug/versions/:version/binaries — upload a binary artifact.
+///
+/// Expects a `multipart/form-data` body with:
+/// - `architecture` (text field): target CPU architecture (x86_64 | aarch64)
+/// - `file` (file field): the binary artifact
+pub async fn upload_binary(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path((slug, version)): Path<(String, String)>,
+    mut multipart: Multipart,
+) -> Result<(StatusCode, Json<BinaryUploadResponse>), AppError> {
+    let pool = &state.db;
+    let plugin_row = fetch_plugin_by_slug(pool, &slug).await?;
+    require_ownership(&auth, plugin_row.author_id)?;
+
+    // Resolve version
+    let version_id: Uuid = sqlx::query_scalar(
+        "SELECT id FROM versions WHERE plugin_id = $1 AND version = $2",
+    )
+    .bind(plugin_row.id)
+    .bind(&version)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?
+    .ok_or(AppError::NotFound)?;
+
+    // Parse multipart fields
+    let mut architecture: Option<String> = None;
+    let mut file_data: Option<Vec<u8>> = None;
+    let mut file_name: Option<String> = None;
+    let mut content_type = "application/octet-stream".to_string();
+
+    let max_size = state.config.binary_max_size_bytes;
+
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        AppError::UnprocessableEntity(format!("Failed to read multipart field: {e}"))
+    })? {
+        let field_name = field.name().unwrap_or_default().to_string();
+
+        match field_name.as_str() {
+            "architecture" => {
+                architecture = Some(
+                    field
+                        .text()
+                        .await
+                        .map_err(|e| {
+                            AppError::UnprocessableEntity(format!(
+                                "Failed to read architecture field: {e}"
+                            ))
+                        })?
+                        .trim()
+                        .to_string(),
+                );
+            }
+            "file" => {
+                file_name = field
+                    .file_name()
+                    .map(|n| n.to_string())
+                    .or_else(|| Some("plugin.bin".to_string()));
+
+                if let Some(ct) = field.content_type() {
+                    content_type = ct.to_string();
+                }
+
+                let bytes = field.bytes().await.map_err(|e| {
+                    AppError::UnprocessableEntity(format!("Failed to read file data: {e}"))
+                })?;
+
+                if bytes.len() as u64 > max_size {
+                    return Err(AppError::UnprocessableEntity(format!(
+                        "File size exceeds maximum allowed size of {} bytes",
+                        max_size
+                    )));
+                }
+                if bytes.is_empty() {
+                    return Err(AppError::UnprocessableEntity(
+                        "File must not be empty".to_string(),
+                    ));
+                }
+
+                file_data = Some(bytes.to_vec());
+            }
+            _ => {} // Ignore unknown fields
+        }
+    }
+
+    // Validate required fields
+    let architecture = architecture.ok_or_else(|| {
+        AppError::UnprocessableEntity("Missing required field: architecture".to_string())
+    })?;
+    let file_data = file_data.ok_or_else(|| {
+        AppError::UnprocessableEntity("Missing required field: file".to_string())
+    })?;
+    let file_name = file_name.unwrap_or_else(|| "plugin.bin".to_string());
+
+    super::dto::validate_architecture(&architecture)?;
+    super::dto::validate_binary_content_type(&content_type)?;
+    super::dto::validate_file_name(&file_name)?;
+
+    // Check for existing binary with same architecture
+    let existing: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM binaries WHERE version_id = $1 AND architecture = $2",
+    )
+    .bind(version_id)
+    .bind(&architecture)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    if existing.is_some() {
+        return Err(AppError::Conflict(format!(
+            "A binary for architecture '{architecture}' already exists for version {version}"
+        )));
+    }
+
+    // Compute SHA-256 checksum
+    let checksum = compute_sha256(&file_data);
+
+    // Build storage key and upload to S3
+    let storage_key =
+        ObjectStorage::build_storage_key(&slug, &version, &architecture, &file_name);
+    let file_size = file_data.len() as i64;
+
+    state
+        .storage
+        .put_object(&storage_key, file_data, &content_type)
+        .await
+        .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?;
+
+    // Insert metadata into database
+    let row: BinaryRow = sqlx::query_as(
+        "INSERT INTO binaries (version_id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at",
+    )
+    .bind(version_id)
+    .bind(&architecture)
+    .bind(&file_name)
+    .bind(file_size)
+    .bind(&checksum)
+    .bind(&storage_key)
+    .bind(&content_type)
+    .fetch_one(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    // Generate pre-signed download URL
+    let presigned = state
+        .storage
+        .presigned_download_url(&storage_key)
+        .await
+        .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(BinaryUploadResponse {
+            binary: BinaryResponse {
+                id: row.id,
+                architecture: row.architecture,
+                file_name: row.file_name,
+                file_size: row.file_size,
+                checksum_sha256: row.checksum_sha256,
+                content_type: row.content_type,
+                uploaded_at: row.uploaded_at,
+            },
+            download_url: presigned.url,
+        }),
+    ))
+}
+
+/// GET /api/v1/plugins/:slug/versions/:version/binaries — list all binaries for a version.
+pub async fn list_binaries(
+    State(state): State<AppState>,
+    Path((slug, version)): Path<(String, String)>,
+) -> Result<Json<BinariesListResponse>, AppError> {
+    let pool = &state.db;
+
+    let plugin_id: Uuid =
+        sqlx::query_scalar("SELECT id FROM plugins WHERE slug = $1 AND is_active = true")
+            .bind(&slug)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?
+            .ok_or(AppError::NotFound)?;
+
+    let version_id: Uuid =
+        sqlx::query_scalar("SELECT id FROM versions WHERE plugin_id = $1 AND version = $2")
+            .bind(plugin_id)
+            .bind(&version)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?
+            .ok_or(AppError::NotFound)?;
+
+    let rows: Vec<BinaryRow> = sqlx::query_as(
+        "SELECT id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
+         FROM binaries WHERE version_id = $1 ORDER BY architecture",
+    )
+    .bind(version_id)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let binaries: Vec<BinaryResponse> = rows
+        .into_iter()
+        .map(|r| BinaryResponse {
+            id: r.id,
+            architecture: r.architecture,
+            file_name: r.file_name,
+            file_size: r.file_size,
+            checksum_sha256: r.checksum_sha256,
+            content_type: r.content_type,
+            uploaded_at: r.uploaded_at,
+        })
+        .collect();
+
+    Ok(Json(BinariesListResponse {
+        plugin_slug: slug,
+        version,
+        total: binaries.len(),
+        binaries,
+    }))
+}
+
+/// GET /api/v1/plugins/:slug/versions/:version/download?arch=x86_64 — get a pre-signed download URL.
+///
+/// Also increments version and plugin download counters atomically.
+pub async fn download_binary(
+    State(state): State<AppState>,
+    Path((slug, version)): Path<(String, String)>,
+    Query(params): Query<DownloadBinaryParams>,
+) -> Result<Json<BinaryDownloadResponse>, AppError> {
+    super::dto::validate_architecture(&params.arch)?;
+
+    let pool = &state.db;
+
+    let plugin_id: Uuid =
+        sqlx::query_scalar("SELECT id FROM plugins WHERE slug = $1 AND is_active = true")
+            .bind(&slug)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?
+            .ok_or(AppError::NotFound)?;
+
+    let version_id: Uuid =
+        sqlx::query_scalar("SELECT id FROM versions WHERE plugin_id = $1 AND version = $2")
+            .bind(plugin_id)
+            .bind(&version)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::internal)?
+            .ok_or(AppError::NotFound)?;
+
+    let binary_row: BinaryRow = sqlx::query_as(
+        "SELECT id, architecture, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
+         FROM binaries WHERE version_id = $1 AND architecture = $2",
+    )
+    .bind(version_id)
+    .bind(&params.arch)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?
+    .ok_or_else(|| {
+        AppError::NotFound
+    })?;
+
+    // Increment download counters
+    sqlx::query("UPDATE versions SET downloads = downloads + 1 WHERE id = $1")
+        .bind(version_id)
+        .execute(pool)
+        .await
+        .map_err(AppError::internal)?;
+    sqlx::query("UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1")
+        .bind(plugin_id)
+        .execute(pool)
+        .await
+        .map_err(AppError::internal)?;
+
+    // Generate pre-signed URL
+    let presigned = state
+        .storage
+        .presigned_download_url(&binary_row.storage_key)
+        .await
+        .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?;
+
+    Ok(Json(BinaryDownloadResponse {
+        download_url: presigned.url,
+        file_name: binary_row.file_name,
+        file_size: binary_row.file_size,
+        checksum_sha256: binary_row.checksum_sha256,
+        architecture: binary_row.architecture,
+        expires_in_seconds: presigned.expires_in_seconds,
+    }))
+}
+
+/// Computes the hex-encoded SHA-256 digest of the given bytes.
+fn compute_sha256(data: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    let result = hasher.finalize();
+    hex_encode(&result)
+}
+
+/// Encodes bytes as a lowercase hex string.
+fn hex_encode(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 #[cfg(test)]
