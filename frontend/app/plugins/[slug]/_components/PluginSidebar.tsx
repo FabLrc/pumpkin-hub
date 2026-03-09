@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { PluginResponse } from "@/lib/types";
+import { usePluginVersions } from "@/lib/hooks";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -31,12 +32,15 @@ interface PluginSidebarProps {
 }
 
 export function PluginSidebar({ plugin }: PluginSidebarProps) {
+  const { data: versionsData } = usePluginVersions(plugin.slug);
+  const latestVersion = versionsData?.versions.find((v) => !v.is_yanked)?.version ?? null;
+
   return (
     <aside className="w-72 flex-shrink-0 hidden lg:block">
       <div className="sidebar-sticky space-y-6">
         <StatisticsCard downloads={plugin.downloads_total} />
         <LinksCard plugin={plugin} />
-        <DetailsCard plugin={plugin} />
+        <DetailsCard plugin={plugin} latestVersion={latestVersion} />
         <AuthorCard plugin={plugin} />
       </div>
     </aside>
@@ -137,7 +141,13 @@ function LinksCard({ plugin }: { plugin: PluginResponse }) {
 
 // ── Details Card ──────────────────────────────────────────────────────────
 
-function DetailsCard({ plugin }: { plugin: PluginResponse }) {
+function DetailsCard({
+  plugin,
+  latestVersion,
+}: {
+  plugin: PluginResponse;
+  latestVersion: string | null;
+}) {
   const details = [
     { label: "Published", value: formatDate(plugin.created_at) },
     { label: "Updated", value: formatDate(plugin.updated_at) },
@@ -149,6 +159,19 @@ function DetailsCard({ plugin }: { plugin: PluginResponse }) {
       <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
         Details
       </div>
+      {latestVersion && (
+        <div className="flex justify-between items-center mb-2.5">
+          <span className="font-mono text-[10px] text-text-dim">Version</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[10px] text-text-subtle">
+              v{latestVersion}
+            </span>
+            <span className="font-mono text-[9px] bg-accent/10 text-accent border border-accent/30 px-1.5 py-0.5">
+              LATEST
+            </span>
+          </div>
+        </div>
+      )}
       <div className="space-y-2.5">
         {details.map((detail) => (
           <div key={detail.label} className="flex justify-between">

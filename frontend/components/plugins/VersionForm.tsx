@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ChevronDown } from "lucide-react";
 import type { VersionFormData, FieldError } from "@/lib/validation";
 import { validateVersionForm, VERSION_RULES } from "@/lib/validation";
+import { usePumpkinVersions } from "@/lib/hooks";
 
 interface VersionFormProps {
   onSubmit: (data: VersionFormData) => Promise<void>;
@@ -26,6 +27,7 @@ export function VersionForm({
   const [form, setForm] = useState<VersionFormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<FieldError[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
+  const { data: pumpkinVersions, isLoading: versionsLoading } = usePumpkinVersions();
 
   const fieldError = useCallback(
     (field: string) => errors.find((e) => e.field === field)?.message ?? null,
@@ -97,15 +99,23 @@ export function VersionForm({
           error={fieldError("pumpkinVersionMin")}
           hint="Optional"
         >
-          <input
-            id="pumpkinVersionMin"
-            type="text"
-            value={form.pumpkinVersionMin}
-            onChange={(e) => updateField("pumpkinVersionMin", e.target.value)}
-            maxLength={VERSION_RULES.VERSION_MAX_LENGTH}
-            className={inputClasses(fieldError("pumpkinVersionMin"))}
-            placeholder="0.1.0"
-          />
+          <div className="relative">
+            <select
+              id="pumpkinVersionMin"
+              value={form.pumpkinVersionMin}
+              onChange={(e) => updateField("pumpkinVersionMin", e.target.value)}
+              disabled={versionsLoading}
+              className={`${inputClasses(fieldError("pumpkinVersionMin"))} pr-8 cursor-pointer appearance-none`}
+            >
+              <option value="">— Any —</option>
+              {pumpkinVersions?.map((v) => (
+                <option key={v.version} value={v.version}>
+                  {v.version}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-dim" />
+          </div>
         </FormField>
 
         <FormField
@@ -114,15 +124,23 @@ export function VersionForm({
           error={fieldError("pumpkinVersionMax")}
           hint="Optional"
         >
-          <input
-            id="pumpkinVersionMax"
-            type="text"
-            value={form.pumpkinVersionMax}
-            onChange={(e) => updateField("pumpkinVersionMax", e.target.value)}
-            maxLength={VERSION_RULES.VERSION_MAX_LENGTH}
-            className={inputClasses(fieldError("pumpkinVersionMax"))}
-            placeholder="1.0.0"
-          />
+          <div className="relative">
+            <select
+              id="pumpkinVersionMax"
+              value={form.pumpkinVersionMax}
+              onChange={(e) => updateField("pumpkinVersionMax", e.target.value)}
+              disabled={versionsLoading}
+              className={`${inputClasses(fieldError("pumpkinVersionMax"))} pr-8 cursor-pointer appearance-none`}
+            >
+              <option value="">— Any —</option>
+              {pumpkinVersions?.map((v) => (
+                <option key={v.version} value={v.version}>
+                  {v.version}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-dim" />
+          </div>
         </FormField>
       </div>
 

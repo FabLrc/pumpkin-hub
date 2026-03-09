@@ -199,21 +199,23 @@ export function validateVersionForm(data: VersionFormData): FieldError[] {
   );
   if (changelogError) errors.push({ field: "changelog", message: changelogError });
 
-  if (data.pumpkinVersionMin) {
-    const minError = validateSemver(data.pumpkinVersionMin, "Pumpkin version min");
-    if (minError) errors.push({ field: "pumpkinVersionMin", message: minError });
-  }
-
-  if (data.pumpkinVersionMax) {
-    const maxError = validateSemver(data.pumpkinVersionMax, "Pumpkin version max");
-    if (maxError) errors.push({ field: "pumpkinVersionMax", message: maxError });
-  }
-
-  const rangeError = validatePumpkinRange(
+  // Pumpkin versions come from a controlled dropdown and may be non-semver
+  // (e.g. "nightly") — only validate maximum length.
+  const pumpkinMinLengthError = validateOptionalLength(
     data.pumpkinVersionMin || undefined,
-    data.pumpkinVersionMax || undefined,
+    "Pumpkin version min",
+    VERSION_RULES.VERSION_MAX_LENGTH,
   );
-  if (rangeError) errors.push({ field: "pumpkinVersionMin", message: rangeError });
+  if (pumpkinMinLengthError)
+    errors.push({ field: "pumpkinVersionMin", message: pumpkinMinLengthError });
+
+  const pumpkinMaxLengthError = validateOptionalLength(
+    data.pumpkinVersionMax || undefined,
+    "Pumpkin version max",
+    VERSION_RULES.VERSION_MAX_LENGTH,
+  );
+  if (pumpkinMaxLengthError)
+    errors.push({ field: "pumpkinVersionMax", message: pumpkinMaxLengthError });
 
   return errors;
 }

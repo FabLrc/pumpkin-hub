@@ -269,13 +269,18 @@ impl CreateVersionRequest {
     pub fn validate(&self) -> Result<(), AppError> {
         validate_semver(&self.version, "version")?;
         validate_optional_length(&self.changelog, "changelog", CHANGELOG_MAX_LENGTH)?;
-        if let Some(ref min) = self.pumpkin_version_min {
-            validate_semver(min, "pumpkin_version_min")?;
-        }
-        if let Some(ref max) = self.pumpkin_version_max {
-            validate_semver(max, "pumpkin_version_max")?;
-        }
-        validate_pumpkin_range(&self.pumpkin_version_min, &self.pumpkin_version_max)?;
+        // Pumpkin versions are not guaranteed to be semver (e.g. "nightly"),
+        // so only validate length here.
+        validate_optional_length(
+            &self.pumpkin_version_min,
+            "pumpkin_version_min",
+            VERSION_MAX_LENGTH,
+        )?;
+        validate_optional_length(
+            &self.pumpkin_version_max,
+            "pumpkin_version_max",
+            VERSION_MAX_LENGTH,
+        )?;
         Ok(())
     }
 }
@@ -412,21 +417,6 @@ fn validate_semver(value: &str, field_name: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-fn validate_pumpkin_range(min: &Option<String>, max: &Option<String>) -> Result<(), AppError> {
-    if let (Some(min_str), Some(max_str)) = (min, max) {
-        let min_ver = semver::Version::parse(min_str.trim()).ok();
-        let max_ver = semver::Version::parse(max_str.trim()).ok();
-        if let (Some(min_v), Some(max_v)) = (min_ver, max_ver) {
-            if min_v > max_v {
-                return Err(AppError::UnprocessableEntity(
-                    "pumpkin_version_min must be less than or equal to pumpkin_version_max"
-                        .to_string(),
-                ));
-            }
-        }
-    }
-    Ok(())
-}
 fn validate_name(name: &str) -> Result<(), AppError> {
     let trimmed = name.trim();
     if trimmed.len() < NAME_MIN_LENGTH {
@@ -834,25 +824,29 @@ mod tests {
     }
 
     #[test]
-    fn version_invalid_pumpkin_min_rejected() {
+    fn version_non_semver_pumpkin_min_accepted() {
+        // Pumpkin uses non-semver identifiers (e.g. "nightly"), so any
+        // non-empty string within the length limit is valid.
         let mut req = valid_version_request();
-        req.pumpkin_version_min = Some("invalid".to_string());
-        assert!(req.validate().is_err());
+        req.pumpkin_version_min = Some("nightly".to_string());
+        assert!(req.validate().is_ok());
     }
 
     #[test]
-    fn version_invalid_pumpkin_max_rejected() {
+    fn version_non_semver_pumpkin_max_accepted() {
         let mut req = valid_version_request();
-        req.pumpkin_version_max = Some("invalid".to_string());
-        assert!(req.validate().is_err());
+        req.pumpkin_version_max = Some("nightly".to_string());
+        assert!(req.validate().is_ok());
     }
 
     #[test]
-    fn version_min_greater_than_max_rejected() {
+    fn version_pumpkin_range_no_order_constraint() {
+        // Range ordering is not enforced server-side; values come from
+        // a controlled dropdown on the frontend.
         let mut req = valid_version_request();
         req.pumpkin_version_min = Some("2.0.0".to_string());
         req.pumpkin_version_max = Some("1.0.0".to_string());
-        assert!(req.validate().is_err());
+        assert!(req.validate().is_ok());
     }
 
     #[test]

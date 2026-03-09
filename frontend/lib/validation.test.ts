@@ -264,21 +264,21 @@ describe("validateVersionForm", () => {
     expect(errors.some((e) => e.field === "version")).toBe(true);
   });
 
-  it("returns error for invalid pumpkin min", () => {
+  it("accepts non-semver pumpkin min (e.g. nightly)", () => {
     const errors = validateVersionForm({
       ...validForm,
-      pumpkinVersionMin: "invalid",
+      pumpkinVersionMin: "nightly",
     });
-    expect(errors.some((e) => e.field === "pumpkinVersionMin")).toBe(true);
+    expect(errors.some((e) => e.field === "pumpkinVersionMin")).toBe(false);
   });
 
-  it("returns error for min > max range", () => {
+  it("accepts inverted pumpkin range (no ordering constraint)", () => {
     const errors = validateVersionForm({
       ...validForm,
       pumpkinVersionMin: "2.0.0",
       pumpkinVersionMax: "1.0.0",
     });
-    expect(errors.some((e) => e.field === "pumpkinVersionMin")).toBe(true);
+    expect(errors.some((e) => e.field === "pumpkinVersionMin")).toBe(false);
   });
 
   it("returns error for changelog too long", () => {
