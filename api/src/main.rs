@@ -77,11 +77,11 @@ async fn main() {
         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
     .with_graceful_shutdown(shutdown_signal())
-        .await
-        .unwrap_or_else(|err| {
-            tracing::error!(%err, "Server error");
-            std::process::exit(1);
-        });
+    .await
+    .unwrap_or_else(|err| {
+        tracing::error!(%err, "Server error");
+        std::process::exit(1);
+    });
 }
 
 /// Listens for CTRL+C (and SIGTERM on Unix) before initiating graceful shutdown.

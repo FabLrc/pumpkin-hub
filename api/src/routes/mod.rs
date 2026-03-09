@@ -16,10 +16,7 @@ use crate::state::AppState;
 
 /// Assembles all versioned sub-routers under their respective prefixes.
 /// `auth_governor` is applied only to auth-sensitive routes (register, login, OAuth).
-pub fn create_router(
-    state: AppState,
-    auth_governor: Arc<AppGovernorConfig>,
-) -> Router {
+pub fn create_router(state: AppState, auth_governor: Arc<AppGovernorConfig>) -> Router {
     Router::new()
         .nest("/api/v1", v1_routes(auth_governor))
         .with_state(state)

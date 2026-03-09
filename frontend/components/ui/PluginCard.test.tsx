@@ -152,7 +152,7 @@ describe("PluginCard", () => {
 
   it("links to the plugin page", () => {
     render(<PluginCard plugin={makePlugin()} />);
-    const link = screen.getByRole("link");
+    const link = screen.getByRole("link", { name: "TestPlugin" });
     expect(link).toHaveAttribute("href", "/plugins/test-plugin");
   });
 

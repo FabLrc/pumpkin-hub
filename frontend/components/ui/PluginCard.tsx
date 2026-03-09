@@ -32,8 +32,7 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
     : "plugin-card border border-border-default bg-bg-elevated/30";
 
   return (
-    <Link href={`/plugins/${plugin.slug}`} className="block">
-      <div className={`${cardClasses} p-5 flex items-start gap-5 cursor-pointer`}>
+    <div className={`${cardClasses} p-5 flex items-start gap-5 cursor-pointer relative`}>
         {/* Icon placeholder */}
         <div
           className={`w-11 h-11 flex items-center justify-center flex-shrink-0 mt-0.5 ${
@@ -55,9 +54,13 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4 mb-1.5">
             <div className="flex items-center gap-3">
-              <span className="font-raleway font-bold text-base text-text-primary hover:text-accent transition-colors">
+              {/* Stretched link: covers the entire card via ::after overlay */}
+              <Link
+                href={`/plugins/${plugin.slug}`}
+                className="font-raleway font-bold text-base text-text-primary hover:text-accent transition-colors after:absolute after:inset-0"
+              >
                 {plugin.name}
-              </span>
+              </Link>
               {featured && <Badge variant="orange">FEATURED</Badge>}
             </div>
           </div>
@@ -66,8 +69,7 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
             by{" "}
             <Link
               href={`/users/${plugin.author.username}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-text-subtle hover:text-accent transition-colors"
+              className="relative z-10 text-text-subtle hover:text-accent transition-colors"
             >
               {plugin.author.username}
             </Link>
@@ -109,7 +111,6 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
             <span className="font-mono text-xs text-text-subtle">—</span>
           </div>
         </div>
-      </div>
-    </Link>
+    </div>
   );
 }

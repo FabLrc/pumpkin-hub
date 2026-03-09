@@ -327,24 +327,21 @@ pub async fn resolve_dependency_graph(
     let pool = &state.db;
     let (plugin_id, version_id, _author_id) = resolve_plugin_version(pool, &slug, &version).await?;
 
-    let mut graph: Vec<DependencyGraphNode> = Vec::new();
-    let mut conflicts: Vec<DependencyConflict> = Vec::new();
-    let mut visited: HashSet<Uuid> = HashSet::new();
+    let mut state = GraphState {
+        graph: Vec::new(),
+        conflicts: Vec::new(),
+        visited: HashSet::new(),
+    };
 
     // BFS through transitive dependencies
-    build_graph_recursive(
-        pool,
-        plugin_id,
-        version_id,
-        &slug,
-        &version,
-        &mut graph,
-        &mut conflicts,
-        &mut visited,
-    )
-    .await?;
+    build_graph_recursive(pool, plugin_id, version_id, &slug, &version, &mut state).await?;
 
     // Detect incompatible range conflicts across the graph
+    let GraphState {
+        graph,
+        mut conflicts,
+        ..
+    } = state;
     detect_range_conflicts(&graph, &mut conflicts);
 
     Ok(Json(DependencyGraphResponse {
@@ -355,7 +352,13 @@ pub async fn resolve_dependency_graph(
     }))
 }
 
-// ── Graph Construction (iterative BFS) ──────────────────────────────────────
+// ── Graph Construction (iterative BFS) ─────────────────────────────────────
+
+struct GraphState {
+    graph: Vec<DependencyGraphNode>,
+    conflicts: Vec<DependencyConflict>,
+    visited: HashSet<Uuid>,
+}
 
 async fn build_graph_recursive(
     pool: &PgPool,
@@ -363,10 +366,13 @@ async fn build_graph_recursive(
     version_id: Uuid,
     slug: &str,
     version: &str,
-    graph: &mut Vec<DependencyGraphNode>,
-    conflicts: &mut Vec<DependencyConflict>,
-    visited: &mut HashSet<Uuid>,
+    state: &mut GraphState,
 ) -> Result<(), AppError> {
+    let GraphState {
+        graph,
+        conflicts,
+        visited,
+    } = state;
     // Use an iterative BFS instead of async recursion.
     // `ancestors` tracks the plugin IDs on the current traversal path
     // to detect real circular dependencies (not diamond/shared deps).

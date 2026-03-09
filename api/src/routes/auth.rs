@@ -773,7 +773,9 @@ async fn reset_password(
     State(state): State<AppState>,
     Json(body): Json<ResetPasswordRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    if body.new_password.len() < MIN_PASSWORD_LENGTH || body.new_password.len() > MAX_PASSWORD_LENGTH {
+    if body.new_password.len() < MIN_PASSWORD_LENGTH
+        || body.new_password.len() > MAX_PASSWORD_LENGTH
+    {
         return Err(AppError::UnprocessableEntity(format!(
             "Password must be between {MIN_PASSWORD_LENGTH} and {MAX_PASSWORD_LENGTH} characters"
         )));
@@ -873,7 +875,9 @@ async fn resend_verification(
     let email_svc = state
         .email
         .as_ref()
-        .ok_or_else(|| AppError::UnprocessableEntity("Email service is not configured".to_string()))?
+        .ok_or_else(|| {
+            AppError::UnprocessableEntity("Email service is not configured".to_string())
+        })?
         .clone();
 
     let user = sqlx::query_as::<_, crate::models::user::User>("SELECT * FROM users WHERE id = $1")

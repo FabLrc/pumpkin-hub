@@ -68,7 +68,14 @@ pub fn build_app(
         }
     });
 
-    let state = AppState::new(config.clone(), pool, storage, search, pumpkin_versions, email_service);
+    let state = AppState::new(
+        config.clone(),
+        pool,
+        storage,
+        search,
+        pumpkin_versions,
+        email_service,
+    );
     let cors = build_cors_layer(&config);
     let x_request_id = axum::http::HeaderName::from_static(REQUEST_ID_HEADER);
 

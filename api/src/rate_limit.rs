@@ -1,16 +1,12 @@
 use tower_governor::{
-    governor::GovernorConfig,
-    governor::GovernorConfigBuilder,
-    key_extractor::PeerIpKeyExtractor,
+    governor::GovernorConfig, governor::GovernorConfigBuilder, key_extractor::PeerIpKeyExtractor,
 };
 
 use crate::config::RateLimitConfig;
 
 /// Concrete governor config type with rate-limit headers enabled.
-pub type AppGovernorConfig = GovernorConfig<
-    PeerIpKeyExtractor,
-    governor::middleware::StateInformationMiddleware,
->;
+pub type AppGovernorConfig =
+    GovernorConfig<PeerIpKeyExtractor, governor::middleware::StateInformationMiddleware>;
 
 /// Builds the general (relaxed) rate limiter configuration.
 /// Default: 30 requests burst, 1 replenished per second → sustained traffic.

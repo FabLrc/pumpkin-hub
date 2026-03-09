@@ -163,20 +163,28 @@ pub async fn list_plugins_admin(
     .map_err(AppError::internal)?;
 
     let total_pages = calculate_total_pages(total, per_page);
-    let data = rows.into_iter().map(|r| AdminPluginEntry {
-        id: r.id,
-        name: r.name,
-        slug: r.slug,
-        author_username: r.author_username,
-        downloads_total: r.downloads_total,
-        is_active: r.is_active,
-        created_at: r.created_at,
-        updated_at: r.updated_at,
-    }).collect();
+    let data = rows
+        .into_iter()
+        .map(|r| AdminPluginEntry {
+            id: r.id,
+            name: r.name,
+            slug: r.slug,
+            author_username: r.author_username,
+            downloads_total: r.downloads_total,
+            is_active: r.is_active,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })
+        .collect();
 
     Ok(Json(PaginatedResponse {
         data,
-        pagination: PaginationMeta { page, per_page, total, total_pages },
+        pagination: PaginationMeta {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
     }))
 }
 
@@ -294,20 +302,28 @@ pub async fn list_users(
     .map_err(AppError::internal)?;
 
     let total_pages = calculate_total_pages(total, per_page);
-    let data = rows.into_iter().map(|r| AdminUserEntry {
-        id: r.id,
-        username: r.username,
-        display_name: r.display_name,
-        email: r.email,
-        role: r.role,
-        is_active: r.is_active,
-        plugin_count: r.plugin_count,
-        created_at: r.created_at,
-    }).collect();
+    let data = rows
+        .into_iter()
+        .map(|r| AdminUserEntry {
+            id: r.id,
+            username: r.username,
+            display_name: r.display_name,
+            email: r.email,
+            role: r.role,
+            is_active: r.is_active,
+            plugin_count: r.plugin_count,
+            created_at: r.created_at,
+        })
+        .collect();
 
     Ok(Json(PaginatedResponse {
         data,
-        pagination: PaginationMeta { page, per_page, total, total_pages },
+        pagination: PaginationMeta {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
     }))
 }
 
@@ -331,12 +347,11 @@ pub async fn change_user_role(
         ));
     }
 
-    let old_role: Option<String> =
-        sqlx::query_scalar("SELECT role FROM users WHERE id = $1")
-            .bind(user_id)
-            .fetch_optional(pool)
-            .await
-            .map_err(AppError::internal)?;
+    let old_role: Option<String> = sqlx::query_scalar("SELECT role FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(AppError::internal)?;
 
     let old_role = old_role.ok_or(AppError::NotFound)?;
 
@@ -381,25 +396,19 @@ pub async fn deactivate_user(
         ));
     }
 
-    let result = sqlx::query("UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1 AND is_active = true")
-        .bind(user_id)
-        .execute(pool)
-        .await
-        .map_err(AppError::internal)?;
+    let result = sqlx::query(
+        "UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1 AND is_active = true",
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await
+    .map_err(AppError::internal)?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound);
     }
 
-    record_audit_log(
-        pool,
-        auth.user_id,
-        "user.deactivate",
-        "user",
-        user_id,
-        None,
-    )
-    .await?;
+    record_audit_log(pool, auth.user_id, "user.deactivate", "user", user_id, None).await?;
 
     Ok(Json(serde_json::json!({ "message": "User deactivated" })))
 }
@@ -413,25 +422,19 @@ pub async fn reactivate_user(
     auth.require_admin()?;
     let pool = &state.db;
 
-    let result = sqlx::query("UPDATE users SET is_active = true, updated_at = NOW() WHERE id = $1 AND is_active = false")
-        .bind(user_id)
-        .execute(pool)
-        .await
-        .map_err(AppError::internal)?;
+    let result = sqlx::query(
+        "UPDATE users SET is_active = true, updated_at = NOW() WHERE id = $1 AND is_active = false",
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await
+    .map_err(AppError::internal)?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound);
     }
 
-    record_audit_log(
-        pool,
-        auth.user_id,
-        "user.reactivate",
-        "user",
-        user_id,
-        None,
-    )
-    .await?;
+    record_audit_log(pool, auth.user_id, "user.reactivate", "user", user_id, None).await?;
 
     Ok(Json(serde_json::json!({ "message": "User reactivated" })))
 }
@@ -462,7 +465,12 @@ pub async fn list_audit_logs(
 
     Ok(Json(PaginatedResponse {
         data: entries,
-        pagination: PaginationMeta { page, per_page, total, total_pages },
+        pagination: PaginationMeta {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
     }))
 }
 

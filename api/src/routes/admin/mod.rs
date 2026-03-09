@@ -13,10 +13,7 @@ pub fn routes() -> Router<AppState> {
         // Dashboard overview
         .route("/admin/stats", get(handlers::get_admin_stats))
         // Plugin moderation
-        .route(
-            "/admin/plugins",
-            get(handlers::list_plugins_admin),
-        )
+        .route("/admin/plugins", get(handlers::list_plugins_admin))
         .route(
             "/admin/plugins/{plugin_id}/deactivate",
             post(handlers::deactivate_plugin),

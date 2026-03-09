@@ -15,7 +15,10 @@ pub struct EmailService {
 }
 
 impl EmailService {
-    pub fn new(config: &SmtpConfig, frontend_url: &str) -> Result<Self, lettre::transport::smtp::Error> {
+    pub fn new(
+        config: &SmtpConfig,
+        frontend_url: &str,
+    ) -> Result<Self, lettre::transport::smtp::Error> {
         let credentials = Credentials::new(config.username.clone(), config.password.clone());
 
         let transport = AsyncSmtpTransport::<Tokio1Executor>::relay(&config.host)?
@@ -43,27 +46,34 @@ impl EmailService {
         );
 
         let message = Message::builder()
-            .from(self.from_address.parse().map_err(|e| EmailError::Build(format!("{e}")))?)
-            .to(to_email.parse().map_err(|e| EmailError::Build(format!("{e}")))?)
+            .from(
+                self.from_address
+                    .parse()
+                    .map_err(|e| EmailError::Build(format!("{e}")))?,
+            )
+            .to(to_email
+                .parse()
+                .map_err(|e| EmailError::Build(format!("{e}")))?)
             .subject("Pumpkin Hub — Password Reset")
             .header(ContentType::TEXT_PLAIN)
             .body(body)
             .map_err(|e| EmailError::Build(e.to_string()))?;
 
-        self.transport
-            .send(message)
-            .await
-            .map_err(|e| {
-                error!(error = %e, "Failed to send password reset email");
-                EmailError::Send(e.to_string())
-            })?;
+        self.transport.send(message).await.map_err(|e| {
+            error!(error = %e, "Failed to send password reset email");
+            EmailError::Send(e.to_string())
+        })?;
 
         info!(to = to_email, "Password reset email sent");
         Ok(())
     }
 
     /// Sends an email verification link to a newly registered user.
-    pub async fn send_email_verification(&self, to_email: &str, token: &str) -> Result<(), EmailError> {
+    pub async fn send_email_verification(
+        &self,
+        to_email: &str,
+        token: &str,
+    ) -> Result<(), EmailError> {
         let verify_link = format!("{}/auth/verify-email?token={}", self.frontend_url, token);
 
         let body = format!(
@@ -75,20 +85,23 @@ impl EmailService {
         );
 
         let message = Message::builder()
-            .from(self.from_address.parse().map_err(|e| EmailError::Build(format!("{e}")))?)
-            .to(to_email.parse().map_err(|e| EmailError::Build(format!("{e}")))?)
+            .from(
+                self.from_address
+                    .parse()
+                    .map_err(|e| EmailError::Build(format!("{e}")))?,
+            )
+            .to(to_email
+                .parse()
+                .map_err(|e| EmailError::Build(format!("{e}")))?)
             .subject("Pumpkin Hub — Verify Your Email")
             .header(ContentType::TEXT_PLAIN)
             .body(body)
             .map_err(|e| EmailError::Build(e.to_string()))?;
 
-        self.transport
-            .send(message)
-            .await
-            .map_err(|e| {
-                error!(error = %e, "Failed to send verification email");
-                EmailError::Send(e.to_string())
-            })?;
+        self.transport.send(message).await.map_err(|e| {
+            error!(error = %e, "Failed to send verification email");
+            EmailError::Send(e.to_string())
+        })?;
 
         info!(to = to_email, "Email verification sent");
         Ok(())
