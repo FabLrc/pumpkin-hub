@@ -78,6 +78,9 @@ aws-sdk-s3 = "1"
 aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-credential-types = "1"
 
+# Full-text search engine
+meilisearch-sdk = "0.27"
+
 # SHA-256 checksum generation
 sha2 = "0.10"
 

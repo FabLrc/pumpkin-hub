@@ -2,6 +2,7 @@ use axum::Router;
 use pumpkin_hub_api::config::{
     Config, GithubConfig, JwtConfig, MeilisearchConfig, S3Config, ServerConfig,
 };
+use pumpkin_hub_api::search::{PumpkinVersionFetcher, SearchService};
 use pumpkin_hub_api::storage::ObjectStorage;
 use sqlx::PgPool;
 use std::net::SocketAddr;
@@ -57,8 +58,10 @@ pub async fn build_test_app() -> (Router, PgPool) {
     };
 
     let storage = ObjectStorage::from_config(&config.s3).await;
+    let search = SearchService::new(&config.meilisearch);
+    let pumpkin_versions = PumpkinVersionFetcher::new();
 
-    let app = pumpkin_hub_api::build_app(config, pool.clone(), storage);
+    let app = pumpkin_hub_api::build_app(config, pool.clone(), storage, search, pumpkin_versions);
     (app, pool)
 }
 

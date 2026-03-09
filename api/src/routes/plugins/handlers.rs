@@ -418,6 +418,19 @@ pub async fn create_plugin(
     let categories = load_categories_for_plugin(pool, row.id).await?;
     let response = build_plugin_response(row, categories);
 
+    // Index in Meilisearch (fire-and-forget — don't block the response)
+    let search = state.search.clone();
+    let db = pool.clone();
+    let pid = plugin_id;
+    tokio::spawn(async move {
+        if let Ok(Some(doc)) = crate::search::indexer::build_single_plugin_document(&db, pid).await
+        {
+            if let Err(e) = search.index_plugin(&doc).await {
+                tracing::warn!("Failed to index new plugin in Meilisearch: {e}");
+            }
+        }
+    });
+
     Ok((StatusCode::CREATED, Json(response)))
 }
 
@@ -492,6 +505,19 @@ pub async fn update_plugin(
     let updated_row = fetch_plugin_by_slug(pool, &slug).await?;
     let categories = load_categories_for_plugin(pool, updated_row.id).await?;
 
+    // Re-index in Meilisearch (fire-and-forget)
+    let search = state.search.clone();
+    let db = pool.clone();
+    let pid = row.id;
+    tokio::spawn(async move {
+        if let Ok(Some(doc)) = crate::search::indexer::build_single_plugin_document(&db, pid).await
+        {
+            if let Err(e) = search.index_plugin(&doc).await {
+                tracing::warn!("Failed to re-index plugin in Meilisearch: {e}");
+            }
+        }
+    });
+
     Ok(Json(build_plugin_response(updated_row, categories)))
 }
 
@@ -516,6 +542,15 @@ pub async fn delete_plugin(
         .execute(pool)
         .await
         .map_err(AppError::internal)?;
+
+    // Remove from Meilisearch index (fire-and-forget)
+    let search = state.search.clone();
+    let plugin_id = row.id.to_string();
+    tokio::spawn(async move {
+        if let Err(e) = search.delete_plugin(&plugin_id).await {
+            tracing::warn!("Failed to remove plugin from Meilisearch: {e}");
+        }
+    });
 
     Ok(Json(serde_json::json!({ "message": "Plugin deleted" })))
 }
@@ -627,6 +662,19 @@ pub async fn create_version(
     .fetch_one(pool)
     .await
     .map_err(AppError::internal)?;
+
+    // Re-index plugin in Meilisearch (pumpkin_versions may have changed)
+    let search = state.search.clone();
+    let db = pool.clone();
+    let pid = row.id;
+    tokio::spawn(async move {
+        if let Ok(Some(doc)) = crate::search::indexer::build_single_plugin_document(&db, pid).await
+        {
+            if let Err(e) = search.index_plugin(&doc).await {
+                tracing::warn!("Failed to re-index plugin after version create: {e}");
+            }
+        }
+    });
 
     Ok((
         StatusCode::CREATED,
@@ -895,6 +943,19 @@ pub async fn upload_binary(
         .presigned_download_url(&storage_key)
         .await
         .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?;
+
+    // Re-index plugin in Meilisearch (platforms may have changed)
+    let search = state.search.clone();
+    let db = pool.clone();
+    let pid = plugin_row.id;
+    tokio::spawn(async move {
+        if let Ok(Some(doc)) = crate::search::indexer::build_single_plugin_document(&db, pid).await
+        {
+            if let Err(e) = search.index_plugin(&doc).await {
+                tracing::warn!("Failed to re-index plugin after binary upload: {e}");
+            }
+        }
+    });
 
     Ok((
         StatusCode::CREATED,

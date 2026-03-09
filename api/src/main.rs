@@ -1,4 +1,9 @@
-use pumpkin_hub_api::{config::Config, db, storage::ObjectStorage};
+use pumpkin_hub_api::{
+    config::Config,
+    db,
+    search::{PumpkinVersionFetcher, SearchService},
+    storage::ObjectStorage,
+};
 
 #[tokio::main]
 async fn main() {
@@ -32,10 +37,31 @@ async fn main() {
     let storage = ObjectStorage::from_config(&config.s3).await;
     tracing::info!("Object storage ready");
 
+    tracing::info!("Initializing Meilisearch…");
+    let search = SearchService::new(&config.meilisearch);
+    if let Err(err) = search.configure_index().await {
+        tracing::error!(%err, "Failed to configure Meilisearch index");
+        std::process::exit(1);
+    }
+
+    // Re-index all existing plugins on startup
+    match search.reindex_all(&pool).await {
+        Ok(count) => tracing::info!("Meilisearch initial index: {count} plugins"),
+        Err(err) => tracing::warn!(%err, "Initial reindex failed — search may be stale"),
+    }
+    tracing::info!("Meilisearch ready");
+
+    tracing::info!("Fetching Pumpkin MC versions from GitHub…");
+    let pumpkin_versions = PumpkinVersionFetcher::new();
+    match pumpkin_versions.refresh().await {
+        Ok(()) => tracing::info!("Pumpkin versions cache populated"),
+        Err(err) => tracing::warn!("Failed to fetch Pumpkin versions: {err}"),
+    }
+
     let addr = config.server.address;
     tracing::info!(%addr, "Starting pumpkin-hub-api");
 
-    let app = pumpkin_hub_api::build_app(config, pool, storage);
+    let app = pumpkin_hub_api::build_app(config, pool, storage, search, pumpkin_versions);
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await

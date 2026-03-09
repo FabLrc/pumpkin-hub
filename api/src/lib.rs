@@ -4,6 +4,7 @@ pub mod db;
 pub mod error;
 pub mod models;
 pub mod routes;
+pub mod search;
 pub mod state;
 pub mod storage;
 
@@ -26,14 +27,25 @@ use tower_http::{
 
 use sqlx::PgPool;
 
-use crate::{config::Config, state::AppState, storage::ObjectStorage};
+use crate::{
+    config::Config,
+    search::{PumpkinVersionFetcher, SearchService},
+    state::AppState,
+    storage::ObjectStorage,
+};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
 /// Builds the fully configured Axum application.
 /// Separated from `main` to allow integration testing without binding a port.
-pub fn build_app(config: Config, pool: PgPool, storage: ObjectStorage) -> Router {
-    let state = AppState::new(config.clone(), pool, storage);
+pub fn build_app(
+    config: Config,
+    pool: PgPool,
+    storage: ObjectStorage,
+    search: SearchService,
+    pumpkin_versions: PumpkinVersionFetcher,
+) -> Router {
+    let state = AppState::new(config.clone(), pool, storage, search, pumpkin_versions);
     let cors = build_cors_layer(&config);
     let x_request_id = axum::http::HeaderName::from_static(REQUEST_ID_HEADER);
 

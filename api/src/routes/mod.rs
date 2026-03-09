@@ -2,6 +2,7 @@ pub mod auth;
 mod categories;
 mod health;
 mod plugins;
+mod search;
 
 use axum::Router;
 
@@ -18,4 +19,5 @@ fn v1_routes() -> Router<AppState> {
         .merge(auth::routes())
         .merge(categories::routes())
         .merge(plugins::routes())
+        .merge(search::routes())
 }
