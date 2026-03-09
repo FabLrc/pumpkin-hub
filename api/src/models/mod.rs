@@ -3,5 +3,6 @@ pub mod binary;
 pub mod category;
 pub mod plugin;
 pub mod plugin_category;
+pub mod plugin_dependency;
 pub mod user;
 pub mod version;
