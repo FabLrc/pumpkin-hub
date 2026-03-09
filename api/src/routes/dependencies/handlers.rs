@@ -367,19 +367,26 @@ async fn build_graph_recursive(
     conflicts: &mut Vec<DependencyConflict>,
     visited: &mut HashSet<Uuid>,
 ) -> Result<(), AppError> {
-    // Use an iterative BFS instead of async recursion
+    // Use an iterative BFS instead of async recursion.
+    // `ancestors` tracks the plugin IDs on the current traversal path
+    // to detect real circular dependencies (not diamond/shared deps).
     struct QueueItem {
         plugin_id: Uuid,
         version_id: Uuid,
         slug: String,
         version: String,
+        ancestors: HashSet<Uuid>,
     }
+
+    let mut root_ancestors = HashSet::new();
+    root_ancestors.insert(plugin_id);
 
     let mut queue = vec![QueueItem {
         plugin_id,
         version_id,
         slug: slug.to_string(),
         version: version.to_string(),
+        ancestors: root_ancestors,
     }];
 
     while let Some(item) = queue.pop() {
@@ -477,7 +484,8 @@ async fn build_graph_recursive(
 
             // Enqueue resolved dependency for further traversal
             if let Some(resolved_vid) = resolved_version_id {
-                if visited.contains(&resolved_vid) {
+                if item.ancestors.contains(&dep.dependency_plugin_id) {
+                    // True cycle: this dep's plugin is an ancestor in the current path
                     conflicts.push(DependencyConflict {
                         dependency_plugin_id: dep.dependency_plugin_id,
                         dependency_plugin_name: dep.dependency_plugin_name.clone(),
@@ -488,14 +496,19 @@ async fn build_graph_recursive(
                             dep.dependency_plugin_name
                         ),
                     });
-                } else {
+                } else if !visited.contains(&resolved_vid) {
+                    // Not yet visited → enqueue with extended ancestry
+                    let mut child_ancestors = item.ancestors.clone();
+                    child_ancestors.insert(dep.dependency_plugin_id);
                     queue.push(QueueItem {
                         plugin_id: dep.dependency_plugin_id,
                         version_id: resolved_vid,
                         slug: dep.dependency_plugin_slug.clone(),
                         version: resolved_version.unwrap_or_default(),
+                        ancestors: child_ancestors,
                     });
                 }
+                // Already visited via another path (diamond dep) → skip silently
             }
         }
 
