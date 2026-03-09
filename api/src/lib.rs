@@ -8,6 +8,7 @@ pub mod state;
 pub mod storage;
 
 use axum::{
+    extract::DefaultBodyLimit,
     http::{
         header::{AUTHORIZATION, CONTENT_TYPE},
         HeaderValue, Method,
@@ -56,7 +57,16 @@ pub fn build_app(config: Config, pool: PgPool, storage: ObjectStorage) -> Router
         // CORS policy
         .layer(cors);
 
-    routes::create_router(state).layer(middleware)
+    // Cap the global body limit just above the maximum allowed binary size
+    // (+ 5 MB overhead for multipart metadata).
+    // The binary upload handler also enforces this limit via `binary_max_size_bytes`
+    // for a precise error message; this layer acts as a backstop for all other routes.
+    let body_limit = usize::try_from(config.binary_max_size_bytes)
+        .unwrap_or(usize::MAX)
+        .saturating_add(5 * 1024 * 1024);
+    routes::create_router(state)
+        .layer(DefaultBodyLimit::max(body_limit))
+        .layer(middleware)
 }
 
 fn build_cors_layer(config: &Config) -> CorsLayer {

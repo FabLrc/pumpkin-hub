@@ -21,3 +21,9 @@ Thumbs.db
 
 # Misc
 *.log
+
+# Local test binaries — not for version control
+*.dll
+*.so
+*.dylib
+*.exe
