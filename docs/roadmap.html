@@ -52,6 +52,7 @@
         <a href="#phase-1" class="sidebar-sublink">Phase 1 — Core</a>
         <a href="#phase-1-5" class="sidebar-sublink">Phase 1.5 — Integration</a>
         <a href="#phase-2" class="sidebar-sublink">Phase 2 — Distribution</a>
+        <a href="#phase-2-5" class="sidebar-sublink">Phase 2.5 — Hardening</a>
         <a href="#phase-3" class="sidebar-sublink">Phase 3 — Community</a>
         <a href="#phase-4" class="sidebar-sublink">Phase 4 — Ecosystem</a>
         <a href="#backlog" class="sidebar-sublink">Backlog</a>
@@ -78,6 +79,7 @@
         <div class="callout-label">Legend</div>
         <span class="badge badge-green" style="margin-right:0.5rem;">Completed</span>
         <span class="badge badge-orange" style="margin-right:0.5rem;">In Progress</span>
+        <span class="badge badge-orange" style="margin-right:0.5rem;">Next Up</span>
         <span class="badge badge-blue" style="margin-right:0.5rem;">Planned</span>
         <span class="badge" style="margin-right:0.5rem;">Backlog</span>
       </div>
@@ -333,7 +335,7 @@
         </div>
 
         <!-- ── PHASE 2 — Distribution ──────────────────────── -->
-        <h2 id="phase-2" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 2 — Distribution <span class="badge badge-blue">In Progress</span></h2>
+        <h2 id="phase-2" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 2 — Distribution <span class="badge badge-green">Completed</span></h2>
 
         <div class="timeline-item">
           <div class="timeline-dot done"></div>
@@ -396,6 +398,79 @@
             <li>Conflict detection: no matching version, incompatible ranges, circular dependencies, inactive plugins</li>
             <li>Reverse dependency lookup — <code>GET /plugins/{slug}/dependants</code></li>
             <li>Frontend: dependency list view, tree graph visualization, conflict alerts, dependants view</li>
+          </ul>
+        </div>
+
+        <!-- ── PHASE 2.5 — Hardening & Polish ──────────────── -->
+        <h2 id="phase-2-5" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 2.5 — Hardening &amp; Polish <span class="badge badge-orange">Next Up</span></h2>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Rate Limiting &amp; API Protection</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Per-IP rate limiting via <code>tower-governor</code> middleware</li>
+            <li>Stricter limits on authentication endpoints (register, login, OAuth) to prevent brute-force</li>
+            <li>Relaxed limits on read-only endpoints (search, plugin list, download)</li>
+            <li>Configurable thresholds via environment variables</li>
+            <li><code>429 Too Many Requests</code> response with <code>Retry-After</code> header</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Password Recovery &amp; Email Verification</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Forgot password flow — email with time-limited reset token (1 hour TTL)</li>
+            <li>Reset password page at <code>/auth/reset-password</code> with token validation</li>
+            <li>Email verification on registration — activation link sent on signup</li>
+            <li>Email sending infrastructure via SMTP or transactional email service (Resend / SendGrid)</li>
+            <li><code>email_verified</code> flag on users table, enforced on sensitive operations</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Custom Error Pages &amp; Toast Notifications</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Custom <code>404 Not Found</code> page consistent with Brutalist Industrial design</li>
+            <li>Custom <code>500 Internal Error</code> page with helpful recovery actions</li>
+            <li>Next.js <code>error.tsx</code> and <code>global-error.tsx</code> error boundaries</li>
+            <li>Toast notification system for user feedback (success, error, info) on CRUD operations</li>
+            <li>Next.js <code>loading.tsx</code> suspense boundaries with skeleton UI on all pages</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Public Author Profiles</span>
+          </div>
+          <ul class="timeline-features">
+            <li><code>GET /api/v1/users/{username}</code> — public author profile endpoint</li>
+            <li><code>GET /api/v1/users/{username}/plugins</code> — author's published plugins</li>
+            <li>Public profile page at <code>/users/{username}</code> with avatar, bio, and plugin portfolio</li>
+            <li>Author stats: total plugins published, cumulative downloads, member since</li>
+            <li>Click-through from plugin detail author name to profile page</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Admin Moderation Basics</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Admin-only routes protected by role middleware (<code>admin</code> / <code>moderator</code>)</li>
+            <li>Deactivate or flag plugins from admin panel</li>
+            <li>User management: ban, role change, account deactivation</li>
+            <li>Audit log of admin actions (who, what, when)</li>
+            <li>Admin dashboard at <code>/admin</code> with pending reviews and flagged content</li>
           </ul>
         </div>
 
