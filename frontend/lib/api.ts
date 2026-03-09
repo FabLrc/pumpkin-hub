@@ -8,6 +8,10 @@ import type {
   CategoryResponse,
   CreatePluginRequest,
   CreateVersionRequest,
+  DeclareDependencyRequest,
+  DependencyGraphResponse,
+  DependencyListResponse,
+  DependencyResponse,
   ListPluginsParams,
   LoginRequest,
   OAuthProvider,
@@ -16,9 +20,11 @@ import type {
   PluginSummary,
   PumpkinVersion,
   RegisterRequest,
+  ReverseDependencyResponse,
   SearchParams,
   SearchResponse,
   SearchSuggestion,
+  UpdateDependencyRequest,
   UpdatePluginRequest,
   UpdateProfileRequest,
   UserProfile,
@@ -372,4 +378,77 @@ export function getPumpkinVersionsPath(): string {
 
 export async function fetchPumpkinVersions(): Promise<PumpkinVersion[]> {
   return apiFetch<PumpkinVersion[]>(getPumpkinVersionsPath());
+}
+
+// ── Dependency Endpoints ──────────────────────────────────────────────────
+
+export function getDependenciesPath(slug: string, version: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/dependencies`;
+}
+
+export function getDependencyGraphPath(slug: string, version: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/dependencies/graph`;
+}
+
+export function getDependantsPath(slug: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/dependants`;
+}
+
+export async function fetchDependencies(
+  slug: string,
+  version: string,
+): Promise<DependencyListResponse> {
+  return apiFetch<DependencyListResponse>(getDependenciesPath(slug, version));
+}
+
+export async function declareDependency(
+  slug: string,
+  version: string,
+  body: DeclareDependencyRequest,
+): Promise<DependencyResponse> {
+  return apiFetch<DependencyResponse>(getDependenciesPath(slug, version), {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateDependency(
+  slug: string,
+  version: string,
+  dependencyId: string,
+  body: UpdateDependencyRequest,
+): Promise<DependencyResponse> {
+  return apiFetch<DependencyResponse>(
+    `${getDependenciesPath(slug, version)}/${encodeURIComponent(dependencyId)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function removeDependency(
+  slug: string,
+  version: string,
+  dependencyId: string,
+): Promise<void> {
+  await apiFetch<void>(
+    `${getDependenciesPath(slug, version)}/${encodeURIComponent(dependencyId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function fetchDependencyGraph(
+  slug: string,
+  version: string,
+): Promise<DependencyGraphResponse> {
+  return apiFetch<DependencyGraphResponse>(
+    getDependencyGraphPath(slug, version),
+  );
+}
+
+export async function fetchDependants(
+  slug: string,
+): Promise<ReverseDependencyResponse> {
+  return apiFetch<ReverseDependencyResponse>(getDependantsPath(slug));
 }

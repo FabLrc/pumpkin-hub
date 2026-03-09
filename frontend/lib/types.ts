@@ -183,6 +183,97 @@ export interface BinaryDownloadResponse {
   expires_in_seconds: number;
 }
 
+// ── Dependency Types ──────────────────────────────────────────────────────
+
+export interface DependencyPluginSummary {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface DependencyResponse {
+  id: string;
+  dependency_plugin: DependencyPluginSummary;
+  version_req: string;
+  is_optional: boolean;
+  created_at: string;
+}
+
+export interface DependencyListResponse {
+  plugin_slug: string;
+  version: string;
+  total: number;
+  dependencies: DependencyResponse[];
+}
+
+export interface DeclareDependencyRequest {
+  dependency_plugin_id: string;
+  version_req: string;
+  is_optional?: boolean;
+}
+
+export interface UpdateDependencyRequest {
+  version_req?: string;
+  is_optional?: boolean;
+}
+
+/** A node in the full dependency graph. */
+export interface DependencyGraphNode {
+  plugin_id: string;
+  plugin_name: string;
+  plugin_slug: string;
+  version: string;
+  version_id: string;
+  dependencies: DependencyGraphEdge[];
+}
+
+/** An edge in the dependency graph. */
+export interface DependencyGraphEdge {
+  dependency_plugin_id: string;
+  dependency_plugin_name: string;
+  dependency_plugin_slug: string;
+  version_req: string;
+  is_optional: boolean;
+  resolved_version: string | null;
+  is_compatible: boolean;
+}
+
+export type ConflictType =
+  | "no_matching_version"
+  | "incompatible_ranges"
+  | "circular_dependency"
+  | "inactive_plugin";
+
+export interface DependencyConflict {
+  dependency_plugin_id: string;
+  dependency_plugin_name: string;
+  dependency_plugin_slug: string;
+  conflict_type: ConflictType;
+  details: string;
+}
+
+export interface DependencyGraphResponse {
+  plugin_slug: string;
+  version: string;
+  graph: DependencyGraphNode[];
+  conflicts: DependencyConflict[];
+}
+
+export interface ReverseDependant {
+  plugin_id: string;
+  plugin_name: string;
+  plugin_slug: string;
+  version: string;
+  version_req: string;
+  is_optional: boolean;
+}
+
+export interface ReverseDependencyResponse {
+  plugin_slug: string;
+  total: number;
+  dependants: ReverseDependant[];
+}
+
 // ── Query Parameters ──────────────────────────────────────────────────────
 
 export type SortField = "created_at" | "updated_at" | "downloads_total" | "name";

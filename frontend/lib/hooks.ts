@@ -4,15 +4,18 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath } from "./api";
 import type {
   BinariesListResponse,
   CategoryResponse,
+  DependencyGraphResponse,
+  DependencyListResponse,
   ListPluginsParams,
   PaginatedResponse,
   PluginResponse,
   PluginSummary,
   PumpkinVersion,
+  ReverseDependencyResponse,
   SearchParams,
   SearchResponse,
   UserProfile,
@@ -87,5 +90,31 @@ export function usePumpkinVersions() {
   return useSWR<PumpkinVersion[]>(getPumpkinVersionsPath(), swrFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60_000,
+  });
+}
+
+// ── Dependency Hooks ──────────────────────────────────────────────────────
+
+/** Fetch dependencies for a specific plugin version. */
+export function useDependencies(slug: string | null, version: string | null) {
+  const path = slug && version ? getDependenciesPath(slug, version) : null;
+  return useSWR<DependencyListResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
+  });
+}
+
+/** Fetch the full dependency graph with conflict detection. */
+export function useDependencyGraph(slug: string | null, version: string | null) {
+  const path = slug && version ? getDependencyGraphPath(slug, version) : null;
+  return useSWR<DependencyGraphResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
+  });
+}
+
+/** Fetch reverse dependencies: "who depends on this plugin?" */
+export function useDependants(slug: string | null) {
+  const path = slug ? getDependantsPath(slug) : null;
+  return useSWR<ReverseDependencyResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
   });
 }
