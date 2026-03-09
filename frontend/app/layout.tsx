@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Raleway, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const raleway = Raleway({
@@ -49,7 +50,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${raleway.variable} ${jetbrainsMono.variable}`}>
-      <body className="min-h-screen scanline antialiased">{children}</body>
+      <body className="min-h-screen scanline antialiased">
+        {children}
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "#1a1a1a",
+              border: "1px solid #262626",
+              color: "#ffffff",
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
+              borderRadius: "0",
+            },
+          }}
+        />
+      </body>
     </html>
   );
 }

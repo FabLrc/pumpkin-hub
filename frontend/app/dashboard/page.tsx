@@ -13,6 +13,7 @@ import {
   ExternalLink,
   AlertCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Navbar, Footer } from "@/components/layout";
 import { useCurrentUser, useAuthorPlugins } from "@/lib/hooks";
 import { resendVerification } from "@/lib/api";
@@ -42,8 +43,9 @@ function EmailVerificationBanner() {
     try {
       await resendVerification();
       setSent(true);
+      toast.success("Verification email sent! Check your inbox.");
     } catch {
-      // Silently fail — user can try again
+      toast.error("Failed to send verification email. Try again later.");
     } finally {
       setSending(false);
     }

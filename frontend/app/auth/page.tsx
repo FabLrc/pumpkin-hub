@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Github, Mail, ArrowLeft, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import {
   getOAuthLoginUrl,
   registerWithEmail,
@@ -39,8 +40,10 @@ export default function AuthPage() {
     try {
       if (mode === "register") {
         await registerWithEmail({ username, email, password });
+        toast.success("Account created! Check your email to verify your address.");
       } else {
         await loginWithEmail({ email, password });
+        toast.success("Welcome back!");
       }
       // Revalidate the user cache so Navbar picks up the session immediately.
       await mutate(getAuthMePath());
@@ -50,7 +53,9 @@ export default function AuthPage() {
         err instanceof Error ? err.message : "An unexpected error occurred";
       // Extract the JSON error message if present.
       const match = message.match(/"error":\s*"([^"]+)"/);
-      setError(match ? match[1] : message);
+      const errorMsg = match ? match[1] : message;
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }

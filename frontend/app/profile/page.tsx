@@ -13,6 +13,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { Navbar, Footer } from "@/components/layout";
+import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks";
 import { updateProfile, uploadAvatar, getAuthMePath } from "@/lib/api";
 import { mutate } from "swr";
@@ -83,12 +84,15 @@ function AvatarSection({
       setSelectedFile(null);
       setPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success("Avatar updated successfully!");
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
       const match = message.match(/"error":\s*"([^"]+)"/);
-      setError(match ? match[1] : message);
+      const errorMsg = match ? match[1] : message;
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsUploading(false);
     }
@@ -236,12 +240,15 @@ export default function ProfilePage() {
       });
       await mutate(getAuthMePath());
       setSuccess(true);
+      toast.success("Profile updated successfully!");
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
       const match = message.match(/"error":\s*"([^"]+)"/);
-      setError(match ? match[1] : message);
+      const errorMsg = match ? match[1] : message;
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
