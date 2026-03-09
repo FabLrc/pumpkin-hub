@@ -13,6 +13,7 @@ pub struct Config {
     pub jwt: JwtConfig,
     pub s3: S3Config,
     pub binary_max_size_bytes: u64,
+    pub rate_limit: RateLimitConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +65,18 @@ pub struct S3Config {
     /// When set, replaces the internal `endpoint_url` in generated URLs.
     /// Example: "http://localhost:9000" in dev, the R2 public URL in prod.
     pub public_url: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RateLimitConfig {
+    /// Replenish interval in seconds for general API routes.
+    pub general_per_second: u64,
+    /// Burst size for general API routes.
+    pub general_burst_size: u32,
+    /// Replenish interval in seconds for auth routes (stricter).
+    pub auth_per_second: u64,
+    /// Burst size for auth routes (stricter).
+    pub auth_burst_size: u32,
 }
 
 #[derive(Debug, Error)]
@@ -127,6 +140,13 @@ impl Config {
         let s3_public_url = std::env::var("S3_PUBLIC_URL").ok();
         let binary_max_size_bytes = parse_env_var::<u64>("BINARY_MAX_SIZE_BYTES", 104_857_600)?;
 
+        let rate_limit = RateLimitConfig {
+            general_per_second: parse_env_var::<u64>("RATE_LIMIT_GENERAL_PER_SECOND", 1)?,
+            general_burst_size: parse_env_var::<u32>("RATE_LIMIT_GENERAL_BURST_SIZE", 30)?,
+            auth_per_second: parse_env_var::<u64>("RATE_LIMIT_AUTH_PER_SECOND", 4)?,
+            auth_burst_size: parse_env_var::<u32>("RATE_LIMIT_AUTH_BURST_SIZE", 5)?,
+        };
+
         Ok(Config {
             server: ServerConfig {
                 address: SocketAddr::new(ip, port),
@@ -159,6 +179,7 @@ impl Config {
                 public_url: s3_public_url,
             },
             binary_max_size_bytes,
+            rate_limit,
         })
     }
 }
@@ -197,6 +218,12 @@ impl Default for Config {
                 public_url: None,
             },
             binary_max_size_bytes: 104_857_600,
+            rate_limit: RateLimitConfig {
+                general_per_second: 1,
+                general_burst_size: 30,
+                auth_per_second: 4,
+                auth_burst_size: 5,
+            },
         }
     }
 }

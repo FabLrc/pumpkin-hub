@@ -15,6 +15,10 @@ use oauth2::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use std::sync::Arc;
+
+use tower_governor::GovernorLayer;
+
 use crate::{
     auth::{
         discord::fetch_discord_user,
@@ -25,6 +29,7 @@ use crate::{
         password,
     },
     error::AppError,
+    rate_limit::AppGovernorConfig,
     state::AppState,
 };
 
@@ -41,26 +46,27 @@ const MIN_PASSWORD_LENGTH: usize = 8;
 /// Maximum password length (prevents DoS via huge Argon2 inputs).
 const MAX_PASSWORD_LENGTH: usize = 128;
 
-pub fn routes() -> Router<AppState> {
-    Router::new()
-        // Email / password
+pub fn routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
+    // Rate-limited auth routes (login, register, OAuth entry points)
+    let rate_limited = Router::new()
         .route("/auth/register", post(register))
         .route("/auth/login", post(login_email))
-        // GitHub OAuth
         .route("/auth/github", get(github_login))
-        .route("/auth/github/callback", get(github_callback))
-        // Google OAuth
         .route("/auth/google", get(google_login))
-        .route("/auth/google/callback", get(google_callback))
-        // Discord OAuth
         .route("/auth/discord", get(discord_login))
+        .layer(GovernorLayer::new(auth_governor));
+
+    // Non-rate-limited auth routes (callbacks, session, avatar)
+    let open = Router::new()
+        .route("/auth/github/callback", get(github_callback))
+        .route("/auth/google/callback", get(google_callback))
         .route("/auth/discord/callback", get(discord_callback))
-        // Session
         .route("/auth/me", get(me).put(update_profile))
         .route("/auth/logout", get(logout))
-        // Avatar upload (authenticated) / serve (public)
         .route("/auth/avatar", post(upload_avatar))
-        .route("/users/{id}/avatar", get(serve_avatar))
+        .route("/users/{id}/avatar", get(serve_avatar));
+
+    rate_limited.merge(open)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

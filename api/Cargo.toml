@@ -84,6 +84,10 @@ meilisearch-sdk = "0.27"
 # SHA-256 checksum generation
 sha2 = "0.10"
 
+# Rate limiting
+tower_governor = { version = "0.8", features = ["axum", "tracing"] }
+governor = "0.10"
+
 [profile.release]
 opt-level = 3
 lto = true

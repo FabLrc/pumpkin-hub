@@ -3,6 +3,7 @@ pub mod config;
 pub mod db;
 pub mod error;
 pub mod models;
+pub mod rate_limit;
 pub mod routes;
 pub mod search;
 pub mod state;
@@ -17,6 +18,7 @@ use axum::{
     Router,
 };
 use tower::ServiceBuilder;
+use tower_governor::GovernorLayer;
 use tower_http::{
     compression::CompressionLayer,
     cors::{AllowOrigin, CorsLayer},
@@ -49,6 +51,25 @@ pub fn build_app(
     let cors = build_cors_layer(&config);
     let x_request_id = axum::http::HeaderName::from_static(REQUEST_ID_HEADER);
 
+    // Rate limiters — separate configs for general and auth-sensitive routes
+    let general_governor = rate_limit::build_general_governor(&config.rate_limit);
+    let auth_governor = rate_limit::build_auth_governor(&config.rate_limit);
+
+    // Spawn background task to clean up expired rate-limit entries
+    let general_limiter = general_governor.limiter().clone();
+    let auth_limiter = auth_governor.limiter().clone();
+    tokio::spawn(async move {
+        let interval = std::time::Duration::from_secs(60);
+        loop {
+            tokio::time::sleep(interval).await;
+            general_limiter.retain_recent();
+            auth_limiter.retain_recent();
+        }
+    });
+
+    let general_governor = std::sync::Arc::new(general_governor);
+    let auth_governor = std::sync::Arc::new(auth_governor);
+
     let middleware = ServiceBuilder::new()
         // Assign a unique ID to every incoming request
         .layer(SetRequestIdLayer::new(
@@ -67,7 +88,9 @@ pub fn build_app(
         // Gzip compression for applicable responses
         .layer(CompressionLayer::new())
         // CORS policy
-        .layer(cors);
+        .layer(cors)
+        // Global rate limiter — relaxed for read-heavy routes
+        .layer(GovernorLayer::new(general_governor));
 
     // Cap the global body limit just above the maximum allowed binary size
     // (+ 5 MB overhead for multipart metadata).
@@ -76,7 +99,7 @@ pub fn build_app(
     let body_limit = usize::try_from(config.binary_max_size_bytes)
         .unwrap_or(usize::MAX)
         .saturating_add(5 * 1024 * 1024);
-    routes::create_router(state)
+    routes::create_router(state, auth_governor)
         .layer(DefaultBodyLimit::max(body_limit))
         .layer(middleware)
 }

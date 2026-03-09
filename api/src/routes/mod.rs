@@ -5,19 +5,28 @@ mod health;
 mod plugins;
 mod search;
 
+use std::sync::Arc;
+
 use axum::Router;
 
+use crate::rate_limit::AppGovernorConfig;
 use crate::state::AppState;
 
 /// Assembles all versioned sub-routers under their respective prefixes.
-pub fn create_router(state: AppState) -> Router {
-    Router::new().nest("/api/v1", v1_routes()).with_state(state)
+/// `auth_governor` is applied only to auth-sensitive routes (register, login, OAuth).
+pub fn create_router(
+    state: AppState,
+    auth_governor: Arc<AppGovernorConfig>,
+) -> Router {
+    Router::new()
+        .nest("/api/v1", v1_routes(auth_governor))
+        .with_state(state)
 }
 
-fn v1_routes() -> Router<AppState> {
+fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
     Router::new()
         .merge(health::routes())
-        .merge(auth::routes())
+        .merge(auth::routes(auth_governor))
         .merge(categories::routes())
         .merge(plugins::routes())
         .merge(dependencies::routes())

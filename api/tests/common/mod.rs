@@ -1,6 +1,6 @@
 use axum::Router;
 use pumpkin_hub_api::config::{
-    Config, GithubConfig, JwtConfig, MeilisearchConfig, S3Config, ServerConfig,
+    Config, GithubConfig, JwtConfig, MeilisearchConfig, RateLimitConfig, S3Config, ServerConfig,
 };
 use pumpkin_hub_api::search::{PumpkinVersionFetcher, SearchService};
 use pumpkin_hub_api::storage::ObjectStorage;
@@ -55,6 +55,12 @@ pub async fn build_test_app() -> (Router, PgPool) {
             public_url: None,
         },
         binary_max_size_bytes: 104_857_600,
+        rate_limit: RateLimitConfig {
+            general_per_second: 1,
+            general_burst_size: 100,
+            auth_per_second: 1,
+            auth_burst_size: 100,
+        },
     };
 
     let storage = ObjectStorage::from_config(&config.s3).await;
