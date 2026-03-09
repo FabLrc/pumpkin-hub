@@ -70,6 +70,10 @@
         <a href="#versions-create" class="sidebar-sublink" style="padding-left:2rem;">Create Version</a>
         <a href="#versions-get" class="sidebar-sublink" style="padding-left:2rem;">Get Version</a>
         <a href="#versions-yank" class="sidebar-sublink" style="padding-left:2rem;">Yank / Restore</a>
+        <a href="#binaries" class="sidebar-sublink">Binaries</a>
+        <a href="#binaries-list" class="sidebar-sublink" style="padding-left:2rem;">List Binaries</a>
+        <a href="#binaries-upload" class="sidebar-sublink" style="padding-left:2rem;">Upload Binary</a>
+        <a href="#binaries-download" class="sidebar-sublink" style="padding-left:2rem;">Download Binary</a>
         <a href="#planned" class="sidebar-sublink">Planned Endpoints</a>
       </div>
     </aside>
@@ -83,8 +87,8 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Active development — Phase 2</div>
-        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management (create, get, yank, download counter).<br>
-        Planned for upcoming phases: binary uploads, Meilisearch full-text search, public author profile pages.
+        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs).<br>
+        Planned for upcoming phases: Meilisearch full-text search, public author profile pages.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -844,6 +848,147 @@
         </tbody>
       </table>
 
+      <!-- ── Binaries ──────────────────────────────────────────────────────── -->
+      <h2 id="binaries">Binaries</h2>
+
+      <p>
+        Binary distribution endpoints allow uploading compiled plugin artifacts per
+        architecture and version. Files are stored on S3-compatible storage (MinIO in
+        development, Cloudflare R2 in production) with automatic SHA-256 checksum
+        generation. Downloads use pre-signed URLs for direct client-to-storage transfer.
+      </p>
+
+      <div class="callout callout-info">
+        <div class="callout-label">Storage</div>
+        Binaries are stored on S3-compatible object storage. The key pattern is
+        <code>plugins/{slug}/{version}/{architecture}/{filename}</code>.
+        Each (version, architecture) pair allows at most one binary.
+      </div>
+
+      <!-- List Binaries -->
+      <h3 id="binaries-list"><span class="badge badge-green">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/binaries</code></h3>
+
+      <p>Returns all binaries uploaded for a given plugin version.</p>
+
+      <h4>Path Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>slug</code></td><td>string</td><td>Plugin slug</td></tr>
+          <tr><td><code>version</code></td><td>string</td><td>Semver version string</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "binaries": [
+    {
+      "id": "uuid",
+      "version_id": "uuid",
+      "architecture": "x86_64",
+      "file_name": "my-plugin.so",
+      "file_size": 2048576,
+      "checksum_sha256": "a1b2c3d4…",
+      "storage_key": "plugins/my-plugin/1.0.0/x86_64/my-plugin.so",
+      "content_type": "application/octet-stream",
+      "uploaded_at": "2025-01-15T10:30:00Z"
+    }
+  ]
+}</code></pre>
+
+      <!-- Upload Binary -->
+      <h3 id="binaries-upload"><span class="badge badge-orange">POST</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/binaries</code></h3>
+
+      <p>
+        Upload a compiled binary for a specific version and architecture.
+        Requires authentication and plugin ownership. The file is validated
+        against MIME type allowlist and a configurable size limit (default 100 MB).
+      </p>
+
+      <h4>Request</h4>
+      <p>Multipart form with two fields:</p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>architecture</code></td><td>text</td><td><code>x86_64</code> or <code>aarch64</code></td></tr>
+          <tr><td><code>file</code></td><td>file</td><td>Binary file (max 100 MB by default)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">201 Created</span></h4>
+      <pre><code>{
+  "binary": {
+    "id": "uuid",
+    "version_id": "uuid",
+    "architecture": "x86_64",
+    "file_name": "my-plugin.so",
+    "file_size": 2048576,
+    "checksum_sha256": "a1b2c3d4…",
+    "storage_key": "plugins/my-plugin/1.0.0/x86_64/my-plugin.so",
+    "content_type": "application/octet-stream",
+    "uploaded_at": "2025-01-15T10:30:00Z"
+  },
+  "download_url": "https://…presigned-url…",
+  "expires_in_seconds": 3600
+}</code></pre>
+
+      <h4>Error Responses</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Condition</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Missing or invalid authentication</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin author</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or version not found</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Binary already exists for this (version, architecture) pair</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid architecture, MIME type, file name or file too large</td></tr>
+        </tbody>
+      </table>
+
+      <!-- Download Binary -->
+      <h3 id="binaries-download"><span class="badge badge-green">GET</span> &nbsp; <code>/api/v1/plugins/:slug/versions/:version/download?arch=x86_64</code></h3>
+
+      <p>
+        Returns a pre-signed download URL for the binary matching the requested
+        architecture. Also increments the download counters on both the version
+        and the plugin.
+      </p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>arch</code></td><td>string</td><td>Yes</td><td><code>x86_64</code> or <code>aarch64</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "download_url": "https://…presigned-url…",
+  "checksum_sha256": "a1b2c3d4…",
+  "file_name": "my-plugin.so",
+  "file_size": 2048576,
+  "expires_in_seconds": 3600
+}</code></pre>
+
+      <h4>Error Responses</h4>
+      <table>
+        <thead>
+          <tr><th>Status</th><th>Condition</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin, version, or binary for the requested architecture not found</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid or missing <code>arch</code> parameter</td></tr>
+        </tbody>
+      </table>
+
       <!-- ── Planned Endpoints ─────────────────────────────────────────────── -->
       <h2 id="planned">Planned Endpoints</h2>
 
@@ -851,16 +996,6 @@
         The following endpoints will be progressively added. See the
         <a href="roadmap.html">roadmap</a> for the detailed schedule.
       </p>
-
-      <h3>Versions &amp; Binaries</h3>
-      <table>
-        <thead>
-          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/plugins/:slug/versions/:ver/download</code></td><td>Binary download</td></tr>
-        </tbody>
-      </table>
 
       <h3>Search</h3>
       <table>

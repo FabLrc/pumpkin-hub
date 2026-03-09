@@ -106,7 +106,7 @@
 │       ├── config.rs       # Configuration from ENV
 │       ├── db.rs           # PostgreSQL connection pool &amp; migrations
 │       ├── error.rs        # Centralized error type (AppError)
-│       ├── state.rs        # Shared state (AppState + PgPool)
+│       ├── state.rs        # Shared state (AppState + PgPool + ObjectStorage)
 │       ├── auth/           # Multi-provider authentication
 │       │   ├── mod.rs      # Auth module exports
 │       │   ├── github.rs   # GitHub API user fetch
@@ -120,8 +120,11 @@
 │       │   ├── auth_provider.rs # OAuth provider links per user
 │       │   ├── plugin.rs   # Plugin (registry entry)
 │       │   ├── version.rs  # Version (semver release)
+│       │   ├── binary.rs   # Binary (compiled artifact per version+arch)
 │       │   ├── category.rs # Category (classification tag)
 │       │   └── plugin_category.rs # Junction table
+│       ├── storage/        # Object storage abstraction
+│       │   └── mod.rs      # S3/MinIO client (upload, presigned URLs, delete)
 │       └── routes/
 │           ├── mod.rs      # Sub-router assembly
 │           ├── health.rs   # GET /api/v1/health (+ DB check)
@@ -165,7 +168,7 @@
 ├── docs/                   # Documentation (GitHub Pages)
 │   └── mockup/             # Design system HTML mockups
 │
-├── docker-compose.yml      # Dev orchestration (4 services)
+├── docker-compose.yml      # Dev orchestration (6 services)
 └── .github/
     ├── workflows/ci.yml    # CI GitHub Actions pipeline
     └── instructions/       # Copilot/AI instructions</code></pre>
@@ -355,7 +358,7 @@
 
       <p>
         The development environment is orchestrated by <code>docker-compose.yml</code> with
-        4 services. PostgreSQL and Meilisearch data are persisted via Docker volumes.
+        6 services. PostgreSQL, Meilisearch and MinIO data are persisted via Docker volumes.
         The Cargo cache is also mounted as a volume to speed up recompilations.
       </p>
 
@@ -374,6 +377,7 @@
           <tr><td><code>db-data-dev</code></td><td>PostgreSQL data</td></tr>
           <tr><td><code>meili-data-dev</code></td><td>Meilisearch indexes</td></tr>
           <tr><td><code>cargo-cache</code></td><td>Cargo registry and build cache</td></tr>
+          <tr><td><code>minio-data-dev</code></td><td>MinIO object storage (binary artifacts)</td></tr>
         </tbody>
       </table>
 

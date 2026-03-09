@@ -351,13 +351,14 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot done"></div>
           <div class="timeline-header">
             <span class="timeline-title">Binary Storage &amp; Distribution</span>
+            <span class="badge badge-green" style="font-size:0.65rem;">Done</span>
           </div>
           <ul class="timeline-features">
             <li>Binary file upload with multi-architecture support (x86_64, aarch64)</li>
-            <li>Storage on Cloudflare R2 (S3-compatible object store)</li>
+            <li>Storage on Cloudflare R2 (S3-compatible object store) — MinIO for local dev</li>
             <li>Automatic SHA-256 checksum generation and storage</li>
             <li>Pre-signed download URLs with integrity verification</li>
             <li>File size limits, MIME-type validation and upload progress UI</li>
