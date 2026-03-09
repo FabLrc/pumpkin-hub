@@ -51,6 +51,7 @@ pub struct User {
     pub avatar_url: Option<String>,
     pub bio: Option<String>,
     pub password_hash: Option<String>,
+    pub email_verified: bool,
     pub role: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

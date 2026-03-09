@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod config;
 pub mod db;
+pub mod email;
 pub mod error;
 pub mod models;
 pub mod rate_limit;
@@ -31,6 +32,7 @@ use sqlx::PgPool;
 
 use crate::{
     config::Config,
+    email::EmailService,
     search::{PumpkinVersionFetcher, SearchService},
     state::AppState,
     storage::ObjectStorage,
@@ -47,7 +49,26 @@ pub fn build_app(
     search: SearchService,
     pumpkin_versions: PumpkinVersionFetcher,
 ) -> Router {
-    let state = AppState::new(config.clone(), pool, storage, search, pumpkin_versions);
+    let email_service = config.smtp.as_ref().and_then(|smtp_cfg| {
+        let frontend_url = config
+            .server
+            .allowed_origins
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "http://localhost:3000".to_string());
+        match EmailService::new(smtp_cfg, &frontend_url) {
+            Ok(svc) => {
+                tracing::info!("SMTP email service configured");
+                Some(svc)
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to initialise SMTP — email features disabled");
+                None
+            }
+        }
+    });
+
+    let state = AppState::new(config.clone(), pool, storage, search, pumpkin_versions, email_service);
     let cors = build_cors_layer(&config);
     let x_request_id = axum::http::HeaderName::from_static(REQUEST_ID_HEADER);
 

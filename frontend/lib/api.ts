@@ -256,6 +256,40 @@ export async function loginWithEmail(
   });
 }
 
+/** Request a password reset email. */
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+/** Reset password using a reset token. */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+}
+
+/** Verify email address using a verification token. */
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+/** Resend email verification (requires auth). */
+export async function resendVerification(): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/resend-verification", {
+    method: "POST",
+  });
+}
+
 // ── Binary Endpoints ──────────────────────────────────────────────────────
 
 export function getBinariesPath(slug: string, version: string): string {

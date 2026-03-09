@@ -88,6 +88,12 @@ sha2 = "0.10"
 tower_governor = { version = "0.8", features = ["axum", "tracing"] }
 governor = "0.10"
 
+# Email (SMTP)
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "builder", "smtp-transport", "tokio1"] }
+
+# Hex encoding (for token hashing)
+hex = "0.4"
+
 [profile.release]
 opt-level = 3
 lto = true

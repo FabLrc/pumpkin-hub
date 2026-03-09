@@ -13,6 +13,7 @@ use oauth2::{
     TokenUrl,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use std::sync::Arc;
@@ -47,16 +48,18 @@ const MIN_PASSWORD_LENGTH: usize = 8;
 const MAX_PASSWORD_LENGTH: usize = 128;
 
 pub fn routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
-    // Rate-limited auth routes (login, register, OAuth entry points)
+    // Rate-limited auth routes (login, register, OAuth entry points, password reset)
     let rate_limited = Router::new()
         .route("/auth/register", post(register))
         .route("/auth/login", post(login_email))
+        .route("/auth/forgot-password", post(forgot_password))
+        .route("/auth/reset-password", post(reset_password))
         .route("/auth/github", get(github_login))
         .route("/auth/google", get(google_login))
         .route("/auth/discord", get(discord_login))
         .layer(GovernorLayer::new(auth_governor));
 
-    // Non-rate-limited auth routes (callbacks, session, avatar)
+    // Non-rate-limited auth routes (callbacks, session, avatar, verification)
     let open = Router::new()
         .route("/auth/github/callback", get(github_callback))
         .route("/auth/google/callback", get(google_callback))
@@ -64,6 +67,8 @@ pub fn routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .route("/auth/me", get(me).put(update_profile))
         .route("/auth/logout", get(logout))
         .route("/auth/avatar", post(upload_avatar))
+        .route("/auth/verify-email", post(verify_email))
+        .route("/auth/resend-verification", post(resend_verification))
         .route("/users/{id}/avatar", get(serve_avatar));
 
     rate_limited.merge(open)
@@ -92,8 +97,8 @@ async fn register(
 
     let user = sqlx::query_as::<_, crate::models::user::User>(
         r#"
-        INSERT INTO users (username, email, password_hash)
-        VALUES ($1, $2, $3)
+        INSERT INTO users (username, email, password_hash, email_verified)
+        VALUES ($1, $2, $3, FALSE)
         RETURNING *
         "#,
     )
@@ -113,6 +118,19 @@ async fn register(
         }
         other => AppError::internal(other),
     })?;
+
+    // Send verification email (best-effort — registration succeeds even if email fails)
+    if let Some(ref email_svc) = state.email {
+        let token = generate_secure_token();
+        store_email_verification_token(&state.db, user.id, &token).await?;
+        let email = user.email.clone().unwrap_or_default();
+        let svc = email_svc.clone();
+        tokio::spawn(async move {
+            if let Err(e) = svc.send_email_verification(&email, &token).await {
+                tracing::warn!(error = %e, "Failed to send verification email");
+            }
+        });
+    }
 
     issue_jwt_cookie(&state, &user)
 }
@@ -675,6 +693,224 @@ fn validate_avatar_magic_bytes(data: &[u8], content_type: &str) -> Result<(), Ap
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Password Recovery
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Token expiry: 1 hour for password reset.
+const PASSWORD_RESET_TTL_HOURS: i64 = 1;
+/// Token expiry: 24 hours for email verification.
+const EMAIL_VERIFICATION_TTL_HOURS: i64 = 24;
+
+#[derive(Debug, Deserialize)]
+struct ForgotPasswordRequest {
+    email: String,
+}
+
+/// `POST /api/v1/auth/forgot-password` — request a password reset link via email.
+///
+/// Always returns 200 regardless of whether the email exists (prevents enumeration).
+async fn forgot_password(
+    State(state): State<AppState>,
+    Json(body): Json<ForgotPasswordRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let email = body.email.trim().to_lowercase();
+
+    // Always return success to prevent email enumeration attacks
+    let success_response = Json(serde_json::json!({
+        "message": "If an account with that email exists, a password reset link has been sent."
+    }));
+
+    let email_svc = match state.email.as_ref() {
+        Some(svc) => svc.clone(),
+        None => return Ok(success_response),
+    };
+
+    let user = sqlx::query_as::<_, crate::models::user::User>(
+        "SELECT * FROM users WHERE LOWER(email) = $1",
+    )
+    .bind(&email)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(AppError::internal)?;
+
+    // Only send if user exists and has a password (email/password account)
+    if let Some(user) = user {
+        if user.password_hash.is_some() {
+            // Invalidate any existing tokens for this user
+            sqlx::query("DELETE FROM password_reset_tokens WHERE user_id = $1")
+                .bind(user.id)
+                .execute(&state.db)
+                .await
+                .map_err(AppError::internal)?;
+
+            let token = generate_secure_token();
+            store_password_reset_token(&state.db, user.id, &token).await?;
+
+            let user_email = email.clone();
+            tokio::spawn(async move {
+                if let Err(e) = email_svc.send_password_reset(&user_email, &token).await {
+                    tracing::warn!(error = %e, "Failed to send password reset email");
+                }
+            });
+        }
+    }
+
+    Ok(success_response)
+}
+
+#[derive(Debug, Deserialize)]
+struct ResetPasswordRequest {
+    token: String,
+    new_password: String,
+}
+
+/// `POST /api/v1/auth/reset-password` — set a new password using a valid reset token.
+async fn reset_password(
+    State(state): State<AppState>,
+    Json(body): Json<ResetPasswordRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    if body.new_password.len() < MIN_PASSWORD_LENGTH || body.new_password.len() > MAX_PASSWORD_LENGTH {
+        return Err(AppError::UnprocessableEntity(format!(
+            "Password must be between {MIN_PASSWORD_LENGTH} and {MAX_PASSWORD_LENGTH} characters"
+        )));
+    }
+
+    let token_hash = hash_token(&body.token);
+
+    // Find valid (non-expired) token
+    let record = sqlx::query_as::<_, TokenRecord>(
+        r#"
+        SELECT id, user_id FROM password_reset_tokens
+        WHERE token_hash = $1 AND expires_at > now()
+        "#,
+    )
+    .bind(&token_hash)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(AppError::internal)?
+    .ok_or_else(|| AppError::UnprocessableEntity("Invalid or expired reset token".to_string()))?;
+
+    let new_hash = password::hash_password(&body.new_password)
+        .map_err(|e| AppError::Internal(Box::new(HashError(e.to_string()))))?;
+
+    // Update password
+    sqlx::query("UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1")
+        .bind(record.user_id)
+        .bind(&new_hash)
+        .execute(&state.db)
+        .await
+        .map_err(AppError::internal)?;
+
+    // Delete all reset tokens for this user
+    sqlx::query("DELETE FROM password_reset_tokens WHERE user_id = $1")
+        .bind(record.user_id)
+        .execute(&state.db)
+        .await
+        .map_err(AppError::internal)?;
+
+    Ok(Json(serde_json::json!({
+        "message": "Password has been reset successfully. You can now sign in."
+    })))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Email Verification
+// ═══════════════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Deserialize)]
+struct VerifyEmailRequest {
+    token: String,
+}
+
+/// `POST /api/v1/auth/verify-email` — verify email address with a token.
+async fn verify_email(
+    State(state): State<AppState>,
+    Json(body): Json<VerifyEmailRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let token_hash = hash_token(&body.token);
+
+    let record = sqlx::query_as::<_, TokenRecord>(
+        r#"
+        SELECT id, user_id FROM email_verification_tokens
+        WHERE token_hash = $1 AND expires_at > now()
+        "#,
+    )
+    .bind(&token_hash)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(AppError::internal)?
+    .ok_or_else(|| {
+        AppError::UnprocessableEntity("Invalid or expired verification token".to_string())
+    })?;
+
+    sqlx::query("UPDATE users SET email_verified = TRUE, updated_at = now() WHERE id = $1")
+        .bind(record.user_id)
+        .execute(&state.db)
+        .await
+        .map_err(AppError::internal)?;
+
+    // Clean up all verification tokens for this user
+    sqlx::query("DELETE FROM email_verification_tokens WHERE user_id = $1")
+        .bind(record.user_id)
+        .execute(&state.db)
+        .await
+        .map_err(AppError::internal)?;
+
+    Ok(Json(serde_json::json!({
+        "message": "Email verified successfully."
+    })))
+}
+
+/// `POST /api/v1/auth/resend-verification` — resend verification email (requires auth).
+async fn resend_verification(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let email_svc = state
+        .email
+        .as_ref()
+        .ok_or_else(|| AppError::UnprocessableEntity("Email service is not configured".to_string()))?
+        .clone();
+
+    let user = sqlx::query_as::<_, crate::models::user::User>("SELECT * FROM users WHERE id = $1")
+        .bind(auth.user_id)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(AppError::internal)?
+        .ok_or(AppError::NotFound)?;
+
+    if user.email_verified {
+        return Err(AppError::UnprocessableEntity(
+            "Email is already verified".to_string(),
+        ));
+    }
+
+    let email = user.email.ok_or_else(|| {
+        AppError::UnprocessableEntity("No email address on this account".to_string())
+    })?;
+
+    // Invalidate previous tokens
+    sqlx::query("DELETE FROM email_verification_tokens WHERE user_id = $1")
+        .bind(user.id)
+        .execute(&state.db)
+        .await
+        .map_err(AppError::internal)?;
+
+    let token = generate_secure_token();
+    store_email_verification_token(&state.db, user.id, &token).await?;
+
+    tokio::spawn(async move {
+        if let Err(e) = email_svc.send_email_verification(&email, &token).await {
+            tracing::warn!(error = %e, "Failed to resend verification email");
+        }
+    });
+
+    Ok(Json(serde_json::json!({
+        "message": "Verification email has been sent."
+    })))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Shared Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -901,6 +1137,73 @@ fn verify_csrf(jar: &CookieJar, state_param: &str) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Generates a cryptographically secure random token (hex-encoded, 32 bytes = 64 chars).
+fn generate_secure_token() -> String {
+    use rand::RngCore;
+    let mut bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut bytes);
+    hex::encode(bytes)
+}
+
+/// Hashes a token with SHA-256 for safe storage (we never store raw tokens in the DB).
+fn hash_token(token: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
+/// Stores a hashed password reset token with a 1-hour expiry.
+async fn store_password_reset_token(
+    db: &sqlx::PgPool,
+    user_id: Uuid,
+    raw_token: &str,
+) -> Result<(), AppError> {
+    let token_hash = hash_token(raw_token);
+    sqlx::query(
+        r#"
+        INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+        VALUES ($1, $2, now() + interval '1 hour' * $3)
+        "#,
+    )
+    .bind(user_id)
+    .bind(&token_hash)
+    .bind(PASSWORD_RESET_TTL_HOURS as f64)
+    .execute(db)
+    .await
+    .map_err(AppError::internal)?;
+    Ok(())
+}
+
+/// Stores a hashed email verification token with a 24-hour expiry.
+async fn store_email_verification_token(
+    db: &sqlx::PgPool,
+    user_id: Uuid,
+    raw_token: &str,
+) -> Result<(), AppError> {
+    let token_hash = hash_token(raw_token);
+    sqlx::query(
+        r#"
+        INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
+        VALUES ($1, $2, now() + interval '1 hour' * $3)
+        "#,
+    )
+    .bind(user_id)
+    .bind(&token_hash)
+    .bind(EMAIL_VERIFICATION_TTL_HOURS as f64)
+    .execute(db)
+    .await
+    .map_err(AppError::internal)?;
+    Ok(())
+}
+
+/// Row returned when looking up a token.
+#[derive(sqlx::FromRow)]
+struct TokenRecord {
+    #[allow(dead_code)]
+    id: Uuid,
+    user_id: Uuid,
+}
+
 /// Issues a JWT in an HttpOnly cookie and returns a JSON response (for API calls).
 fn issue_jwt_cookie(
     state: &AppState,
@@ -968,6 +1271,7 @@ pub struct UserProfile {
     pub avatar_url: Option<String>,
     pub bio: Option<String>,
     pub role: String,
+    pub email_verified: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -981,6 +1285,7 @@ impl From<crate::models::user::User> for UserProfile {
             avatar_url: user.avatar_url,
             bio: user.bio,
             role: user.role,
+            email_verified: user.email_verified,
             created_at: user.created_at,
         }
     }

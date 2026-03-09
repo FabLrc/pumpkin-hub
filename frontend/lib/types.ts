@@ -9,6 +9,7 @@ export interface UserProfile {
   avatar_url: string | null;
   bio: string | null;
   role: "author" | "moderator" | "admin";
+  email_verified: boolean;
   created_at: string;
 }
 

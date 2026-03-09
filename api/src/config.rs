@@ -14,6 +14,7 @@ pub struct Config {
     pub s3: S3Config,
     pub binary_max_size_bytes: u64,
     pub rate_limit: RateLimitConfig,
+    pub smtp: Option<SmtpConfig>,
 }
 
 #[derive(Debug, Clone)]
@@ -77,6 +78,15 @@ pub struct RateLimitConfig {
     pub auth_per_second: u64,
     /// Burst size for auth routes (stricter).
     pub auth_burst_size: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct SmtpConfig {
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub from_address: String,
 }
 
 #[derive(Debug, Error)]
@@ -147,6 +157,8 @@ impl Config {
             auth_burst_size: parse_env_var::<u32>("RATE_LIMIT_AUTH_BURST_SIZE", 5)?,
         };
 
+        let smtp = load_smtp_config()?;
+
         Ok(Config {
             server: ServerConfig {
                 address: SocketAddr::new(ip, port),
@@ -180,6 +192,7 @@ impl Config {
             },
             binary_max_size_bytes,
             rate_limit,
+            smtp,
         })
     }
 }
@@ -224,6 +237,7 @@ impl Default for Config {
                 auth_per_second: 4,
                 auth_burst_size: 5,
             },
+            smtp: None,
         }
     }
 }
@@ -269,4 +283,25 @@ where
         }),
         Err(_) => Ok(default),
     }
+}
+
+/// Loads optional SMTP config. Returns `None` if `SMTP_HOST` is not set.
+fn load_smtp_config() -> Result<Option<SmtpConfig>, ConfigError> {
+    let host = match std::env::var("SMTP_HOST") {
+        Ok(val) if !val.is_empty() => val,
+        _ => return Ok(None),
+    };
+
+    let port = parse_env_var::<u16>("SMTP_PORT", 587)?;
+    let username = require_env("SMTP_USERNAME")?;
+    let password = require_env("SMTP_PASSWORD")?;
+    let from_address = require_env("SMTP_FROM_ADDRESS")?;
+
+    Ok(Some(SmtpConfig {
+        host,
+        port,
+        username,
+        password,
+        from_address,
+    }))
 }

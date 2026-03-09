@@ -3,6 +3,7 @@ use std::sync::Arc;
 use sqlx::PgPool;
 
 use crate::config::Config;
+use crate::email::EmailService;
 use crate::search::{PumpkinVersionFetcher, SearchService};
 use crate::storage::ObjectStorage;
 
@@ -15,6 +16,7 @@ pub struct AppState {
     pub storage: ObjectStorage,
     pub search: SearchService,
     pub pumpkin_versions: PumpkinVersionFetcher,
+    pub email: Option<EmailService>,
 }
 
 impl AppState {
@@ -24,6 +26,7 @@ impl AppState {
         storage: ObjectStorage,
         search: SearchService,
         pumpkin_versions: PumpkinVersionFetcher,
+        email: Option<EmailService>,
     ) -> Self {
         Self {
             config: Arc::new(config),
@@ -31,6 +34,7 @@ impl AppState {
             storage,
             search,
             pumpkin_versions,
+            email,
         }
     }
 }

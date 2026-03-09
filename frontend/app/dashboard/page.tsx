@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,9 +11,11 @@ import {
   Plus,
   Pencil,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { Navbar, Footer } from "@/components/layout";
 import { useCurrentUser, useAuthorPlugins } from "@/lib/hooks";
+import { resendVerification } from "@/lib/api";
 import type { PluginSummary } from "@/lib/types";
 
 function formatDownloads(count: number): string {
@@ -28,6 +31,48 @@ function formatDate(dateString: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function EmailVerificationBanner() {
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  async function handleResend() {
+    setSending(true);
+    try {
+      await resendVerification();
+      setSent(true);
+    } catch {
+      // Silently fail — user can try again
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="bg-warning/10 border-b border-warning/30 px-6 py-3">
+      <div className="max-w-5xl mx-auto flex items-center gap-3">
+        <AlertCircle className="w-4 h-4 text-warning shrink-0" />
+        <p className="font-mono text-xs text-text-primary flex-1">
+          Your email is not verified. Some features may be limited.
+        </p>
+        {sent ? (
+          <span className="font-mono text-xs text-success">
+            Verification email sent!
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={sending}
+            className="font-mono text-xs text-accent hover:text-accent-light transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {sending ? "Sending..." : "Resend verification email"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -53,6 +98,9 @@ export default function DashboardPage() {
   return (
     <>
       <Navbar />
+      {user && !user.email_verified && user.email && (
+        <EmailVerificationBanner />
+      )}
       <main className="max-w-5xl mx-auto px-6 py-12">
         {/* Back link */}
         <Link
