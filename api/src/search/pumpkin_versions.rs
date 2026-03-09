@@ -129,3 +129,9 @@ impl PumpkinVersionFetcher {
         self.get_versions().await.map(|_| ())
     }
 }
+
+impl Default for PumpkinVersionFetcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
