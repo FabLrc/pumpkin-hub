@@ -44,7 +44,7 @@ pub struct SearchQuery {
 }
 
 /// A single search hit returned to the client.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SearchHit {
     pub id: String,
     pub name: String,
@@ -272,35 +272,13 @@ impl SearchService {
             "pumpkin_versions",
         ]));
 
-        let results: SearchResults<PluginDocument> =
-            search_request.execute().await.map_err(|e| {
-                AppError::internal(std::io::Error::other(format!(
-                    "Meilisearch search failed: {e}"
-                )))
-            })?;
+        let results: SearchResults<SearchHit> = search_request.execute().await.map_err(|e| {
+            AppError::internal(std::io::Error::other(format!(
+                "Meilisearch search failed: {e}"
+            )))
+        })?;
 
-        let hits: Vec<SearchHit> = results
-            .hits
-            .into_iter()
-            .map(|hit| {
-                let doc = hit.result;
-                SearchHit {
-                    id: doc.id,
-                    name: doc.name,
-                    slug: doc.slug,
-                    short_description: doc.short_description,
-                    author_username: doc.author_username,
-                    license: doc.license,
-                    downloads_total: doc.downloads_total,
-                    categories: doc.categories,
-                    category_slugs: doc.category_slugs,
-                    platforms: doc.platforms,
-                    pumpkin_versions: doc.pumpkin_versions,
-                    created_at_timestamp: doc.created_at_timestamp,
-                    updated_at_timestamp: doc.updated_at_timestamp,
-                }
-            })
-            .collect();
+        let hits: Vec<SearchHit> = results.hits.into_iter().map(|hit| hit.result).collect();
 
         let facet_distribution = results.facet_distribution.map(|fd| FacetDistribution {
             categories: fd.get("category_slugs").cloned().unwrap_or_default(),
@@ -321,7 +299,7 @@ impl SearchService {
 
     /// Returns autocomplete suggestions for partial queries.
     pub async fn suggest(&self, query: &str, limit: usize) -> Result<Vec<Suggestion>, AppError> {
-        let results: SearchResults<PluginDocument> = self
+        let results: SearchResults<SearchHit> = self
             .client
             .index(INDEX_NAME)
             .search()
