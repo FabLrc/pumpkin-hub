@@ -1,4 +1,4 @@
-use axum::{extract::connect_info::MockConnectInfo, Router};
+use axum::Router;
 use pumpkin_hub_api::config::{
     Config, GithubConfig, JwtConfig, MeilisearchConfig, RateLimitConfig, S3Config, ServerConfig,
 };
@@ -68,10 +68,7 @@ pub async fn build_test_app() -> (Router, PgPool) {
     let search = SearchService::new(&config.meilisearch);
     let pumpkin_versions = PumpkinVersionFetcher::new();
 
-    let app = pumpkin_hub_api::build_app(config, pool.clone(), storage, search, pumpkin_versions)
-        // Inject a fake peer IP so GovernorLayer / PeerIpKeyExtractor can work
-        // without a real TCP connection (tests use `oneshot` which has no ConnectInfo).
-        .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 0))));
+    let app = pumpkin_hub_api::build_app(config, pool.clone(), storage, search, pumpkin_versions);
     (app, pool)
 }
 
