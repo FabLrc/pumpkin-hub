@@ -2,6 +2,9 @@
 // Centralised fetch wrapper for the Pumpkin Hub REST API.
 
 import type {
+  BinariesListResponse,
+  BinaryDownloadResponse,
+  BinaryUploadResponse,
   CategoryResponse,
   CreatePluginRequest,
   CreateVersionRequest,
@@ -241,4 +244,70 @@ export async function loginWithEmail(
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+// ── Binary Endpoints ──────────────────────────────────────────────────────
+
+export function getBinariesPath(slug: string, version: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/binaries`;
+}
+
+export async function fetchBinaries(
+  slug: string,
+  version: string,
+): Promise<BinariesListResponse> {
+  return apiFetch<BinariesListResponse>(getBinariesPath(slug, version));
+}
+
+/**
+ * Upload a binary artifact for a specific plugin version.
+ * Uses multipart/form-data — do NOT set Content-Type manually (browser adds boundary).
+ */
+export async function uploadBinary(
+  slug: string,
+  version: string,
+  file: File,
+  architecture: string,
+  onProgress?: (progress: number) => void,
+): Promise<BinaryUploadResponse> {
+  const formData = new FormData();
+  formData.append("architecture", architecture);
+  formData.append("file", file);
+
+  // Use XMLHttpRequest for upload progress tracking
+  return new Promise<BinaryUploadResponse>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_PREFIX}${getBinariesPath(slug, version)}`);
+    xhr.withCredentials = true;
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable && onProgress) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText) as BinaryUploadResponse);
+      } else {
+        reject(new Error(`API ${xhr.status}: ${xhr.responseText}`));
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      reject(new Error("Network error during binary upload"));
+    });
+
+    xhr.send(formData);
+  });
+}
+
+export async function fetchBinaryDownload(
+  slug: string,
+  version: string,
+  architecture: string,
+): Promise<BinaryDownloadResponse> {
+  return apiFetch<BinaryDownloadResponse>(
+    `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download?arch=${encodeURIComponent(architecture)}`,
+  );
 }

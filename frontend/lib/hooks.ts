@@ -4,8 +4,9 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath } from "./api";
 import type {
+  BinariesListResponse,
   CategoryResponse,
   ListPluginsParams,
   PaginatedResponse,
@@ -56,6 +57,14 @@ export function useCurrentUser() {
 export function useAuthorPlugins(username: string | null) {
   const path = username ? getPluginsPath({ author: username, per_page: 100 }) : null;
   return useSWR<PaginatedResponse<PluginSummary>>(path, swrFetcher, {
+    revalidateOnFocus: false,
+  });
+}
+
+/** Fetch all binary artifacts for a specific plugin version. */
+export function useBinaries(slug: string | null, version: string | null) {
+  const path = slug && version ? getBinariesPath(slug, version) : null;
+  return useSWR<BinariesListResponse>(path, swrFetcher, {
     revalidateOnFocus: false,
   });
 }

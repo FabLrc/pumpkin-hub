@@ -145,6 +145,44 @@ export interface YankVersionRequest {
   yanked: boolean;
 }
 
+// ── Binary Types ──────────────────────────────────────────────────────────
+
+/** Supported target CPU architectures for plugin binaries. */
+export type Architecture = "x86_64" | "aarch64";
+
+export const ARCHITECTURES: Architecture[] = ["x86_64", "aarch64"];
+
+export interface BinaryResponse {
+  id: string;
+  architecture: string;
+  file_name: string;
+  file_size: number;
+  checksum_sha256: string;
+  content_type: string;
+  uploaded_at: string;
+}
+
+export interface BinariesListResponse {
+  plugin_slug: string;
+  version: string;
+  total: number;
+  binaries: BinaryResponse[];
+}
+
+export interface BinaryUploadResponse {
+  binary: BinaryResponse;
+  download_url: string;
+}
+
+export interface BinaryDownloadResponse {
+  download_url: string;
+  file_name: string;
+  file_size: number;
+  checksum_sha256: string;
+  architecture: string;
+  expires_in_seconds: number;
+}
+
 // ── Query Parameters ──────────────────────────────────────────────────────
 
 export type SortField = "created_at" | "updated_at" | "downloads_total" | "name";

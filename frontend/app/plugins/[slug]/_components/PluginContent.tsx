@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Package, AlertTriangle, Plus } from "lucide-react";
+import { Package, AlertTriangle, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { mutate } from "swr";
 import type { PluginResponse, VersionResponse, CreateVersionRequest } from "@/lib/types";
-import { usePluginVersions, useCurrentUser } from "@/lib/hooks";
-import { createVersion, getPluginVersionsPath } from "@/lib/api";
+import { usePluginVersions, useCurrentUser, useBinaries } from "@/lib/hooks";
+import { createVersion, getPluginVersionsPath, getBinariesPath } from "@/lib/api";
 import { VersionForm } from "@/components/plugins/VersionForm";
 import { VersionManager } from "@/components/plugins/VersionManager";
+import { BinaryUpload } from "@/components/plugins/BinaryUpload";
+import { BinaryList } from "@/components/plugins/BinaryList";
 
 type TabId = "overview" | "versions" | "dependencies";
 
@@ -342,6 +344,12 @@ function VersionRow({
   slug: string;
   onMutated: () => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { data: binariesData, isLoading: binariesLoading } = useBinaries(
+    isExpanded ? slug : null,
+    isExpanded ? version.version : null,
+  );
+
   const compatRange = formatCompatRange(
     version.pumpkin_version_min,
     version.pumpkin_version_max,
@@ -351,68 +359,121 @@ function VersionRow({
     { year: "numeric", month: "short", day: "numeric" },
   );
 
+  function revalidateBinaries() {
+    mutate(getBinariesPath(slug, version.version));
+  }
+
   return (
     <div
-      className={`ver-row grid grid-cols-12 gap-4 px-4 py-3.5 border-b border-border-default items-center last:border-b-0 ${
+      className={`border-b border-border-default last:border-b-0 ${
         version.is_yanked ? "opacity-60" : ""
       }`}
     >
-      {/* Version number + badges */}
-      <div className="col-span-3 flex items-center gap-2 flex-wrap">
-        <span
-          className={`font-mono text-sm font-bold ${
-            version.is_yanked
-              ? "text-text-dim line-through"
-              : isLatest
-                ? "text-text-primary"
-                : "text-text-dim"
-          }`}
-        >
-          {version.version}
-        </span>
-        {isLatest && !version.is_yanked && (
-          <span className="font-mono text-[9px] bg-accent/10 text-accent border border-accent/30 px-1.5 py-0.5">
-            LATEST
+      {/* Main row — clickable to expand */}
+      <div
+        className="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 items-center cursor-pointer hover:bg-bg-elevated/30 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {/* Expand indicator + Version number + badges */}
+        <div className="col-span-3 flex items-center gap-2 flex-wrap">
+          {isExpanded ? (
+            <ChevronDown className="w-3 h-3 text-text-dim flex-shrink-0" />
+          ) : (
+            <ChevronRight className="w-3 h-3 text-text-dim flex-shrink-0" />
+          )}
+          <span
+            className={`font-mono text-sm font-bold ${
+              version.is_yanked
+                ? "text-text-dim line-through"
+                : isLatest
+                  ? "text-text-primary"
+                  : "text-text-dim"
+            }`}
+          >
+            {version.version}
           </span>
-        )}
-        {version.is_yanked && (
-          <span className="font-mono text-[9px] bg-red-500/10 text-red-400 border border-red-500/30 px-1.5 py-0.5 inline-flex items-center gap-1">
-            <AlertTriangle className="w-2.5 h-2.5" />
-            YANKED
-          </span>
-        )}
+          {isLatest && !version.is_yanked && (
+            <span className="font-mono text-[9px] bg-accent/10 text-accent border border-accent/30 px-1.5 py-0.5">
+              LATEST
+            </span>
+          )}
+          {version.is_yanked && (
+            <span className="font-mono text-[9px] bg-red-500/10 text-red-400 border border-red-500/30 px-1.5 py-0.5 inline-flex items-center gap-1">
+              <AlertTriangle className="w-2.5 h-2.5" />
+              YANKED
+            </span>
+          )}
+        </div>
+
+        {/* Pumpkin compatibility range */}
+        <div className="col-span-3 font-mono text-xs text-text-dim">
+          {compatRange}
+        </div>
+
+        {/* Published date */}
+        <div className="col-span-2 font-mono text-xs text-text-dim">
+          {publishedDate}
+        </div>
+
+        {/* Downloads */}
+        <div className="col-span-2 font-mono text-xs text-text-dim">
+          {version.downloads.toLocaleString()}
+        </div>
+
+        {/* Status indicator + actions */}
+        <div className="col-span-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {version.is_yanked ? (
+            <span className="w-2 h-2 bg-red-400 inline-block" title="Yanked" />
+          ) : (
+            <span className="w-2 h-2 bg-green-500 inline-block" title="Available" />
+          )}
+          {canManage && (
+            <VersionManager
+              slug={slug}
+              version={version}
+              onMutated={onMutated}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Pumpkin compatibility range */}
-      <div className="col-span-3 font-mono text-xs text-text-dim">
-        {compatRange}
-      </div>
+      {/* Expanded panel — binaries */}
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-1 bg-bg-elevated/20 border-t border-border-default">
+          <h4 className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+            Binaries
+          </h4>
 
-      {/* Published date */}
-      <div className="col-span-2 font-mono text-xs text-text-dim">
-        {publishedDate}
-      </div>
+          {binariesLoading && (
+            <div className="animate-pulse space-y-2">
+              <div className="h-10 bg-bg-surface" />
+              <div className="h-10 bg-bg-surface" />
+            </div>
+          )}
 
-      {/* Downloads */}
-      <div className="col-span-2 font-mono text-xs text-text-dim">
-        {version.downloads.toLocaleString()}
-      </div>
+          {binariesData && (
+            <>
+              <BinaryList
+                slug={slug}
+                version={version.version}
+                binaries={binariesData.binaries}
+              />
 
-      {/* Status indicator + actions */}
-      <div className="col-span-2 flex items-center gap-2">
-        {version.is_yanked ? (
-          <span className="w-2 h-2 bg-red-400 inline-block" title="Yanked" />
-        ) : (
-          <span className="w-2 h-2 bg-green-500 inline-block" title="Available" />
-        )}
-        {canManage && (
-          <VersionManager
-            slug={slug}
-            version={version}
-            onMutated={onMutated}
-          />
-        )}
-      </div>
+              {/* Upload section for owners/admins */}
+              {canManage && !version.is_yanked && (
+                <div className="mt-4">
+                  <BinaryUpload
+                    slug={slug}
+                    version={version.version}
+                    existingArchitectures={binariesData.binaries.map((b) => b.architecture)}
+                    onUploaded={revalidateBinaries}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
