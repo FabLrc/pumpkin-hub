@@ -1,4 +1,4 @@
-use pumpkin_hub_api::{config::Config, db};
+use pumpkin_hub_api::{config::Config, db, storage::ObjectStorage};
 
 #[tokio::main]
 async fn main() {
@@ -28,10 +28,14 @@ async fn main() {
         });
     tracing::info!("Database ready");
 
+    tracing::info!("Connecting to object storage…");
+    let storage = ObjectStorage::from_config(&config.s3).await;
+    tracing::info!("Object storage ready");
+
     let addr = config.server.address;
     tracing::info!(%addr, "Starting pumpkin-hub-api");
 
-    let app = pumpkin_hub_api::build_app(config, pool);
+    let app = pumpkin_hub_api::build_app(config, pool, storage);
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await

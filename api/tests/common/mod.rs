@@ -1,5 +1,8 @@
 use axum::Router;
-use pumpkin_hub_api::config::{Config, GithubConfig, JwtConfig, MeilisearchConfig, ServerConfig};
+use pumpkin_hub_api::config::{
+    Config, GithubConfig, JwtConfig, MeilisearchConfig, S3Config, ServerConfig,
+};
+use pumpkin_hub_api::storage::ObjectStorage;
 use sqlx::PgPool;
 use std::net::SocketAddr;
 
@@ -38,9 +41,23 @@ pub async fn build_test_app() -> (Router, PgPool) {
             secret: "integration-test-secret-key-do-not-use-in-production".to_string(),
             ttl_seconds: 3600,
         },
+        s3: S3Config {
+            endpoint_url: std::env::var("S3_ENDPOINT_URL")
+                .unwrap_or_else(|_| "http://localhost:9000".to_string()),
+            bucket: "pumpkin-hub-binaries".to_string(),
+            access_key_id: std::env::var("S3_ACCESS_KEY_ID")
+                .unwrap_or_else(|_| "minioadmin".to_string()),
+            secret_access_key: std::env::var("S3_SECRET_ACCESS_KEY")
+                .unwrap_or_else(|_| "minioadmin".to_string()),
+            region: "us-east-1".to_string(),
+            force_path_style: true,
+        },
+        binary_max_size_bytes: 104_857_600,
     };
 
-    let app = pumpkin_hub_api::build_app(config, pool.clone());
+    let storage = ObjectStorage::from_config(&config.s3).await;
+
+    let app = pumpkin_hub_api::build_app(config, pool.clone(), storage);
     (app, pool)
 }
 
@@ -74,6 +91,11 @@ pub async fn cleanup_test_data(pool: &PgPool, user_ids: &[uuid::Uuid]) {
     for user_id in user_ids {
         // Delete in dependency order
         sqlx::query("DELETE FROM user_avatars WHERE user_id = $1")
+            .bind(user_id)
+            .execute(pool)
+            .await
+            .ok();
+        sqlx::query("DELETE FROM binaries WHERE version_id IN (SELECT v.id FROM versions v JOIN plugins p ON v.plugin_id = p.id WHERE p.author_id = $1)")
             .bind(user_id)
             .execute(pool)
             .await

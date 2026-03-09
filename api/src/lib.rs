@@ -5,6 +5,7 @@ pub mod error;
 pub mod models;
 pub mod routes;
 pub mod state;
+pub mod storage;
 
 use axum::{
     http::{
@@ -24,14 +25,14 @@ use tower_http::{
 
 use sqlx::PgPool;
 
-use crate::{config::Config, state::AppState};
+use crate::{config::Config, state::AppState, storage::ObjectStorage};
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 
 /// Builds the fully configured Axum application.
 /// Separated from `main` to allow integration testing without binding a port.
-pub fn build_app(config: Config, pool: PgPool) -> Router {
-    let state = AppState::new(config.clone(), pool);
+pub fn build_app(config: Config, pool: PgPool, storage: ObjectStorage) -> Router {
+    let state = AppState::new(config.clone(), pool, storage);
     let cors = build_cors_layer(&config);
     let x_request_id = axum::http::HeaderName::from_static(REQUEST_ID_HEADER);
 
