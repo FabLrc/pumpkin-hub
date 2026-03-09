@@ -157,6 +157,10 @@ async fn login_email(
     .map_err(AppError::internal)?
     .ok_or(AppError::Unauthorized)?;
 
+    if !user.is_active {
+        return Err(AppError::Forbidden);
+    }
+
     let stored_hash = user
         .password_hash
         .as_deref()

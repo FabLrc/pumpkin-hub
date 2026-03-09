@@ -371,3 +371,46 @@ export type SearchSortOption =
   | "updated"
   | "name_asc"
   | "name_desc";
+
+// ── Admin Types ───────────────────────────────────────────────────────────
+
+export interface AdminStatsResponse {
+  total_users: number;
+  total_plugins: number;
+  total_downloads: number;
+  active_plugins: number;
+  deactivated_plugins: number;
+  recent_audit_logs: AuditLogEntry[];
+}
+
+export interface AdminPluginEntry {
+  id: string;
+  name: string;
+  slug: string;
+  author_username: string;
+  downloads_total: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminUserEntry {
+  id: string;
+  username: string;
+  display_name: string | null;
+  email: string | null;
+  role: string;
+  is_active: boolean;
+  plugin_count: number;
+  created_at: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actor_username: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}

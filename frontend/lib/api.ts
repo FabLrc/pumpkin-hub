@@ -2,6 +2,10 @@
 // Centralised fetch wrapper for the Pumpkin Hub REST API.
 
 import type {
+  AdminPluginEntry,
+  AdminStatsResponse,
+  AdminUserEntry,
+  AuditLogEntry,
   AuthorProfileResponse,
   BinariesListResponse,
   BinaryDownloadResponse,
@@ -519,5 +523,88 @@ export async function fetchAuthorPlugins(
 ): Promise<PaginatedResponse<PluginSummary>> {
   return apiFetch<PaginatedResponse<PluginSummary>>(
     getAuthorPluginsPath(username, page, perPage),
+  );
+}
+
+// ── Admin Endpoints ───────────────────────────────────────────────────────
+
+export async function fetchAdminStats(): Promise<AdminStatsResponse> {
+  return apiFetch<AdminStatsResponse>("/admin/stats");
+}
+
+export async function fetchAdminPlugins(
+  page?: number,
+  perPage?: number,
+  search?: string,
+): Promise<PaginatedResponse<AdminPluginEntry>> {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (perPage) params.set("per_page", String(perPage));
+  if (search) params.set("search", search);
+  const qs = params.toString();
+  return apiFetch<PaginatedResponse<AdminPluginEntry>>(
+    `/admin/plugins${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export async function deactivatePlugin(pluginId: string): Promise<void> {
+  await apiFetch<unknown>(`/admin/plugins/${pluginId}/deactivate`, {
+    method: "POST",
+  });
+}
+
+export async function reactivatePlugin(pluginId: string): Promise<void> {
+  await apiFetch<unknown>(`/admin/plugins/${pluginId}/reactivate`, {
+    method: "POST",
+  });
+}
+
+export async function fetchAdminUsers(
+  page?: number,
+  perPage?: number,
+  search?: string,
+): Promise<PaginatedResponse<AdminUserEntry>> {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (perPage) params.set("per_page", String(perPage));
+  if (search) params.set("search", search);
+  const qs = params.toString();
+  return apiFetch<PaginatedResponse<AdminUserEntry>>(
+    `/admin/users${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export async function changeUserRole(
+  userId: string,
+  role: string,
+): Promise<void> {
+  await apiFetch<unknown>(`/admin/users/${userId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function deactivateUser(userId: string): Promise<void> {
+  await apiFetch<unknown>(`/admin/users/${userId}/deactivate`, {
+    method: "POST",
+  });
+}
+
+export async function reactivateUser(userId: string): Promise<void> {
+  await apiFetch<unknown>(`/admin/users/${userId}/reactivate`, {
+    method: "POST",
+  });
+}
+
+export async function fetchAuditLogs(
+  page?: number,
+  perPage?: number,
+): Promise<PaginatedResponse<AuditLogEntry>> {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (perPage) params.set("per_page", String(perPage));
+  const qs = params.toString();
+  return apiFetch<PaginatedResponse<AuditLogEntry>>(
+    `/admin/audit-logs${qs ? `?${qs}` : ""}`,
   );
 }

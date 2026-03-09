@@ -14,6 +14,26 @@ pub struct AuthUser {
     pub role: String,
 }
 
+impl AuthUser {
+    /// Returns `Ok(())` if the user has the `admin` or `moderator` role.
+    pub fn require_staff(&self) -> Result<(), AppError> {
+        if self.role == "admin" || self.role == "moderator" {
+            Ok(())
+        } else {
+            Err(AppError::Forbidden)
+        }
+    }
+
+    /// Returns `Ok(())` if the user has the `admin` role.
+    pub fn require_admin(&self) -> Result<(), AppError> {
+        if self.role == "admin" {
+            Ok(())
+        } else {
+            Err(AppError::Forbidden)
+        }
+    }
+}
+
 impl FromRequestParts<AppState> for AuthUser {
     type Rejection = AppError;
 

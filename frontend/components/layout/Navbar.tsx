@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { LogOut, User, ChevronDown, LayoutDashboard } from "lucide-react";
+import { LogOut, User, ChevronDown, LayoutDashboard, Shield } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
 import { getLogoutUrl } from "@/lib/api";
 
@@ -121,6 +121,16 @@ export function Navbar() {
                     <LayoutDashboard className="w-3.5 h-3.5" />
                     Dashboard
                   </Link>
+                  {(user.role === "admin" || user.role === "moderator") && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-accent hover:text-accent hover:bg-bg-surface transition-colors"
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      Admin Panel
+                    </Link>
+                  )}
                   <div className="border-t border-border-default">
                     <button
                       onClick={handleLogout}

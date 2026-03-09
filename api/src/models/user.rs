@@ -53,6 +53,7 @@ pub struct User {
     pub password_hash: Option<String>,
     pub email_verified: bool,
     pub role: String,
+    pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
