@@ -1,0 +1,13 @@
+#!/bin/sh
+# Run cargo fmt on the api directory before each commit.
+# If formatting changes are needed, they are applied automatically and the
+# commit is aborted so the freshly-formatted files can be staged.
+
+cd "$(git rev-parse --show-toplevel)/api" || exit 1
+
+if ! cargo fmt --all -- --check 2>/dev/null; then
+  echo "--- cargo fmt: formatting issues detected, applying fixes ---"
+  cargo fmt --all
+  echo "--- Files have been reformatted. Please stage the changes and commit again. ---"
+  exit 1
+fi
