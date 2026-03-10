@@ -62,6 +62,10 @@ services:
       - S3_REGION=us-east-1
       - S3_FORCE_PATH_STYLE=true
       - BINARY_MAX_SIZE_BYTES=104857600
+      # GitHub App (optional — set in .env to enable GitHub publishing)
+      - GITHUB_APP_ID=${GITHUB_APP_ID:-}
+      - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY:-}
+      - GITHUB_APP_WEBHOOK_SECRET=${GITHUB_APP_WEBHOOK_SECRET:-}
 
   db-dev:
     container_name: pumpkin-hub-db-dev

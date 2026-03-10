@@ -15,6 +15,7 @@ pub struct Config {
     pub binary_max_size_bytes: u64,
     pub rate_limit: RateLimitConfig,
     pub smtp: Option<SmtpConfig>,
+    pub github_app: Option<GitHubAppConfig>,
 }
 
 #[derive(Debug, Clone)]
@@ -89,6 +90,13 @@ pub struct SmtpConfig {
     pub from_address: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct GitHubAppConfig {
+    pub app_id: String,
+    pub private_key: String,
+    pub webhook_secret: String,
+}
+
 #[derive(Debug, Error)]
 pub enum ConfigError {
     #[error("Missing environment variable: {0}")]
@@ -158,6 +166,7 @@ impl Config {
         };
 
         let smtp = load_smtp_config()?;
+        let github_app = load_github_app_config()?;
 
         Ok(Config {
             server: ServerConfig {
@@ -193,6 +202,7 @@ impl Config {
             binary_max_size_bytes,
             rate_limit,
             smtp,
+            github_app,
         })
     }
 }
@@ -238,6 +248,7 @@ impl Default for Config {
                 auth_burst_size: 5,
             },
             smtp: None,
+            github_app: None,
         }
     }
 }
@@ -283,6 +294,23 @@ where
         }),
         Err(_) => Ok(default),
     }
+}
+
+/// Loads optional GitHub App config. Returns `None` if `GITHUB_APP_ID` is not set.
+fn load_github_app_config() -> Result<Option<GitHubAppConfig>, ConfigError> {
+    let app_id = match std::env::var("GITHUB_APP_ID") {
+        Ok(val) if !val.is_empty() => val,
+        _ => return Ok(None),
+    };
+
+    let private_key = require_env("GITHUB_APP_PRIVATE_KEY")?;
+    let webhook_secret = require_env("GITHUB_APP_WEBHOOK_SECRET")?;
+
+    Ok(Some(GitHubAppConfig {
+        app_id,
+        private_key,
+        webhook_secret,
+    }))
 }
 
 /// Loads optional SMTP config. Returns `None` if `SMTP_HOST` is not set.

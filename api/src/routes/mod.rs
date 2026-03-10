@@ -4,6 +4,7 @@ pub mod auth;
 mod categories;
 mod dashboard;
 mod dependencies;
+mod github;
 mod health;
 pub mod notifications;
 mod plugins;
@@ -38,4 +39,5 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(api_keys::routes())
         .merge(notifications::routes())
         .merge(admin::routes())
+        .merge(github::routes())
 }

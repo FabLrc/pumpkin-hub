@@ -1,6 +1,7 @@
 pub mod auth_provider;
 pub mod binary;
 pub mod category;
+pub mod github_installation;
 pub mod plugin;
 pub mod plugin_category;
 pub mod plugin_dependency;
