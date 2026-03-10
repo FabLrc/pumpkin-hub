@@ -111,6 +111,18 @@
         <a href="#admin-users" class="sidebar-sublink" style="padding-left:2rem;">User Management</a>
         <a href="#admin-audit" class="sidebar-sublink" style="padding-left:2rem;">Audit Logs</a>
       </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">On this page (cont.)</div>
+        <a href="#reviews" class="sidebar-sublink">Reviews</a>
+        <a href="#reviews-list" class="sidebar-sublink" style="padding-left:2rem;">List Reviews</a>
+        <a href="#reviews-create" class="sidebar-sublink" style="padding-left:2rem;">Create Review</a>
+        <a href="#reviews-update" class="sidebar-sublink" style="padding-left:2rem;">Update Review</a>
+        <a href="#reviews-delete" class="sidebar-sublink" style="padding-left:2rem;">Delete Review</a>
+        <a href="#reviews-hide" class="sidebar-sublink" style="padding-left:2rem;">Toggle Visibility</a>
+        <a href="#reviews-report" class="sidebar-sublink" style="padding-left:2rem;">Report Review</a>
+        <a href="#admin-review-reports" class="sidebar-sublink" style="padding-left:2rem;">Admin: List Reports</a>
+        <a href="#admin-review-reports-resolve" class="sidebar-sublink" style="padding-left:2rem;">Admin: Resolve Report</a>
+      </div>
     </aside>
 
     <main class="content">
@@ -122,8 +134,8 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Active development — Phase 3 In Progress</div>
-        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>, <strong>download analytics &amp; KPIs</strong>, <strong>API key management</strong> (permission enforcement, per-key rate limiting, usage audit trail), <strong>notification center</strong>.<br>
-        Next up: Publishing from GitHub, Review System, Collections &amp; Curations.
+        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>, <strong>download analytics &amp; KPIs</strong>, <strong>API key management</strong> (permission enforcement, per-key rate limiting, usage audit trail), <strong>notification center</strong>, <strong>review system</strong> (star ratings, moderation, abuse reporting, Meilisearch sync).<br>
+        Next up: Publishing from GitHub, Collections &amp; Curations.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -1832,6 +1844,253 @@
           <tr><td><code>user.role_change</code></td><td>user</td><td>Old role → new role</td></tr>
           <tr><td><code>user.deactivate</code></td><td>user</td><td>Username</td></tr>
           <tr><td><code>user.reactivate</code></td><td>user</td><td>Username</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ══════════════════════════════════════════════════════════════════════
+           REVIEWS
+      ══════════════════════════════════════════════════════════════════════ -->
+      <h2 id="reviews">Reviews</h2>
+      <p style="color:#a3a3a3;margin-bottom:2rem;">
+        Community review and rating system. Each user may submit one review per plugin (star rating
+        1–5, optional title and body). Authors cannot review their own plugin. Hidden reviews are
+        excluded from <code>average_rating</code> and <code>review_count</code>.
+        Both fields are included in <code>PluginSummary</code>, <code>PluginResponse</code>, and
+        Meilisearch search results. The plugin document is automatically reindexed after every
+        review mutation.
+      </p>
+
+      <div class="callout callout-info">
+        <div class="callout-label">Rating in PluginSummary / SearchHit</div>
+        Every plugin response now includes two extra fields:<br>
+        &bull; <code>average_rating: number</code> — weighted average (0.0 when no reviews)<br>
+        &bull; <code>review_count: number</code> — count of visible (non-hidden) reviews<br>
+        The <code>/search</code> endpoint also supports <code>sort=rating</code> (descending) and <code>sort=rating_asc</code>.
+      </div>
+
+      <!-- ── List Reviews ───────────────────────────────────────────────── -->
+      <h3 id="reviews-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/reviews</code></h3>
+      <p>Returns a paginated list of visible reviews for a plugin, with rating distribution and computed average.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>integer</td><td><code>1</code></td><td>Page number (1-based)</td></tr>
+          <tr><td><code>per_page</code></td><td>integer</td><td><code>10</code></td><td>Items per page (1–100)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "reviews": [
+    {
+      "id": "uuid",
+      "plugin_id": "uuid",
+      "author": {
+        "id": "uuid",
+        "username": "rustcraftdev",
+        "avatar_url": "https://..."
+      },
+      "rating": 5,
+      "title": "Excellent plugin",
+      "body": "Works perfectly on 0.3.x.",
+      "is_hidden": false,
+      "created_at": "2026-03-10T10:00:00Z",
+      "updated_at": "2026-03-10T10:00:00Z"
+    }
+  ],
+  "total": 1,
+  "average_rating": 5.0,
+  "rating_distribution": {
+    "star_1": 0,
+    "star_2": 0,
+    "star_3": 0,
+    "star_4": 0,
+    "star_5": 1
+  }
+}</code></pre>
+
+      <!-- ── Create Review ──────────────────────────────────────────────── -->
+      <h3 id="reviews-create"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/plugins/:slug/reviews</code> &nbsp; <span class="badge badge-orange">Protected — write</span></h3>
+      <p>Submits a new review. One review per user per plugin. Plugin authors cannot review their own plugin.</p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "rating": 5,          // required: integer 1–5
+  "title": "...",       // optional: max 200 chars
+  "body": "..."         // optional: max 5000 chars
+}</code></pre>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th></tr></thead>
+        <tbody>
+          <tr><td><code>rating</code></td><td>integer</td><td>Required. 1–5 inclusive.</td></tr>
+          <tr><td><code>title</code></td><td>string | null</td><td>Optional. Max 200 characters.</td></tr>
+          <tr><td><code>body</code></td><td>string | null</td><td>Optional. Max 5 000 characters.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">201 Created</span></h4>
+      <p>Returns the created <code>ReviewResponse</code> object.</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Not authenticated</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Missing <code>write</code> permission (API key)</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin not found</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>User has already reviewed this plugin</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Plugin author attempted to review their own plugin, or validation failure</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Update Review ──────────────────────────────────────────────── -->
+      <h3 id="reviews-update"><span class="badge badge-orange">PUT</span> &nbsp; <code>/api/v1/plugins/:slug/reviews/:review_id</code> &nbsp; <span class="badge badge-orange">Protected — owner only</span></h3>
+      <p>Updates the authenticated user's own review. All fields are optional (patch semantics via COALESCE).</p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "rating": 4,          // optional
+  "title": "Updated",   // optional
+  "body": "..."         // optional
+}</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the updated <code>ReviewResponse</code> object.</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Not authenticated</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Review does not belong to the authenticated user</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or review not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Delete Review ──────────────────────────────────────────────── -->
+      <h3 id="reviews-delete"><span class="badge badge-red">DELETE</span> &nbsp; <code>/api/v1/plugins/:slug/reviews/:review_id</code> &nbsp; <span class="badge badge-orange">Protected</span></h3>
+      <p>Deletes a review. Allowed for: the review author, the plugin author, admin, and moderator roles.</p>
+
+      <h4>Response <span class="badge badge-green">204 No Content</span></h4>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Not authenticated</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not authorized (not owner, not plugin author, not staff)</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or review not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Toggle Visibility ─────────────────────────────────────────── -->
+      <h3 id="reviews-hide"><span class="badge badge-orange">PATCH</span> &nbsp; <code>/api/v1/plugins/:slug/reviews/:review_id/hide</code> &nbsp; <span class="badge badge-orange">Protected — author or staff</span></h3>
+      <p>
+        Toggles the visibility of a review. Hidden reviews are excluded from the displayed list,
+        <code>average_rating</code>, and <code>review_count</code>. The plugin is reindexed in
+        Meilisearch after the change.
+      </p>
+
+      <h4>Request Body</h4>
+      <pre><code>{ "hidden": true }</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{ "hidden": true }</code></pre>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin author or staff</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or review not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Report Review ──────────────────────────────────────────────── -->
+      <h3 id="reviews-report"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/plugins/:slug/reviews/:review_id/report</code> &nbsp; <span class="badge badge-orange">Protected — write</span></h3>
+      <p>Reports a review for abuse. Each user can report a given review only once.</p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "reason": "spam",      // required: see reason values below
+  "details": "..."       // optional: max 1000 chars
+}</code></pre>
+      <table>
+        <thead><tr><th>Reason</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>spam</code></td><td>Spam or promotional content</td></tr>
+          <tr><td><code>harassment</code></td><td>Harassment or targeted abuse</td></tr>
+          <tr><td><code>misinformation</code></td><td>False or misleading content</td></tr>
+          <tr><td><code>inappropriate</code></td><td>Inappropriate or offensive language</td></tr>
+          <tr><td><code>other</code></td><td>Other reason (use <code>details</code> to elaborate)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">201 Created</span></h4>
+      <p>Returns the created report object.</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Review not found</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>User has already reported this review</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Admin: List Reports ────────────────────────────────────────── -->
+      <h3 id="admin-review-reports"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/admin/review-reports</code> &nbsp; <span class="badge badge-orange">Staff</span></h3>
+      <p>Returns a paginated list of review abuse reports for staff review.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>integer</td><td><code>1</code></td><td>Page number</td></tr>
+          <tr><td><code>per_page</code></td><td>integer</td><td><code>20</code></td><td>Items per page</td></tr>
+          <tr><td><code>status</code></td><td>string</td><td><code>pending</code></td><td>Filter by status: <code>pending</code>, <code>resolved</code>, or <code>dismissed</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "reports": [
+    {
+      "id": "uuid",
+      "review_id": "uuid",
+      "reporter_id": "uuid",
+      "reason": "spam",
+      "details": null,
+      "status": "pending",
+      "resolved_by": null,
+      "resolved_at": null,
+      "created_at": "2026-03-10T10:00:00Z"
+    }
+  ],
+  "total": 3,
+  "page": 1
+}</code></pre>
+
+      <!-- ── Admin: Resolve Report ──────────────────────────────────────── -->
+      <h3 id="admin-review-reports-resolve"><span class="badge badge-orange">PATCH</span> &nbsp; <code>/api/v1/admin/review-reports/:report_id/resolve</code> &nbsp; <span class="badge badge-orange">Staff</span></h3>
+      <p>Resolves or dismisses a review abuse report. The <code>resolved_by</code> field is set to the acting staff member's user ID.</p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "status": "resolved"   // "resolved" or "dismissed"
+}</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the updated report object.</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Report not found</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid status value</td></tr>
         </tbody>
       </table>
 

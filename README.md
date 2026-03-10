@@ -31,8 +31,9 @@
 - **Binary Storage & Distribution** — Multi-platform binary uploads, secure presigned download URLs, S3-compatible storage (MinIO / Cloudflare R2)
 - **GitHub Integration** — Link repositories to plugins, auto-publish on releases, sync README/changelogs, embed install badges
 - **Dependency Graph** — Inter-plugin dependency declaration, semver compatibility resolution, conflict detection, and reverse lookup
+- **Review System** — Star ratings (1–5), reviews with moderation, abuse reporting, rating display on explorer and plugin pages, automatic Meilisearch reindex on review mutations
 - **Author Dashboard** — Download analytics with charts, API key management for CI/CD, audit trails, notification center with milestones
-- **Admin Moderation** — Role-based moderation with plugin/user management, audit logs, and account management
+- **Admin Moderation** — Role-based moderation with plugin/user management, audit logs, review report management
 - **Brutalist UI** — Industrial design system with responsive layouts, custom error pages, toast notifications
 
 ## Quick Start

@@ -507,15 +507,20 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
             <span class="timeline-title">Review System</span>
           </div>
           <ul class="timeline-features">
-            <li>Plugin ratings and comments</li>
-            <li>Rating system (stars + comment)</li>
-            <li>Moderation by authors and administrators</li>
-            <li>Abusive content reporting</li>
+            <li>Star ratings (1–5) with per-user enforcement (one review per plugin, authors cannot self-review)</li>
+            <li>Review form with title, body and inline <code>StarRating</code> component (hover + keyboard)</li>
+            <li>Rating distribution overview (bar chart per star level) and computed average</li>
+            <li>Moderation by plugin authors and staff — toggle review visibility via <code>PATCH /reviews/:id/hide</code></li>
+            <li>Abuse reporting with 5 reason types, deduplication guard, and admin resolution workflow</li>
+            <li><code>average_rating</code> &amp; <code>review_count</code> included in <code>PluginSummary</code> and Meilisearch documents</li>
+            <li>Automatic Meilisearch reindex on every review mutation (create / update / delete / hide)</li>
+            <li>Rating display on plugin detail page (header), explorer cards (<code>PluginCard</code> &amp; <code>SearchHitCard</code>)</li>
+            <li>New <code>rating</code> sort option on search endpoint (<code>average_rating:desc/asc</code>)</li>
           </ul>
         </div>
 
