@@ -42,8 +42,10 @@ export function ReviewSection({ plugin }: ReviewSectionProps) {
   function revalidate() {
     mutate(getReviewsPath(plugin.slug, page, PER_PAGE));
     if (page !== 1) mutate(getReviewsPath(plugin.slug, 1, PER_PAGE));
-    // Revalidate the plugin itself so average_rating and review_count update
+    // Revalidate the single plugin (detail page header)
     mutate(getPluginPath(plugin.slug));
+    // Revalidate all plugin list caches (explorer, search results, user pages…)
+    mutate((key) => typeof key === "string" && key.startsWith("/plugins?"));
   }
 
   async function handleCreate(formData: { rating: number; title: string; body: string }) {
