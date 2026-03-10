@@ -729,6 +729,14 @@ pub async fn get_version(
         .await
         .map_err(AppError::internal)?;
 
+    // Record download event for analytics
+    sqlx::query("INSERT INTO download_events (plugin_id, version_id) VALUES ($1, $2)")
+        .bind(plugin_id)
+        .bind(row.id)
+        .execute(pool)
+        .await
+        .map_err(AppError::internal)?;
+
     Ok(Json(VersionResponse {
         id: row.id,
         version: row.version,
@@ -1081,6 +1089,17 @@ pub async fn download_binary(
         .execute(pool)
         .await
         .map_err(AppError::internal)?;
+
+    // Record download event for analytics
+    sqlx::query(
+        "INSERT INTO download_events (plugin_id, version_id, platform) VALUES ($1, $2, $3)",
+    )
+    .bind(plugin_id)
+    .bind(version_id)
+    .bind(&params.platform)
+    .execute(pool)
+    .await
+    .map_err(AppError::internal)?;
 
     // Generate pre-signed URL
     let presigned = state

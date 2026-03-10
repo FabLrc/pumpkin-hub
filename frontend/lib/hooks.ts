@@ -4,14 +4,18 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath } from "./api";
 import type {
+  AuthorDashboardStats,
   BinariesListResponse,
   CategoryResponse,
   DependencyGraphResponse,
   DependencyListResponse,
+  DownloadDataPoint,
+  DownloadGranularity,
   ListPluginsParams,
   PaginatedResponse,
+  PluginDownloadStats,
   PluginResponse,
   PluginSummary,
   PumpkinVersion,
@@ -116,5 +120,47 @@ export function useDependants(slug: string | null) {
   const path = slug ? getDependantsPath(slug) : null;
   return useSWR<ReverseDependencyResponse>(path, swrFetcher, {
     revalidateOnFocus: false,
+  });
+}
+
+// ── Dashboard Analytics Hooks ─────────────────────────────────────────────
+
+/** Fetch advanced author dashboard KPIs with download chart data. */
+export function useAuthorDashboardStats(
+  granularity?: DownloadGranularity,
+  periods?: number,
+) {
+  const path = getDashboardStatsPath(granularity, periods);
+  return useSWR<AuthorDashboardStats>(path, swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 10_000,
+    shouldRetryOnError: false,
+  });
+}
+
+/** Fetch author aggregate download chart data. */
+export function useAuthorDownloads(
+  granularity?: DownloadGranularity,
+  periods?: number,
+) {
+  const path = getDashboardDownloadsPath(granularity, periods);
+  return useSWR<DownloadDataPoint[]>(path, swrFetcher, {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  });
+}
+
+/** Fetch per-plugin download analytics with chart. */
+export function usePluginDownloadStats(
+  slug: string | null,
+  granularity?: DownloadGranularity,
+  periods?: number,
+) {
+  const path = slug
+    ? getPluginDownloadStatsPath(slug, granularity, periods)
+    : null;
+  return useSWR<PluginDownloadStats>(path, swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 10_000,
   });
 }

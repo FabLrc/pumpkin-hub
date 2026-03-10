@@ -414,3 +414,44 @@ export interface AuditLogEntry {
   details: Record<string, unknown> | null;
   created_at: string;
 }
+
+// ── Dashboard Analytics Types ─────────────────────────────────────────────
+
+export interface DownloadDataPoint {
+  period: string;
+  downloads: number;
+}
+
+export interface TopPlugin {
+  name: string;
+  slug: string;
+  downloads_total: number;
+}
+
+export interface AuthorDashboardStats {
+  total_plugins: number;
+  total_downloads: number;
+  downloads_last_30_days: number;
+  downloads_last_7_days: number;
+  downloads_trend_percent: number;
+  most_downloaded_plugin: TopPlugin | null;
+  recent_downloads: DownloadDataPoint[];
+}
+
+export interface VersionDownloadSummary {
+  version: string;
+  downloads: number;
+  published_at: string;
+}
+
+export interface PluginDownloadStats {
+  plugin_slug: string;
+  total_downloads: number;
+  downloads_last_30_days: number;
+  downloads_last_7_days: number;
+  downloads_trend_percent: number;
+  chart: DownloadDataPoint[];
+  by_version: VersionDownloadSummary[];
+}
+
+export type DownloadGranularity = "daily" | "weekly" | "monthly";

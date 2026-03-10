@@ -608,3 +608,38 @@ export async function fetchAuditLogs(
     `/admin/audit-logs${qs ? `?${qs}` : ""}`,
   );
 }
+
+// ── Dashboard Analytics Endpoints ─────────────────────────────────────────
+
+function buildStatsQueryString(
+  granularity?: string,
+  periods?: number,
+): string {
+  const params = new URLSearchParams();
+  if (granularity) params.set("granularity", granularity);
+  if (periods) params.set("periods", String(periods));
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export function getDashboardStatsPath(
+  granularity?: string,
+  periods?: number,
+): string {
+  return `/dashboard/stats${buildStatsQueryString(granularity, periods)}`;
+}
+
+export function getDashboardDownloadsPath(
+  granularity?: string,
+  periods?: number,
+): string {
+  return `/dashboard/downloads${buildStatsQueryString(granularity, periods)}`;
+}
+
+export function getPluginDownloadStatsPath(
+  slug: string,
+  granularity?: string,
+  periods?: number,
+): string {
+  return `/plugins/${encodeURIComponent(slug)}/download-stats${buildStatsQueryString(granularity, periods)}`;
+}

@@ -12,12 +12,18 @@ import {
   Pencil,
   ExternalLink,
   AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Trophy,
+  Calendar,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar, Footer } from "@/components/layout";
-import { useCurrentUser, useAuthorPlugins } from "@/lib/hooks";
+import { useCurrentUser, useAuthorPlugins, useAuthorDashboardStats } from "@/lib/hooks";
 import { resendVerification } from "@/lib/api";
-import type { PluginSummary } from "@/lib/types";
+import { DownloadChart, GranularitySelector } from "@/components/ui/DownloadChart";
+import type { PluginSummary, DownloadGranularity } from "@/lib/types";
 
 function formatDownloads(count: number): string {
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
@@ -32,6 +38,11 @@ function formatDate(dateString: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function formatTrend(percent: number): string {
+  const sign = percent >= 0 ? "+" : "";
+  return `${sign}${percent.toFixed(1)}%`;
 }
 
 function EmailVerificationBanner() {
@@ -79,9 +90,14 @@ function EmailVerificationBanner() {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [granularity, setGranularity] = useState<DownloadGranularity>("weekly");
   const { data: user, isLoading: isLoadingUser } = useCurrentUser();
   const { data: pluginsData, isLoading: isLoadingPlugins } = useAuthorPlugins(
     user?.username ?? null,
+  );
+  const { data: stats, isLoading: isLoadingStats } = useAuthorDashboardStats(
+    granularity,
+    granularity === "daily" ? 30 : granularity === "monthly" ? 12 : 12,
   );
 
   // Redirect unauthenticated users
@@ -91,10 +107,6 @@ export default function DashboardPage() {
   }
 
   const plugins = pluginsData?.data ?? [];
-  const totalDownloads = plugins.reduce(
-    (sum, p) => sum + p.downloads_total,
-    0,
-  );
   const isLoading = isLoadingUser || isLoadingPlugins;
 
   return (
@@ -137,35 +149,92 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Stats */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            {Array.from({ length: 3 }).map((_, i) => (
+        {/* Advanced KPI Cards */}
+        {isLoadingStats ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-24 bg-bg-surface border border-border-default animate-pulse"
+                className="h-28 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            <StatCard
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <KpiCard
               icon={<Package className="w-5 h-5" />}
               label="Published Plugins"
-              value={String(plugins.length)}
+              value={String(stats?.total_plugins ?? plugins.length)}
             />
-            <StatCard
+            <KpiCard
               icon={<Download className="w-5 h-5" />}
               label="Total Downloads"
-              value={formatDownloads(totalDownloads)}
+              value={formatDownloads(stats?.total_downloads ?? 0)}
             />
-            <StatCard
-              icon={<LayoutDashboard className="w-5 h-5" />}
-              label="Member Since"
-              value={user ? formatDate(user.created_at) : "—"}
+            <KpiCard
+              icon={<Calendar className="w-5 h-5" />}
+              label="Last 30 Days"
+              value={formatDownloads(stats?.downloads_last_30_days ?? 0)}
+              trend={stats?.downloads_trend_percent}
+            />
+            <KpiCard
+              icon={<BarChart3 className="w-5 h-5" />}
+              label="Last 7 Days"
+              value={formatDownloads(stats?.downloads_last_7_days ?? 0)}
             />
           </div>
         )}
+
+        {/* Most Downloaded Plugin highlight */}
+        {stats?.most_downloaded_plugin && (
+          <div className="border border-border-default bg-bg-elevated p-4 mb-8 flex items-center gap-4">
+            <div className="w-9 h-9 bg-accent/10 border border-accent/30 flex items-center justify-center shrink-0">
+              <Trophy className="w-4 h-4 text-accent" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-mono text-[10px] text-text-dim uppercase tracking-wider">
+                Top Performer
+              </span>
+              <div className="flex items-baseline gap-2">
+                <Link
+                  href={`/plugins/${stats.most_downloaded_plugin.slug}`}
+                  className="font-raleway font-bold text-sm text-text-primary hover:text-accent transition-colors"
+                >
+                  {stats.most_downloaded_plugin.name}
+                </Link>
+                <span className="font-mono text-xs text-text-dim">
+                  {formatDownloads(stats.most_downloaded_plugin.downloads_total)} downloads
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Download Chart */}
+        <div className="border border-border-default bg-bg-elevated mb-8">
+          <div className="px-6 py-4 border-b border-border-default flex items-center justify-between">
+            <h2 className="font-raleway font-bold text-sm text-text-primary tracking-wide uppercase">
+              Download Trends
+            </h2>
+            <GranularitySelector value={granularity} onChange={setGranularity} />
+          </div>
+          <div className="px-6 py-6">
+            {isLoadingStats ? (
+              <div className="h-[160px] bg-bg-surface border border-border-default animate-pulse" />
+            ) : stats?.recent_downloads && stats.recent_downloads.length > 0 ? (
+              <DownloadChart
+                data={stats.recent_downloads}
+                granularity={granularity}
+              />
+            ) : (
+              <div className="h-[160px] flex items-center justify-center">
+                <p className="font-mono text-xs text-text-dim">
+                  No download data yet. Downloads will appear here once users start downloading your plugins.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Plugins Table */}
         <div className="border border-border-default bg-bg-elevated">
@@ -212,20 +281,29 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Member Info */}
+        <div className="mt-4 text-right">
+          <span className="font-mono text-[10px] text-text-dim">
+            Member since {user ? formatDate(user.created_at) : "—"}
+          </span>
+        </div>
       </main>
       <Footer />
     </>
   );
 }
 
-function StatCard({
+function KpiCard({
   icon,
   label,
   value,
+  trend,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  trend?: number;
 }) {
   return (
     <div className="border border-border-default bg-bg-elevated p-5">
@@ -235,8 +313,24 @@ function StatCard({
           {label}
         </span>
       </div>
-      <div className="font-mono text-2xl font-bold text-text-primary">
-        {value}
+      <div className="flex items-baseline gap-2">
+        <div className="font-mono text-2xl font-bold text-text-primary">
+          {value}
+        </div>
+        {trend !== undefined && trend !== 0 && (
+          <span
+            className={`inline-flex items-center gap-0.5 font-mono text-[10px] font-bold ${
+              trend > 0 ? "text-success" : "text-danger"
+            }`}
+          >
+            {trend > 0 ? (
+              <TrendingUp className="w-3 h-3" />
+            ) : (
+              <TrendingDown className="w-3 h-3" />
+            )}
+            {formatTrend(trend)}
+          </span>
+        )}
       </div>
     </div>
   );

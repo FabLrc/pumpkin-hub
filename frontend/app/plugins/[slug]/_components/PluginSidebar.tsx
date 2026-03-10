@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { PluginResponse } from "@/lib/types";
-import { usePluginVersions } from "@/lib/hooks";
+import { usePluginVersions, usePluginDownloadStats } from "@/lib/hooks";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ export function PluginSidebar({ plugin }: PluginSidebarProps) {
   return (
     <aside className="w-72 flex-shrink-0 hidden lg:block">
       <div className="sidebar-sticky space-y-6">
-        <StatisticsCard downloads={plugin.downloads_total} />
+        <StatisticsCard slug={plugin.slug} downloads={plugin.downloads_total} />
         <LinksCard plugin={plugin} />
         <DetailsCard plugin={plugin} latestVersion={latestVersion} />
         <AuthorCard plugin={plugin} />
@@ -50,9 +50,10 @@ export function PluginSidebar({ plugin }: PluginSidebarProps) {
 
 // ── Statistics Card ───────────────────────────────────────────────────────
 
-function StatisticsCard({ downloads }: { downloads: number }) {
-  // Placeholder weekly chart — real data will come from a future stats API
-  const WEEKLY_HEIGHTS = [30, 45, 38, 60, 55, 70, 85, 100];
+function StatisticsCard({ slug, downloads }: { slug: string; downloads: number }) {
+  const { data: stats } = usePluginDownloadStats(slug, "weekly", 8);
+  const chartData = stats?.chart ?? [];
+  const maxDownloads = Math.max(...chartData.map((d) => d.downloads), 1);
 
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-5">
@@ -73,17 +74,28 @@ function StatisticsCard({ downloads }: { downloads: number }) {
           Last 8 weeks
         </div>
         <div className="flex items-end gap-1 h-16">
-          {WEEKLY_HEIGHTS.map((height, index) => (
-            <div
-              key={index}
-              className={`chart-bar flex-1 ${
-                index === WEEKLY_HEIGHTS.length - 1
-                  ? "bg-accent opacity-80"
-                  : ""
-              }`}
-              style={{ height: `${height}%` }}
-            />
-          ))}
+          {chartData.length > 0
+            ? chartData.map((point, index) => (
+                <div
+                  key={point.period}
+                  className={`chart-bar flex-1 ${
+                    index === chartData.length - 1
+                      ? "bg-accent opacity-80"
+                      : ""
+                  }`}
+                  style={{
+                    height: `${Math.max((point.downloads / maxDownloads) * 100, 2)}%`,
+                  }}
+                  title={`${point.period}: ${point.downloads}`}
+                />
+              ))
+            : Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="chart-bar flex-1"
+                  style={{ height: "2%" }}
+                />
+              ))}
         </div>
       </div>
 
@@ -92,6 +104,22 @@ function StatisticsCard({ downloads }: { downloads: number }) {
           <span className="text-text-dim">All time</span>
           <span className="text-text-primary">{formatDownloads(downloads)}</span>
         </div>
+        {stats && (
+          <>
+            <div className="flex justify-between font-mono text-xs">
+              <span className="text-text-dim">Last 30 days</span>
+              <span className="text-text-primary">
+                {formatDownloads(stats.downloads_last_30_days)}
+              </span>
+            </div>
+            <div className="flex justify-between font-mono text-xs">
+              <span className="text-text-dim">Last 7 days</span>
+              <span className="text-text-primary">
+                {formatDownloads(stats.downloads_last_7_days)}
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
