@@ -222,11 +222,70 @@ pub(crate) fn require_ownership(auth: &AuthUser, plugin_author_id: Uuid) -> Resu
     Err(AppError::Forbidden)
 }
 
+// ── Review Stats Loading ────────────────────────────────────────────────────
+
+/// Aggregated review statistics for a plugin.
+#[derive(Debug, Clone, Default)]
+struct ReviewStats {
+    average_rating: f64,
+    review_count: i64,
+}
+
+#[derive(Debug, FromRow)]
+struct ReviewStatsRow {
+    plugin_id: Uuid,
+    review_count: Option<i64>,
+    avg_rating: Option<f64>,
+}
+
+/// Batch-loads review stats (count + average) for a set of plugin IDs.
+async fn load_review_stats_batch(
+    pool: &PgPool,
+    plugin_ids: &[Uuid],
+) -> Result<HashMap<Uuid, ReviewStats>, AppError> {
+    if plugin_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let rows: Vec<ReviewStatsRow> = sqlx::query_as(
+        "SELECT plugin_id, COUNT(*) AS review_count, AVG(rating::float) AS avg_rating
+         FROM reviews
+         WHERE plugin_id = ANY($1) AND is_hidden = FALSE
+         GROUP BY plugin_id",
+    )
+    .bind(plugin_ids)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let mut map = HashMap::new();
+    for row in rows {
+        map.insert(
+            row.plugin_id,
+            ReviewStats {
+                average_rating: row.avg_rating.unwrap_or(0.0),
+                review_count: row.review_count.unwrap_or(0),
+            },
+        );
+    }
+    Ok(map)
+}
+
+/// Loads review stats for a single plugin.
+async fn load_review_stats_for_plugin(
+    pool: &PgPool,
+    plugin_id: Uuid,
+) -> Result<ReviewStats, AppError> {
+    let map = load_review_stats_batch(pool, &[plugin_id]).await?;
+    Ok(map.into_values().next().unwrap_or_default())
+}
+
 // ── Response Builders ───────────────────────────────────────────────────────
 
 fn build_plugin_response(
     row: PluginWithAuthorRow,
     categories: Vec<CategorySummary>,
+    stats: ReviewStats,
 ) -> PluginResponse {
     PluginResponse {
         id: row.id,
@@ -244,6 +303,8 @@ fn build_plugin_response(
         license: row.license,
         downloads_total: row.downloads_total,
         categories,
+        average_rating: stats.average_rating,
+        review_count: stats.review_count,
         created_at: row.created_at,
         updated_at: row.updated_at,
     }
@@ -252,6 +313,7 @@ fn build_plugin_response(
 fn build_plugin_summary(
     row: PluginWithAuthorRow,
     categories: Vec<CategorySummary>,
+    stats: ReviewStats,
 ) -> PluginSummary {
     PluginSummary {
         id: row.id,
@@ -266,6 +328,8 @@ fn build_plugin_summary(
         license: row.license,
         downloads_total: row.downloads_total,
         categories,
+        average_rating: stats.average_rating,
+        review_count: stats.review_count,
         created_at: row.created_at,
         updated_at: row.updated_at,
     }
@@ -339,15 +403,17 @@ pub async fn list_plugins(
         .await
         .map_err(AppError::internal)?;
 
-    // Batch-load categories for all returned plugins
+    // Batch-load categories and review stats for all returned plugins
     let plugin_ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
     let categories_map = load_categories_batch(pool, &plugin_ids).await?;
+    let review_stats_map = load_review_stats_batch(pool, &plugin_ids).await?;
 
     let data = rows
         .into_iter()
         .map(|row| {
             let categories = categories_map.get(&row.id).cloned().unwrap_or_default();
-            build_plugin_summary(row, categories)
+            let stats = review_stats_map.get(&row.id).cloned().unwrap_or_default();
+            build_plugin_summary(row, categories, stats)
         })
         .collect();
 
@@ -414,10 +480,11 @@ pub async fn create_plugin(
 
     tx.commit().await.map_err(AppError::internal)?;
 
-    // Load full response (plugin + author + categories)
+    // Load full response (plugin + author + categories + review stats)
     let row = fetch_plugin_by_slug(pool, &slug).await?;
     let categories = load_categories_for_plugin(pool, row.id).await?;
-    let response = build_plugin_response(row, categories);
+    let stats = load_review_stats_for_plugin(pool, row.id).await?;
+    let response = build_plugin_response(row, categories, stats);
 
     // Index in Meilisearch (fire-and-forget — don't block the response)
     let search = state.search.clone();
@@ -443,8 +510,9 @@ pub async fn get_plugin(
     let pool = &state.db;
     let row = fetch_plugin_by_slug(pool, &slug).await?;
     let categories = load_categories_for_plugin(pool, row.id).await?;
+    let stats = load_review_stats_for_plugin(pool, row.id).await?;
 
-    Ok(Json(build_plugin_response(row, categories)))
+    Ok(Json(build_plugin_response(row, categories, stats)))
 }
 
 /// PUT /api/v1/plugins/:slug — update plugin metadata (owner or admin only).
@@ -463,7 +531,8 @@ pub async fn update_plugin(
 
     if !payload.has_changes() {
         let categories = load_categories_for_plugin(pool, row.id).await?;
-        return Ok(Json(build_plugin_response(row, categories)));
+        let stats = load_review_stats_for_plugin(pool, row.id).await?;
+        return Ok(Json(build_plugin_response(row, categories, stats)));
     }
 
     // Validate new category IDs if provided
@@ -506,6 +575,7 @@ pub async fn update_plugin(
     // Re-fetch for fresh response
     let updated_row = fetch_plugin_by_slug(pool, &slug).await?;
     let categories = load_categories_for_plugin(pool, updated_row.id).await?;
+    let stats = load_review_stats_for_plugin(pool, updated_row.id).await?;
 
     // Re-index in Meilisearch (fire-and-forget)
     let search = state.search.clone();
@@ -520,7 +590,7 @@ pub async fn update_plugin(
         }
     });
 
-    Ok(Json(build_plugin_response(updated_row, categories)))
+    Ok(Json(build_plugin_response(updated_row, categories, stats)))
 }
 
 /// DELETE /api/v1/plugins/:slug — soft-delete (owner, admin or moderator).

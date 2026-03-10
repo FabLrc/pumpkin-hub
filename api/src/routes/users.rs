@@ -192,14 +192,16 @@ async fn get_author_plugins(
     .await
     .map_err(AppError::internal)?;
 
-    // Batch-load categories
+    // Batch-load categories and review stats
     let plugin_ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
     let mut categories_map = load_categories_batch(pool, &plugin_ids).await?;
+    let review_stats_map = load_review_stats_batch(pool, &plugin_ids).await?;
 
     let plugins: Vec<PluginSummary> = rows
         .into_iter()
         .map(|row| {
             let categories = categories_map.remove(&row.id).unwrap_or_default();
+            let stats = review_stats_map.get(&row.id);
             PluginSummary {
                 id: row.id,
                 author: AuthorSummary {
@@ -213,6 +215,8 @@ async fn get_author_plugins(
                 license: row.license,
                 downloads_total: row.downloads_total,
                 categories,
+                average_rating: stats.map(|s| s.0).unwrap_or(0.0),
+                review_count: stats.map(|s| s.1).unwrap_or(0),
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             }
@@ -264,5 +268,42 @@ async fn load_categories_batch(
         });
     }
 
+    Ok(map)
+}
+
+/// Batch-loads average rating and review count for a set of plugin IDs.
+async fn load_review_stats_batch(
+    pool: &sqlx::PgPool,
+    plugin_ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, (f64, i64)>, AppError> {
+    if plugin_ids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        plugin_id: Uuid,
+        review_count: Option<i64>,
+        avg_rating: Option<f64>,
+    }
+
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT plugin_id, COUNT(*) AS review_count, AVG(rating::float) AS avg_rating
+         FROM reviews
+         WHERE plugin_id = ANY($1) AND is_hidden = FALSE
+         GROUP BY plugin_id",
+    )
+    .bind(plugin_ids)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let mut map = std::collections::HashMap::new();
+    for row in rows {
+        map.insert(
+            row.plugin_id,
+            (row.avg_rating.unwrap_or(0.0), row.review_count.unwrap_or(0)),
+        );
+    }
     Ok(map)
 }

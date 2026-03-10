@@ -185,6 +185,8 @@ pub struct PluginResponse {
     pub license: Option<String>,
     pub downloads_total: i64,
     pub categories: Vec<CategorySummary>,
+    pub average_rating: f64,
+    pub review_count: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -200,6 +202,8 @@ pub struct PluginSummary {
     pub license: Option<String>,
     pub downloads_total: i64,
     pub categories: Vec<CategorySummary>,
+    pub average_rating: f64,
+    pub review_count: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
