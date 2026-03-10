@@ -93,11 +93,11 @@ pub async fn get_admin_stats(
             .map_err(AppError::internal)?
             .unwrap_or(0);
 
-    let plugin_stats: (Option<i64>, Option<i64>, Option<i64>) = sqlx::query_as(
+    let plugin_stats: (i64, i64, i64) = sqlx::query_as(
         "SELECT
             COUNT(*) FILTER (WHERE is_active = true),
             COUNT(*) FILTER (WHERE is_active = false),
-            COALESCE(SUM(downloads_total), 0)
+            COALESCE(SUM(downloads_total), 0)::BIGINT
          FROM plugins",
     )
     .fetch_one(pool)
@@ -108,10 +108,10 @@ pub async fn get_admin_stats(
 
     Ok(Json(AdminStatsResponse {
         total_users,
-        total_plugins: plugin_stats.0.unwrap_or(0) + plugin_stats.1.unwrap_or(0),
-        active_plugins: plugin_stats.0.unwrap_or(0),
-        deactivated_plugins: plugin_stats.1.unwrap_or(0),
-        total_downloads: plugin_stats.2.unwrap_or(0),
+        total_plugins: plugin_stats.0 + plugin_stats.1,
+        active_plugins: plugin_stats.0,
+        deactivated_plugins: plugin_stats.1,
+        total_downloads: plugin_stats.2,
         recent_audit_logs,
     }))
 }

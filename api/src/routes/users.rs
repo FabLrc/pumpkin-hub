@@ -117,8 +117,8 @@ async fn get_author_profile(
     .map_err(AppError::internal)?
     .ok_or(AppError::NotFound)?;
 
-    let stats: (Option<i64>, Option<i64>) = sqlx::query_as(
-        "SELECT COUNT(*), COALESCE(SUM(downloads_total), 0)
+    let stats: (i64, i64) = sqlx::query_as(
+        "SELECT COUNT(*)::BIGINT, COALESCE(SUM(downloads_total), 0)::BIGINT
          FROM plugins
          WHERE author_id = $1 AND is_active = true",
     )
@@ -134,8 +134,8 @@ async fn get_author_profile(
         avatar_url: author.avatar_url,
         bio: author.bio,
         role: author.role,
-        plugin_count: stats.0.unwrap_or(0),
-        total_downloads: stats.1.unwrap_or(0),
+        plugin_count: stats.0,
+        total_downloads: stats.1,
         created_at: author.created_at,
     }))
 }
