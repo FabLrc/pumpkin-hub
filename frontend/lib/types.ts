@@ -477,3 +477,25 @@ export interface CreateApiKeyRequest {
 export interface CreateApiKeyResponse extends ApiKeySummary {
   key: string;
 }
+
+// ── Notification Types ────────────────────────────────────────────────────
+
+export interface NotificationItem {
+  id: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationListResponse {
+  notifications: NotificationItem[];
+  total: number;
+  unread: number;
+}
+
+export interface UnreadCountResponse {
+  count: number;
+}

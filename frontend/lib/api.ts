@@ -664,3 +664,35 @@ export async function revokeApiKey(id: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+// ── Notification Endpoints ────────────────────────────────────────────────
+
+export function getNotificationsPath(
+  page?: number,
+  perPage?: number,
+  unreadOnly?: boolean,
+): string {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (perPage) params.set("per_page", String(perPage));
+  if (unreadOnly) params.set("unread_only", "true");
+  const qs = params.toString();
+  return `/notifications${qs ? `?${qs}` : ""}`;
+}
+
+export function getUnreadCountPath(): string {
+  return "/notifications/unread-count";
+}
+
+export async function markNotificationRead(
+  id: string,
+): Promise<import("./types").NotificationItem> {
+  return apiFetch<import("./types").NotificationItem>(
+    `/notifications/${encodeURIComponent(id)}/read`,
+    { method: "PATCH" },
+  );
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await apiFetch<unknown>("/notifications/read-all", { method: "POST" });
+}

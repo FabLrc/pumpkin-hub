@@ -18,10 +18,11 @@ import {
   Calendar,
   BarChart3,
   Key,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar, Footer } from "@/components/layout";
-import { useCurrentUser, useAuthorPlugins, useAuthorDashboardStats } from "@/lib/hooks";
+import { useCurrentUser, useAuthorPlugins, useAuthorDashboardStats, useUnreadCount } from "@/lib/hooks";
 import { resendVerification } from "@/lib/api";
 import { DownloadChart, GranularitySelector } from "@/components/ui/DownloadChart";
 import type { PluginSummary, DownloadGranularity } from "@/lib/types";
@@ -100,6 +101,7 @@ export default function DashboardPage() {
     granularity,
     granularity === "daily" ? 30 : granularity === "monthly" ? 12 : 12,
   );
+  const { data: unreadData } = useUnreadCount();
 
   // Redirect unauthenticated users
   if (!isLoadingUser && !user) {
@@ -251,6 +253,32 @@ export default function DashboardPage() {
             </span>
             <span className="block font-mono text-[10px] text-text-dim">
               Manage keys for CI/CD integration and programmatic access
+            </span>
+          </div>
+          <ExternalLink className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors shrink-0" />
+        </Link>
+
+        {/* Notifications Quick-Link */}
+        <Link
+          href="/dashboard/notifications"
+          className="flex items-center gap-3 border border-border-default bg-bg-elevated p-4 mb-8 hover:border-accent/40 transition-colors group"
+        >
+          <div className="w-9 h-9 bg-bg-surface border border-border-default flex items-center justify-center shrink-0 group-hover:border-accent/40 transition-colors relative">
+            <Bell className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors" />
+            {(unreadData?.count ?? 0) > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 flex items-center justify-center bg-accent text-black font-mono text-[9px] font-bold leading-none">
+                {(unreadData?.count ?? 0) > 99
+                  ? "99+"
+                  : unreadData?.count}
+              </span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-raleway font-bold text-sm text-text-primary group-hover:text-accent transition-colors">
+              Notifications
+            </span>
+            <span className="block font-mono text-[10px] text-text-dim">
+              Download milestones and plugin activity updates
             </span>
           </div>
           <ExternalLink className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors shrink-0" />

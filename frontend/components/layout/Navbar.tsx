@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LogOut, User, ChevronDown, LayoutDashboard, Shield } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
 import { getLogoutUrl } from "@/lib/api";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function Navbar() {
   const { data: user, isLoading } = useCurrentUser();
@@ -72,6 +73,8 @@ export function Navbar() {
           {isLoading ? (
             <div className="w-20 h-8 bg-bg-surface border border-border-default animate-pulse" />
           ) : user ? (
+            <>
+              <NotificationBell />
             <div ref={menuRef} className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -143,6 +146,7 @@ export function Navbar() {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <Link
               href="/auth"

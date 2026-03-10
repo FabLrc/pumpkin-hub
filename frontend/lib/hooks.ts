@@ -4,7 +4,7 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath } from "./api";
 import type {
   ApiKeySummary,
   AuthorDashboardStats,
@@ -15,6 +15,7 @@ import type {
   DownloadDataPoint,
   DownloadGranularity,
   ListPluginsParams,
+  NotificationListResponse,
   PaginatedResponse,
   PluginDownloadStats,
   PluginResponse,
@@ -23,6 +24,7 @@ import type {
   ReverseDependencyResponse,
   SearchParams,
   SearchResponse,
+  UnreadCountResponse,
   UserProfile,
   VersionsListResponse,
 } from "./types";
@@ -170,5 +172,29 @@ export function usePluginDownloadStats(
 export function useApiKeys() {
   return useSWR<ApiKeySummary[]>(getApiKeysPath(), swrFetcher, {
     revalidateOnFocus: false,
+  });
+}
+
+// ── Notification Hooks ────────────────────────────────────────────────────
+
+/** Fetch paginated notifications for the current user. */
+export function useNotifications(
+  page?: number,
+  perPage?: number,
+  unreadOnly?: boolean,
+) {
+  const path = getNotificationsPath(page, perPage, unreadOnly);
+  return useSWR<NotificationListResponse>(path, swrFetcher, {
+    revalidateOnFocus: true,
+    refreshInterval: 30_000,
+  });
+}
+
+/** Fetch the unread notification count for the bell badge. */
+export function useUnreadCount() {
+  return useSWR<UnreadCountResponse>(getUnreadCountPath(), swrFetcher, {
+    revalidateOnFocus: true,
+    refreshInterval: 30_000,
+    shouldRetryOnError: false,
   });
 }

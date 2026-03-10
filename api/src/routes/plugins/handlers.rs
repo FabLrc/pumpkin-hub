@@ -698,9 +698,9 @@ pub async fn get_version(
 ) -> Result<Json<VersionResponse>, AppError> {
     let pool = &state.db;
 
-    // Verify the plugin exists and is active
-    let plugin_id: Uuid =
-        sqlx::query_scalar("SELECT id FROM plugins WHERE slug = $1 AND is_active = true")
+    // Verify the plugin exists and is active, fetch name for milestone notifications
+    let (plugin_id, plugin_name): (Uuid, String) =
+        sqlx::query_as("SELECT id, name FROM plugins WHERE slug = $1 AND is_active = true")
             .bind(&slug)
             .fetch_optional(pool)
             .await
@@ -723,11 +723,13 @@ pub async fn get_version(
     let row = version_row.ok_or(AppError::NotFound)?;
 
     // Also increment the plugin-level total downloads
-    sqlx::query("UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1")
-        .bind(plugin_id)
-        .execute(pool)
-        .await
-        .map_err(AppError::internal)?;
+    let (new_total,): (i64,) = sqlx::query_as(
+        "UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1 RETURNING downloads_total",
+    )
+    .bind(plugin_id)
+    .fetch_one(pool)
+    .await
+    .map_err(AppError::internal)?;
 
     // Record download event for analytics
     sqlx::query("INSERT INTO download_events (plugin_id, version_id) VALUES ($1, $2)")
@@ -736,6 +738,17 @@ pub async fn get_version(
         .execute(pool)
         .await
         .map_err(AppError::internal)?;
+
+    // Check for download milestone (fire-and-forget)
+    {
+        let db = pool.clone();
+        let p_id = plugin_id;
+        let p_name = plugin_name.clone();
+        let p_slug = slug.clone();
+        tokio::spawn(async move {
+            check_download_milestone(&db, p_id, &p_name, &p_slug, new_total).await;
+        });
+    }
 
     Ok(Json(VersionResponse {
         id: row.id,
@@ -1048,8 +1061,8 @@ pub async fn download_binary(
 
     let pool = &state.db;
 
-    let plugin_id: Uuid =
-        sqlx::query_scalar("SELECT id FROM plugins WHERE slug = $1 AND is_active = true")
+    let (plugin_id, plugin_name): (Uuid, String) =
+        sqlx::query_as("SELECT id, name FROM plugins WHERE slug = $1 AND is_active = true")
             .bind(&slug)
             .fetch_optional(pool)
             .await
@@ -1084,11 +1097,13 @@ pub async fn download_binary(
         .execute(pool)
         .await
         .map_err(AppError::internal)?;
-    sqlx::query("UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1")
-        .bind(plugin_id)
-        .execute(pool)
-        .await
-        .map_err(AppError::internal)?;
+    let (new_total,): (i64,) = sqlx::query_as(
+        "UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1 RETURNING downloads_total",
+    )
+    .bind(plugin_id)
+    .fetch_one(pool)
+    .await
+    .map_err(AppError::internal)?;
 
     // Record download event for analytics
     sqlx::query(
@@ -1100,6 +1115,17 @@ pub async fn download_binary(
     .execute(pool)
     .await
     .map_err(AppError::internal)?;
+
+    // Check for download milestone (fire-and-forget)
+    {
+        let db = pool.clone();
+        let p_id = plugin_id;
+        let p_name = plugin_name.clone();
+        let p_slug = slug.clone();
+        tokio::spawn(async move {
+            check_download_milestone(&db, p_id, &p_name, &p_slug, new_total).await;
+        });
+    }
 
     // Generate pre-signed URL
     let presigned = state
@@ -1116,6 +1142,46 @@ pub async fn download_binary(
         platform: binary_row.platform,
         expires_in_seconds: presigned.expires_in_seconds,
     }))
+}
+
+// ── Download Milestone Notifications ────────────────────────────────────
+
+const DOWNLOAD_MILESTONES: &[i64] = &[10, 50, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000];
+
+async fn check_download_milestone(
+    pool: &PgPool,
+    plugin_id: Uuid,
+    plugin_name: &str,
+    plugin_slug: &str,
+    new_total: i64,
+) {
+    if !DOWNLOAD_MILESTONES.contains(&new_total) {
+        return;
+    }
+
+    let author_id: Option<Uuid> = sqlx::query_scalar("SELECT author_id FROM plugins WHERE id = $1")
+        .bind(plugin_id)
+        .fetch_optional(pool)
+        .await
+        .unwrap_or(None);
+
+    let Some(author_id) = author_id else { return };
+
+    let title = format!("{plugin_name} reached {new_total} downloads!");
+    let body = format!(
+        "Congratulations! Your plugin \"{plugin_name}\" just hit the {new_total} downloads milestone."
+    );
+    let link = format!("/plugins/{plugin_slug}");
+
+    let _ = crate::routes::notifications::handlers::create_notification(
+        pool,
+        author_id,
+        "download_milestone",
+        &title,
+        Some(&body),
+        Some(&link),
+    )
+    .await;
 }
 
 /// Computes the hex-encoded SHA-256 digest of the given bytes.

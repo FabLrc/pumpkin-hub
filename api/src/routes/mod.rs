@@ -5,6 +5,7 @@ mod categories;
 mod dashboard;
 mod dependencies;
 mod health;
+pub mod notifications;
 mod plugins;
 mod search;
 mod users;
@@ -35,5 +36,6 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(users::routes())
         .merge(dashboard::routes())
         .merge(api_keys::routes())
+        .merge(notifications::routes())
         .merge(admin::routes())
 }
