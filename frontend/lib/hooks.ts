@@ -4,7 +4,7 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath } from "./api";
 import type {
   ApiKeySummary,
   AuthorDashboardStats,
@@ -14,6 +14,7 @@ import type {
   DependencyListResponse,
   DownloadDataPoint,
   DownloadGranularity,
+  GitHubLinkResponse,
   ListPluginsParams,
   NotificationListResponse,
   PaginatedResponse,
@@ -195,6 +196,17 @@ export function useUnreadCount() {
   return useSWR<UnreadCountResponse>(getUnreadCountPath(), swrFetcher, {
     revalidateOnFocus: true,
     refreshInterval: 30_000,
+    shouldRetryOnError: false,
+  });
+}
+
+// ── GitHub Integration Hooks ──────────────────────────────────────────────
+
+/** Fetch the GitHub link status for a plugin (null when not linked). */
+export function useGithubLink(slug: string | null) {
+  const path = slug ? getGithubLinkPath(slug) : null;
+  return useSWR<GitHubLinkResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
 }

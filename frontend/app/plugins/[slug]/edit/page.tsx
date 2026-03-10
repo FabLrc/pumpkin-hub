@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { Navbar, Footer } from "@/components/layout";
 import { PluginForm } from "@/components/plugins/PluginForm";
+import { GitHubIntegration } from "@/components/plugins/GitHubIntegration";
 import { usePlugin, useCurrentUser } from "@/lib/hooks";
 import { updatePlugin, getPluginPath } from "@/lib/api";
 import { mutate } from "swr";
@@ -114,12 +115,19 @@ export default function EditPluginPage({ params }: EditPluginPageProps) {
             ))}
           </div>
         ) : plugin && initialData ? (
-          <PluginForm
-            initialData={initialData}
-            onSubmit={handleUpdate}
-            submitLabel="Save Changes"
-            isSubmitting={isSubmitting}
-          />
+          <>
+            <PluginForm
+              initialData={initialData}
+              onSubmit={handleUpdate}
+              submitLabel="Save Changes"
+              isSubmitting={isSubmitting}
+            />
+
+            {/* GitHub Integration section */}
+            <div className="mt-10">
+              <GitHubIntegration slug={slug} />
+            </div>
+          </>
         ) : (
           <div className="text-center py-20">
             <p className="font-mono text-sm text-text-dim">

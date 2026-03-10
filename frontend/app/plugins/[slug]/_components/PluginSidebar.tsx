@@ -10,7 +10,8 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { PluginResponse } from "@/lib/types";
-import { usePluginVersions, usePluginDownloadStats } from "@/lib/hooks";
+import { usePluginVersions, usePluginDownloadStats, useGithubLink } from "@/lib/hooks";
+import { getPluginBadgeUrl } from "@/lib/api";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -40,11 +41,44 @@ export function PluginSidebar({ plugin }: PluginSidebarProps) {
     <aside className="w-72 flex-shrink-0 hidden lg:block">
       <div className="sidebar-sticky space-y-6">
         <StatisticsCard slug={plugin.slug} downloads={plugin.downloads_total} />
+        <GitHubBadgeCard slug={plugin.slug} />
         <LinksCard plugin={plugin} />
         <DetailsCard plugin={plugin} latestVersion={latestVersion} />
         <AuthorCard plugin={plugin} />
       </div>
     </aside>
+  );
+}
+
+// ── Statistics Card ───────────────────────────────────────────────────────
+
+// ── GitHub Badge Card ─────────────────────────────────────────────────────
+
+function GitHubBadgeCard({ slug }: { slug: string }) {
+  const { data: link, error } = useGithubLink(slug);
+
+  if (error || !link) return null;
+
+  const badgeUrl = getPluginBadgeUrl(slug);
+
+  return (
+    <div className="border border-border-default bg-bg-elevated/30 p-5">
+      <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
+        GitHub
+      </div>
+      <a
+        href={`https://github.com/${link.repository_full_name}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 font-mono text-xs text-text-dim hover:text-accent transition-colors mb-3"
+      >
+        <Github className="w-3.5 h-3.5" />
+        <span>{link.repository_full_name}</span>
+        <ArrowUpRight className="ml-auto w-[11px] h-[11px]" />
+      </a>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={badgeUrl} alt="Pumpkin Hub badge" height={20} />
+    </div>
   );
 }
 

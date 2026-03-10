@@ -499,3 +499,29 @@ export interface NotificationListResponse {
 export interface UnreadCountResponse {
   count: number;
 }
+
+// ── GitHub Integration ────────────────────────────────────────────────────
+
+export interface LinkGitHubRequest {
+  installation_id: number;
+  repository_owner: string;
+  repository_name: string;
+  sync_readme?: boolean;
+  sync_changelog?: boolean;
+  auto_publish?: boolean;
+}
+
+export interface GitHubLinkResponse {
+  id: string;
+  plugin_id: string;
+  installation_id: number;
+  repository_owner: string;
+  repository_name: string;
+  repository_full_name: string;
+  default_branch: string;
+  sync_readme: boolean;
+  sync_changelog: boolean;
+  auto_publish: boolean;
+  last_webhook_at: string | null;
+  created_at: string;
+}

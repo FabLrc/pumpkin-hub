@@ -696,3 +696,30 @@ export async function markNotificationRead(
 export async function markAllNotificationsRead(): Promise<void> {
   await apiFetch<unknown>("/notifications/read-all", { method: "POST" });
 }
+
+// ── GitHub Integration ────────────────────────────────────────────────────
+
+export function getGithubLinkPath(slug: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/github`;
+}
+
+export function getPluginBadgeUrl(slug: string): string {
+  return `${API_PREFIX}/plugins/${encodeURIComponent(slug)}/badge.svg`;
+}
+
+export async function linkGithub(
+  slug: string,
+  body: import("./types").LinkGitHubRequest,
+): Promise<import("./types").GitHubLinkResponse> {
+  return apiFetch<import("./types").GitHubLinkResponse>(
+    `/plugins/${encodeURIComponent(slug)}/github/link`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export async function unlinkGithub(slug: string): Promise<void> {
+  await apiFetch<unknown>(
+    `/plugins/${encodeURIComponent(slug)}/github`,
+    { method: "DELETE" },
+  );
+}
