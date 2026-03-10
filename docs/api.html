@@ -118,7 +118,7 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Active development — Phase 3 In Progress</div>
-        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>, <strong>download analytics &amp; KPIs</strong>, <strong>API key management</strong>, <strong>notification center</strong>.<br>
+        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>, <strong>download analytics &amp; KPIs</strong>, <strong>API key management</strong> (permission enforcement, per-key rate limiting, usage audit trail), <strong>notification center</strong>.<br>
         Next up: Publishing from GitHub, Review System, Collections &amp; Curations.
       </div>
 
@@ -153,9 +153,10 @@
       <h2 id="rate-limiting">Rate Limiting</h2>
 
       <p>
-        All endpoints are protected by per-IP rate limiting via <code>tower-governor</code>.
-        Two tiers exist: a relaxed policy for general routes, and a strict policy for
-        authentication-sensitive endpoints to prevent brute-force attacks.
+        All endpoints are protected by rate limiting. For anonymous or JWT-authenticated requests
+        a <strong>per-IP</strong> limiter applies. When a valid <code>X-API-Key</code> header is
+        present the <strong>per-key quotas</strong> configured at key creation are used instead.
+        Auth-sensitive endpoints keep an additional strict per-IP limiter to prevent brute-force.
       </p>
 
       <table>
@@ -164,10 +165,16 @@
         </thead>
         <tbody>
           <tr>
-            <td><strong>General</strong></td>
-            <td>All routes (plugins, search, versions, categories, etc.)</td>
+            <td><strong>IP (General)</strong></td>
+            <td>All routes without a valid API key</td>
             <td>30 requests</td>
             <td>1 request / second</td>
+          </tr>
+          <tr>
+            <td><strong>API Key</strong></td>
+            <td>All routes when authenticated with <code>X-API-Key</code></td>
+            <td>Configured per key (default 30)</td>
+            <td>Configured per key (default 1 / second)</td>
           </tr>
           <tr>
             <td><strong>Auth (Strict)</strong></td>
@@ -179,9 +186,11 @@
       </table>
 
       <p>
-        Thresholds are configurable via environment variables
+        IP-based thresholds are configurable via environment variables
         (<code>RATE_LIMIT_GENERAL_PER_SECOND</code>, <code>RATE_LIMIT_GENERAL_BURST_SIZE</code>,
         <code>RATE_LIMIT_AUTH_PER_SECOND</code>, <code>RATE_LIMIT_AUTH_BURST_SIZE</code>).
+        Per-API-key quotas are set when the key is created via <code>rate_limit_per_second</code>
+        and <code>rate_limit_burst_size</code> fields.
         When a client exceeds the limit, a <code>429 Too Many Requests</code> response
         is returned with a <code>Retry-After</code> header.
       </p>
@@ -1412,6 +1421,39 @@
         Key format: <code>phub_</code> prefix + 8 hex characters (visible prefix) + random secret.
       </p>
 
+      <h4>Permission Enforcement</h4>
+      <p>
+        Each API key carries a set of <strong>scoped permissions</strong> that restrict which endpoints it can access.
+        JWT sessions (cookie / bearer token) always have full access.
+      </p>
+      <table>
+        <thead><tr><th>Permission</th><th>Allows</th></tr></thead>
+        <tbody>
+          <tr><td><code>publish</code></td><td>Create / update / delete plugins, create / yank versions</td></tr>
+          <tr><td><code>upload</code></td><td>Upload binaries</td></tr>
+          <tr><td><code>read</code></td><td>Dashboard analytics, notifications</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Admin and moderation endpoints are <strong>never</strong> accessible via API key — a JWT session is required.
+        If a key lacks the required permission, a <code>403 Forbidden</code> response is returned.
+      </p>
+
+      <h4>Per-Key Rate Limiting</h4>
+      <p>
+        Each API key has its own rate-limit quota (<code>rate_limit_per_second</code> and <code>rate_limit_burst_size</code>),
+        configured at creation time. When a request uses the <code>X-API-Key</code> header, the global per-IP limiter is
+        replaced by the key's individual quotas. Default: 1 token / second with a burst of 30.
+      </p>
+
+      <h4>Audit Trail</h4>
+      <p>
+        Every API-key-authenticated request is automatically logged to <code>api_key_usage_logs</code> with:
+        <code>api_key_id</code>, <code>action</code> (e.g. <em>plugin.create</em>), <code>resource</code> (request path),
+        <code>success</code> (boolean), and <code>created_at</code> timestamp. Failed requests (rate limited, permission denied,
+        handler errors) are recorded as well.
+      </p>
+
       <!-- ── List API Keys ─────────────────────────────────── -->
       <h3 id="api-keys-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/api-keys</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
       <p>Lists all API keys for the authenticated user. The key secret is never returned — only the <code>key_prefix</code>.</p>
@@ -1425,6 +1467,8 @@
     "permissions": ["publish", "upload"],
     "last_used_at": "2026-03-15T14:30:00Z",
     "expires_at": "2027-03-15T00:00:00Z",
+    "rate_limit_per_second": 1,
+    "rate_limit_burst_size": 30,
     "created_at": "2026-03-01T10:00:00Z"
   }
 ]</code></pre>
@@ -1440,6 +1484,8 @@
           <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Key label (max 64 characters)</td></tr>
           <tr><td><code>permissions</code></td><td>string[]</td><td>Yes</td><td>Scoped permissions: <code>publish</code>, <code>upload</code>, <code>read</code></td></tr>
           <tr><td><code>expires_at</code></td><td>string (ISO 8601)</td><td>No</td><td>Expiration date (must be in the future)</td></tr>
+          <tr><td><code>rate_limit_per_second</code></td><td>integer</td><td>No</td><td>Token replenish interval in seconds (default 1, min 1)</td></tr>
+          <tr><td><code>rate_limit_burst_size</code></td><td>integer</td><td>No</td><td>Burst capacity (default 30, max 500)</td></tr>
         </tbody>
       </table>
 
@@ -1449,7 +1495,9 @@
   -d '{
     "name": "CI Deploy Key",
     "permissions": ["publish", "upload"],
-    "expires_at": "2027-03-15T00:00:00Z"
+    "expires_at": "2027-03-15T00:00:00Z",
+    "rate_limit_per_second": 1,
+    "rate_limit_burst_size": 60
   }'</code></pre>
 
       <h4>Response <span class="badge badge-green">201 Created</span></h4>
@@ -1460,6 +1508,8 @@
   "key_prefix": "phub_ab12cd34",
   "permissions": ["publish", "upload"],
   "expires_at": "2027-03-15T00:00:00Z",
+  "rate_limit_per_second": 1,
+  "rate_limit_burst_size": 60,
   "created_at": "2026-03-01T10:00:00Z"
 }</code></pre>
 
@@ -1467,7 +1517,7 @@
       <table>
         <thead><tr><th>Code</th><th>Cause</th></tr></thead>
         <tbody>
-          <tr><td><span class="badge badge-yellow">422</span></td><td>Name exceeds 64 chars, invalid permission, or <code>expires_at</code> in the past</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Name exceeds 64 chars, invalid permission, <code>expires_at</code> in the past, or invalid rate limit values</td></tr>
           <tr><td><span class="badge badge-yellow">409</span></td><td>Maximum 10 keys per user reached</td></tr>
         </tbody>
       </table>

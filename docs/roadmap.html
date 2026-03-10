@@ -483,6 +483,9 @@
             <li>Download charts over time with configurable granularity (daily/weekly/monthly) and period count</li>
             <li>API key management for CI/CD integration — create, list, revoke keys with scoped permissions (publish, upload, read)</li>
             <li>Notification center with download milestone alerts (10, 50, 100, 500, 1K, 5K, 10K, 50K, 100K), unread badge, and mark-as-read</li>
+            <li>Permission enforcement — API keys are validated against each endpoint's required permission; admin routes locked to JWT</li>
+            <li>API key usage audit trail — every API-key-authenticated request logs action, resource, success/failure, and timestamp</li>
+            <li>Per-API-key rate limiting — individual quotas (burst &amp; sustained) replace the global rate limiter for key-authenticated traffic</li>
           </ul>
         </div>
 
@@ -547,7 +550,7 @@
           </div>
           <ul class="timeline-features">
             <li>Auto-generated OpenAPI/Swagger documentation</li>
-            <li>Rate limiting and quotas per API key</li>
+            <li><s>Rate limiting and quotas per API key</s> <em>(moved to Phase 3 — completed)</em></li>
             <li>Configurable webhooks (new version, new plugin, download)</li>
             <li>Client SDKs for third-party integrations</li>
           </ul>
@@ -561,7 +564,7 @@
           <ul class="timeline-features">
             <li>Automatic scan of uploaded binaries (antivirus, static analysis)</li>
             <li>Cryptographic release signing (GPG / cosign)</li>
-            <li>Audit log of all publishing operations</li>
+            <li><s>Audit log of all publishing operations</s> <em>(moved to Phase 3 — completed via API key audit trail)</em></li>
             <li>Community bug bounty program</li>
           </ul>
         </div>

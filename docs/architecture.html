@@ -247,7 +247,7 @@
           <tr><td>4</td><td><code>TimeoutLayer</code></td><td>Global 30s timeout → 504 Gateway Timeout</td></tr>
           <tr><td>5</td><td><code>CompressionLayer</code></td><td>Gzip response compression</td></tr>
           <tr><td>6</td><td><code>CorsLayer</code></td><td>Configurable multi-origin CORS policy</td></tr>
-          <tr><td>7</td><td><code>GovernorLayer</code> (general)</td><td>Per-IP rate limiting (30 burst, 1/s sustained) for all routes</td></tr>
+          <tr><td>7</td><td><code>api_key_middleware</code></td><td>API key pre-resolution, per-key rate limiting (configurable quotas), IP-based fallback (30 burst, 1/s), and usage audit trail</td></tr>
           <tr><td>8</td><td><code>GovernorLayer</code> (auth)</td><td>Strict per-IP rate limiting (5 burst, 1/4s) on auth-sensitive endpoints</td></tr>
         </tbody>
       </table>
