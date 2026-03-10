@@ -5,5 +5,6 @@ pub mod github_installation;
 pub mod plugin;
 pub mod plugin_category;
 pub mod plugin_dependency;
+pub mod review;
 pub mod user;
 pub mod version;

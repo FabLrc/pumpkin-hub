@@ -8,6 +8,7 @@ mod github;
 mod health;
 pub mod notifications;
 mod plugins;
+mod reviews;
 mod search;
 mod users;
 
@@ -38,6 +39,7 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(dashboard::routes())
         .merge(api_keys::routes())
         .merge(notifications::routes())
+        .merge(reviews::routes())
         .merge(admin::routes())
         .merge(github::routes())
 }
