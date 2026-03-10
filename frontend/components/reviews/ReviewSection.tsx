@@ -7,6 +7,7 @@ import type { PluginResponse, ReviewResponse } from "@/lib/types";
 import { useReviews, useCurrentUser } from "@/lib/hooks";
 import {
   getReviewsPath,
+  getPluginPath,
   createReview,
   updateReview,
   deleteReview,
@@ -41,6 +42,8 @@ export function ReviewSection({ plugin }: ReviewSectionProps) {
   function revalidate() {
     mutate(getReviewsPath(plugin.slug, page, PER_PAGE));
     if (page !== 1) mutate(getReviewsPath(plugin.slug, 1, PER_PAGE));
+    // Revalidate the plugin itself so average_rating and review_count update
+    mutate(getPluginPath(plugin.slug));
   }
 
   async function handleCreate(formData: { rating: number; title: string; body: string }) {

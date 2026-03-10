@@ -104,7 +104,11 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
               <span>·</span>
               <div className="flex items-center gap-1">
                 <Star className="w-[11px] h-[11px] text-accent fill-accent" />
-                <span className="text-text-subtle">—</span>
+                <span className="text-text-subtle">
+                  {plugin.review_count > 0
+                    ? `${plugin.average_rating.toFixed(1)} (${plugin.review_count})`
+                    : "—"}
+                </span>
               </div>
               <span>·</span>
               <span>Updated {formatTimeAgo(plugin.updated_at)}</span>
