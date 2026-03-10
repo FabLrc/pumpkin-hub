@@ -53,6 +53,7 @@
         <a href="#local" class="sidebar-sublink">Local Launch</a>
         <a href="#env" class="sidebar-sublink">Environment Variables</a>
         <a href="#s3-config" class="sidebar-sublink">S3 / R2 Configuration</a>
+        <a href="#email-testing" class="sidebar-sublink">Email Testing</a>
         <a href="#verify" class="sidebar-sublink">Verification</a>
       </div>
     </aside>
@@ -89,13 +90,14 @@ cd pumpkin-hub</code></pre>
       <!-- ── Docker ────────────────────────────────────────── -->
       <h2 id="docker">Launch with Docker Compose</h2>
 
-      <p>The recommended method for development. Docker Compose orchestrates 5 services:</p>
+      <p>The recommended method for development. Docker Compose orchestrates 6 services:</p>
       <ul>
         <li><code>frontend-dev</code> — Next.js with hot-reload (port 3000)</li>
         <li><code>api-dev</code> — Rust API with cargo-watch (port 8080)</li>
         <li><code>db-dev</code> — PostgreSQL 16 Alpine (port 5432)</li>
         <li><code>meilisearch-dev</code> — Meilisearch v1.7 (port 7700)</li>
         <li><code>minio-dev</code> — MinIO S3-compatible object storage (ports 9000/9001)</li>
+        <li><code>mailpit-dev</code> — Local email testing server (SMTP 1025, web UI 8025)</li>
       </ul>
 
       <pre><code># Build and start all services
@@ -125,6 +127,7 @@ docker compose logs -f api-dev</code></pre>
           <tr><td>Meilisearch</td><td><code>http://localhost:7700</code></td><td>Search engine</td></tr>
           <tr><td>MinIO</td><td><code>http://localhost:9000</code></td><td>Object storage (binary artifacts)</td></tr>
           <tr><td>MinIO Console</td><td><code>http://localhost:9001</code></td><td>MinIO admin console</td></tr>
+          <tr><td>Mailpit</td><td><code>http://localhost:8025</code></td><td>Email testing web UI</td></tr>
         </tbody>
       </table>
 
@@ -193,6 +196,58 @@ npm run build</code></pre>
         </tbody>
       </table>
 
+      <h3>Authentication &amp; JWT</h3>
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>JWT_SECRET</code></td><td>Yes</td><td>—</td><td>Secret key for signing JWT tokens</td></tr>
+          <tr><td><code>JWT_TTL_SECONDS</code></td><td>No</td><td><code>86400</code></td><td>JWT token lifetime (default: 24 hours)</td></tr>
+          <tr><td><code>API_PUBLIC_URL</code></td><td>No</td><td><code>http://localhost:8080</code></td><td>Publicly reachable API base URL (used in email links)</td></tr>
+          <tr><td><code>GITHUB_CLIENT_ID</code></td><td>Yes</td><td>—</td><td>GitHub OAuth App client ID</td></tr>
+          <tr><td><code>GITHUB_CLIENT_SECRET</code></td><td>Yes</td><td>—</td><td>GitHub OAuth App client secret</td></tr>
+          <tr><td><code>GITHUB_REDIRECT_URI</code></td><td>No</td><td><code>…/auth/github/callback</code></td><td>GitHub OAuth redirect URI</td></tr>
+          <tr><td><code>GOOGLE_CLIENT_ID</code></td><td>No</td><td>—</td><td>Google OAuth client ID (enables Google login)</td></tr>
+          <tr><td><code>GOOGLE_CLIENT_SECRET</code></td><td>No</td><td>—</td><td>Google OAuth client secret</td></tr>
+          <tr><td><code>GOOGLE_REDIRECT_URI</code></td><td>No</td><td><code>…/auth/google/callback</code></td><td>Google OAuth redirect URI</td></tr>
+          <tr><td><code>DISCORD_CLIENT_ID</code></td><td>No</td><td>—</td><td>Discord OAuth client ID (enables Discord login)</td></tr>
+          <tr><td><code>DISCORD_CLIENT_SECRET</code></td><td>No</td><td>—</td><td>Discord OAuth client secret</td></tr>
+          <tr><td><code>DISCORD_REDIRECT_URI</code></td><td>No</td><td><code>…/auth/discord/callback</code></td><td>Discord OAuth redirect URI</td></tr>
+        </tbody>
+      </table>
+
+      <h3>SMTP (Email)</h3>
+      <p>
+        SMTP is optional. When configured, the API sends email verification and password recovery emails.
+        If omitted, email features degrade gracefully (new accounts are auto-verified).
+      </p>
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>SMTP_HOST</code></td><td>No*</td><td>—</td><td>SMTP server hostname (e.g. <code>localhost</code>, <code>smtp.gmail.com</code>). Enables email features when set.</td></tr>
+          <tr><td><code>SMTP_PORT</code></td><td>No</td><td><code>587</code></td><td>SMTP server port</td></tr>
+          <tr><td><code>SMTP_USERNAME</code></td><td>If SMTP_HOST set</td><td>—</td><td>SMTP authentication username</td></tr>
+          <tr><td><code>SMTP_PASSWORD</code></td><td>If SMTP_HOST set</td><td>—</td><td>SMTP authentication password</td></tr>
+          <tr><td><code>SMTP_FROM_ADDRESS</code></td><td>If SMTP_HOST set</td><td>—</td><td>Sender email address (e.g. <code>noreply@pumpkinhub.dev</code>)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Rate Limiting</h3>
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>RATE_LIMIT_GENERAL_PER_SECOND</code></td><td>No</td><td><code>1</code></td><td>Token replenish interval (seconds) for general routes</td></tr>
+          <tr><td><code>RATE_LIMIT_GENERAL_BURST_SIZE</code></td><td>No</td><td><code>30</code></td><td>Max burst size for general routes</td></tr>
+          <tr><td><code>RATE_LIMIT_AUTH_PER_SECOND</code></td><td>No</td><td><code>4</code></td><td>Token replenish interval (seconds) for auth routes (stricter)</td></tr>
+          <tr><td><code>RATE_LIMIT_AUTH_BURST_SIZE</code></td><td>No</td><td><code>5</code></td><td>Max burst size for auth routes (stricter)</td></tr>
+        </tbody>
+      </table>
+
       <h3>Example <code>.env</code> file</h3>
       <pre><code>DATABASE_URL=postgres://pumpkin_user:dev_password@localhost:5432/pumpkin_hub_dev
 MEILISEARCH_URL=http://localhost:7700
@@ -201,13 +256,25 @@ SERVER_PORT=8080
 ALLOWED_ORIGINS=http://localhost:3000
 RUST_LOG=pumpkin_hub_api=debug,tower_http=debug
 
+# Authentication
+JWT_SECRET=your-super-secret-key-change-in-prod
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
 # Object storage (MinIO — local outside Docker)
 S3_ENDPOINT_URL=http://localhost:9000
 S3_PUBLIC_URL=http://localhost:9000
 S3_BUCKET=pumpkin-hub-binaries
 S3_ACCESS_KEY_ID=minioadmin
 S3_SECRET_ACCESS_KEY=minioadmin
-S3_FORCE_PATH_STYLE=true</code></pre>
+S3_FORCE_PATH_STYLE=true
+
+# SMTP (optional — uses Mailpit in Docker)
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_USERNAME=pumpkin
+SMTP_PASSWORD=pumpkin
+SMTP_FROM_ADDRESS=noreply@pumpkinhub.dev</code></pre>
 
       <!-- ── S3 / R2 Configuration ───────────────────────── -->
       <h2 id="s3-config">S3 / R2 Configuration Guide</h2>
@@ -252,6 +319,25 @@ S3_ACCESS_KEY_ID=&lt;R2_TOKEN_ID&gt;
 S3_SECRET_ACCESS_KEY=&lt;R2_TOKEN_SECRET&gt;
 S3_REGION=auto
 S3_FORCE_PATH_STYLE=false</code></pre>
+
+      <!-- ── Email Testing ─────────────────────────────────── -->
+      <h2 id="email-testing">Email Testing (Mailpit)</h2>
+
+      <p>
+        In the Docker development environment, a <strong>Mailpit</strong> instance captures all
+        outgoing emails. No real email is ever sent during development.
+      </p>
+
+      <ul>
+        <li><strong>SMTP port:</strong> <code>1025</code> (API sends mail here)</li>
+        <li><strong>Web UI:</strong> <a href="http://localhost:8025">http://localhost:8025</a> — browse captured emails</li>
+      </ul>
+
+      <p>
+        When you register a new account or trigger a password reset, the email will appear
+        instantly in the Mailpit web interface. Click the verification/reset link from there
+        to complete the flow.
+      </p>
 
       <!-- ── Verification ──────────────────────────────────── -->
       <h2 id="verify">Installation Verification</h2>

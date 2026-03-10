@@ -49,6 +49,7 @@
         <div class="sidebar-label">On this page</div>
         <a href="#base-url" class="sidebar-sublink">Base URL</a>
         <a href="#headers" class="sidebar-sublink">Common Headers</a>
+        <a href="#rate-limiting" class="sidebar-sublink">Rate Limiting</a>
         <a href="#health" class="sidebar-sublink">Health Check</a>
         <a href="#errors" class="sidebar-sublink">Error Handling</a>
         <a href="#cors" class="sidebar-sublink">CORS Policy</a>
@@ -57,6 +58,8 @@
         <a href="#auth-me-put" class="sidebar-sublink" style="padding-left:2rem;">Update Profile</a>
         <a href="#auth-avatar" class="sidebar-sublink" style="padding-left:2rem;">Upload Avatar</a>
         <a href="#users-avatar" class="sidebar-sublink" style="padding-left:2rem;">Serve Avatar</a>
+        <a href="#auth-email-verification" class="sidebar-sublink" style="padding-left:2rem;">Email Verification</a>
+        <a href="#auth-password-recovery" class="sidebar-sublink" style="padding-left:2rem;">Password Recovery</a>
         <a href="#categories" class="sidebar-sublink">Categories</a>
         <a href="#categories-list" class="sidebar-sublink" style="padding-left:2rem;">List Categories</a>
         <a href="#plugins" class="sidebar-sublink">Plugins</a>
@@ -82,7 +85,14 @@
         <a href="#dependencies-graph" class="sidebar-sublink" style="padding-left:2rem;">Resolve Graph</a>
         <a href="#dependencies-dependants" class="sidebar-sublink" style="padding-left:2rem;">List Dependants</a>
         <a href="#search" class="sidebar-sublink">Search</a>
-        <a href="#planned" class="sidebar-sublink">Planned Endpoints</a>
+        <a href="#users" class="sidebar-sublink">Users (Public Profiles)</a>
+        <a href="#users-profile" class="sidebar-sublink" style="padding-left:2rem;">Get Author Profile</a>
+        <a href="#users-plugins" class="sidebar-sublink" style="padding-left:2rem;">Author's Plugins</a>
+        <a href="#admin" class="sidebar-sublink">Admin &amp; Moderation</a>
+        <a href="#admin-stats" class="sidebar-sublink" style="padding-left:2rem;">Dashboard Stats</a>
+        <a href="#admin-plugins" class="sidebar-sublink" style="padding-left:2rem;">Plugin Moderation</a>
+        <a href="#admin-users" class="sidebar-sublink" style="padding-left:2rem;">User Management</a>
+        <a href="#admin-audit" class="sidebar-sublink" style="padding-left:2rem;">Audit Logs</a>
       </div>
     </aside>
 
@@ -94,9 +104,9 @@
       </p>
 
       <div class="callout callout-warn">
-        <div class="callout-label">Active development — Phase 2</div>
-        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs).<br>
-        Planned for upcoming phases: public author profile pages.
+        <div class="callout-label">Active development — Phase 2.5 Complete</div>
+        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>.<br>
+        Next milestone: Phase 3 — Community (advanced analytics, GitHub publishing, review system).
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -122,8 +132,46 @@
           <tr><td><code>x-request-id</code></td><td>Response</td><td>Unique UUID assigned to each request (traceability)</td></tr>
           <tr><td><code>Content-Encoding</code></td><td>Response</td><td><code>gzip</code> if the client supports compression</td></tr>
           <tr><td><code>Authorization</code></td><td>Request</td><td><code>Bearer &lt;jwt&gt;</code> — alternative to the cookie for programmatic API clients</td></tr>
+          <tr><td><code>Retry-After</code></td><td>Response</td><td>Seconds to wait before retrying (returned on <code>429 Too Many Requests</code>)</td></tr>
         </tbody>
       </table>
+
+      <!-- ── Rate Limiting ──────────────────────────────────────── -->
+      <h2 id="rate-limiting">Rate Limiting</h2>
+
+      <p>
+        All endpoints are protected by per-IP rate limiting via <code>tower-governor</code>.
+        Two tiers exist: a relaxed policy for general routes, and a strict policy for
+        authentication-sensitive endpoints to prevent brute-force attacks.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Tier</th><th>Applies To</th><th>Burst</th><th>Sustained Rate</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>General</strong></td>
+            <td>All routes (plugins, search, versions, categories, etc.)</td>
+            <td>30 requests</td>
+            <td>1 request / second</td>
+          </tr>
+          <tr>
+            <td><strong>Auth (Strict)</strong></td>
+            <td><code>/auth/register</code>, <code>/auth/login</code>, <code>/auth/forgot-password</code>, <code>/auth/reset-password</code>, OAuth entry points</td>
+            <td>5 requests</td>
+            <td>1 request / 4 seconds</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Thresholds are configurable via environment variables
+        (<code>RATE_LIMIT_GENERAL_PER_SECOND</code>, <code>RATE_LIMIT_GENERAL_BURST_SIZE</code>,
+        <code>RATE_LIMIT_AUTH_PER_SECOND</code>, <code>RATE_LIMIT_AUTH_BURST_SIZE</code>).
+        When a client exceeds the limit, a <code>429 Too Many Requests</code> response
+        is returned with a <code>Retry-After</code> header.
+      </p>
 
       <!-- ── Health Check ──────────────────────────────────── -->
       <h2 id="health">Health Check</h2>
@@ -189,6 +237,7 @@
           <tr><td><span class="badge badge-yellow">404</span></td><td><code>NotFound</code></td><td>Resource not found</td></tr>
           <tr><td><span class="badge badge-yellow">409</span></td><td><code>Conflict</code></td><td>Resource conflict (e.g., duplicate slug or name)</td></tr>
           <tr><td><span class="badge badge-yellow">422</span></td><td><code>UnprocessableEntity</code></td><td>Invalid data (details in message)</td></tr>
+          <tr><td><span class="badge badge-yellow">429</span></td><td><code>TooManyRequests</code></td><td>Rate limit exceeded — <code>Retry-After</code> header included</td></tr>
           <tr><td><span class="badge badge-red">500</span></td><td><code>Internal</code></td><td>Internal error (details logged server-side, never exposed to client)</td></tr>
           <tr><td><span class="badge badge-red">504</span></td><td>Timeout</td><td>Request exceeded the 30-second global timeout</td></tr>
         </tbody>
@@ -344,6 +393,8 @@
   "email": "octocat@github.com",
   "avatar_url": "https://avatars.githubusercontent.com/u/1",
   "bio": null,
+  "email_verified": true,
+  "is_active": true,
   "role": "author",
   "created_at": "2026-03-06T12:00:00Z"
 }</code></pre>
@@ -356,6 +407,8 @@
           <tr><td><code>email</code></td><td>string | null</td><td>User's email address</td></tr>
           <tr><td><code>avatar_url</code></td><td>string | null</td><td>Avatar URL — points to <code>/api/v1/users/{id}/avatar</code> after upload, or to OAuth provider URL on first login</td></tr>
           <tr><td><code>bio</code></td><td>string | null</td><td>User bio</td></tr>
+          <tr><td><code>email_verified</code></td><td>boolean</td><td>Whether the user’s email has been verified</td></tr>
+          <tr><td><code>is_active</code></td><td>boolean</td><td>Account active status (deactivated users cannot log in)</td></tr>
           <tr><td><code>role</code></td><td><code>author</code> | <code>moderator</code> | <code>admin</code></td><td>Platform role</td></tr>
           <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Registration date</td></tr>
         </tbody>
@@ -424,6 +477,85 @@
       <p>Clears the JWT cookie (<code>pumpkin_hub_token</code>), effectively logging the user out.</p>
       <h4>Response <span class="badge badge-green">200 OK</span></h4>
       <pre><code>{ "message": "Logged out" }</code></pre>
+
+      <!-- ── Email Verification ─────────────────────────────────────────────── -->
+      <h3 id="auth-email-verification">Email Verification</h3>
+      <p>
+        When a user registers with email/password, a verification email is sent with a time-limited
+        token (24-hour TTL). OAuth-registered accounts are automatically verified. Tokens are hashed
+        with SHA-256 before storage and are single-use.
+      </p>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/verify-email</code></h4>
+      <p>Verifies the user's email address using a token received by email.</p>
+      <h5>Request Body</h5>
+      <pre><code>{
+  "token": "abc123..."
+}</code></pre>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "Email verified" }</code></pre>
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Invalid or expired token</td></tr>
+        </tbody>
+      </table>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/resend-verification</code> &nbsp; <span class="badge badge-orange">Protected</span></h4>
+      <p>Resends a verification email for the authenticated user. Requires a valid JWT session.</p>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "Verification email sent" }</code></pre>
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Email already verified</td></tr>
+          <tr><td><span class="badge badge-yellow">401</span></td><td>Not authenticated</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Password Recovery ───────────────────────────────────────────────── -->
+      <h3 id="auth-password-recovery">Password Recovery</h3>
+      <p>
+        A password reset flow allows users to recover access via a time-limited email token (1-hour TTL).
+        The <code>forgot-password</code> endpoint always returns <code>200</code> regardless of whether
+        the email exists, to prevent email enumeration.
+      </p>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/forgot-password</code></h4>
+      <p>Sends a password reset email if the address is associated with an account. Always returns 200 for security.</p>
+      <h5>Request Body</h5>
+      <pre><code>{
+  "email": "alex@example.com"
+}</code></pre>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "If the email exists, a reset link has been sent" }</code></pre>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/reset-password</code></h4>
+      <p>Resets the user's password using a one-time token from the reset email.</p>
+      <h5>Request Body</h5>
+      <pre><code>{
+  "token": "abc123...",
+  "new_password": "my_new_secure_password"
+}</code></pre>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th></tr></thead>
+        <tbody>
+          <tr><td><code>token</code></td><td>string</td><td>One-time token from the reset email</td></tr>
+          <tr><td><code>new_password</code></td><td>string</td><td>8–128 characters</td></tr>
+        </tbody>
+      </table>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "Password reset successful" }</code></pre>
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Invalid or expired token</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Password does not meet requirements (8–128 chars)</td></tr>
+        </tbody>
+      </table>
 
       <!-- ── JWT Claims ─────────────────────────────────────────────────────── -->
       <h3>JWT Claims</h3>
@@ -1165,23 +1297,216 @@
       <h3>GET /api/v1/pumpkin-versions</h3>
       <p>Returns all known Pumpkin MC release versions, fetched and cached from the official <a href="https://github.com/Pumpkin-MC/Pumpkin">Pumpkin GitHub repository</a>.</p>
 
-      <!-- ── Planned Endpoints ─────────────────────────────────────────────── -->
-      <h2 id="planned">Planned Endpoints</h2>
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                    PUBLIC AUTHOR PROFILES                       -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="users">Users (Public Profiles)</h2>
+      <p>Public endpoints exposing author profiles and their published plugins. No authentication required.</p>
 
-      <p>
-        The following endpoints will be progressively added. See the
-        <a href="roadmap.html">roadmap</a> for the detailed schedule.
-      </p>
+      <!-- ── Get Author Profile ─────────────────────────────── -->
+      <h3 id="users-profile"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/users/:username</code></h3>
+      <p>Returns the public profile of an author including aggregate statistics.</p>
 
-      <h3>Users</h3>
+      <h4>Request</h4>
+      <pre><code>curl http://localhost:8080/api/v1/users/rustdev</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "rustdev",
+  "display_name": "Rust Developer",
+  "avatar_url": "/api/v1/users/550e8400-…/avatar",
+  "bio": "Minecraft plugin developer",
+  "role": "author",
+  "plugin_count": 3,
+  "total_downloads": 4250,
+  "created_at": "2026-03-06T12:00:00Z"
+}</code></pre>
+
       <table>
-        <thead>
-          <tr><th>Method</th><th>Route</th><th>Description</th></tr>
-        </thead>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username</code></td><td>Author public profile</td></tr>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/users/:username/plugins</code></td><td>Plugins published by the author</td></tr>
-          <tr><td><span class="badge badge-blue">GET</span></td><td><code>/api/v1/me/stats</code></td><td>Author dashboard statistics</td></tr>
+          <tr><td><code>id</code></td><td>UUID</td><td>User identifier</td></tr>
+          <tr><td><code>username</code></td><td>string</td><td>Unique username</td></tr>
+          <tr><td><code>display_name</code></td><td>string | null</td><td>Display name</td></tr>
+          <tr><td><code>avatar_url</code></td><td>string | null</td><td>Avatar URL</td></tr>
+          <tr><td><code>bio</code></td><td>string | null</td><td>User biography</td></tr>
+          <tr><td><code>role</code></td><td>string</td><td><code>author</code>, <code>moderator</code> or <code>admin</code></td></tr>
+          <tr><td><code>plugin_count</code></td><td>integer</td><td>Number of active plugins published by this author</td></tr>
+          <tr><td><code>total_downloads</code></td><td>integer</td><td>Cumulative downloads across all the author's plugins</td></tr>
+          <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Registration date</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>User not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Author's Plugins ─────────────────────────────── -->
+      <h3 id="users-plugins"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/users/:username/plugins</code></h3>
+      <p>Returns a paginated list of plugins published by the specified author. Only active plugins are returned.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>integer</td><td><code>1</code></td><td>Page number (≥ 1)</td></tr>
+          <tr><td><code>per_page</code></td><td>integer</td><td><code>20</code></td><td>Items per page (1–100)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns a paginated list of <code>PluginSummary</code> objects (same format as <a href="#plugins-list">List Plugins</a>).</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>User not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                    ADMIN & MODERATION                          -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="admin">Admin &amp; Moderation</h2>
+      <p>
+        Administration endpoints for platform moderation. All routes require authentication and
+        appropriate role permissions. Two middleware layers enforce access control:
+      </p>
+      <ul>
+        <li><strong>Staff</strong> (<code>admin</code> or <code>moderator</code>) — required for plugin moderation and audit log viewing</li>
+        <li><strong>Admin only</strong> — required for user management (role changes, account deactivation)</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <div class="callout-label">Audit Trail</div>
+        All admin actions (plugin deactivation, user role changes, account management) are
+        automatically logged in the <code>audit_logs</code> table with the actor, action,
+        target, and details (JSONB).
+      </div>
+
+      <!-- ── Admin Stats ─────────────────────────────── -->
+      <h3 id="admin-stats"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/admin/stats</code> &nbsp; <span class="badge badge-orange">Staff</span></h3>
+      <p>Returns a summary of platform statistics for the admin dashboard.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "user_count": 42,
+  "plugin_count": 15,
+  "active_plugin_count": 12,
+  "recent_audit_logs": [ … ]
+}</code></pre>
+
+      <!-- ── Plugin Moderation ─────────────────────────────── -->
+      <h3 id="admin-plugins">Plugin Moderation</h3>
+
+      <h4><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/admin/plugins</code> &nbsp; <span class="badge badge-orange">Staff</span></h4>
+      <p>Lists all plugins (active and deactivated) with optional search filtering.</p>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>search</code></td><td>string</td><td>Filter plugins by name (optional)</td></tr>
+          <tr><td><code>page</code></td><td>integer</td><td>Page number (default: 1)</td></tr>
+        </tbody>
+      </table>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/admin/plugins/:plugin_id/deactivate</code> &nbsp; <span class="badge badge-orange">Staff</span></h4>
+      <p>Deactivates a plugin (soft-ban). The plugin becomes invisible in public listings and search.</p>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "Plugin deactivated" }</code></pre>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/admin/plugins/:plugin_id/reactivate</code> &nbsp; <span class="badge badge-orange">Staff</span></h4>
+      <p>Reactivates a previously deactivated plugin.</p>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "Plugin reactivated" }</code></pre>
+
+      <!-- ── User Management ─────────────────────────────── -->
+      <h3 id="admin-users">User Management</h3>
+
+      <h4><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/admin/users</code> &nbsp; <span class="badge badge-red">Admin</span></h4>
+      <p>Lists all users with plugin counts and optional search filtering.</p>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>search</code></td><td>string</td><td>Filter users by username or email (optional)</td></tr>
+          <tr><td><code>page</code></td><td>integer</td><td>Page number (default: 1)</td></tr>
+        </tbody>
+      </table>
+
+      <h4><span class="badge badge-orange">PATCH</span> &nbsp; <code>/api/v1/admin/users/:user_id/role</code> &nbsp; <span class="badge badge-red">Admin</span></h4>
+      <p>Changes a user's platform role. Admins cannot demote themselves.</p>
+      <h5>Request Body</h5>
+      <pre><code>{
+  "role": "moderator"
+}</code></pre>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Allowed Values</th></tr></thead>
+        <tbody>
+          <tr><td><code>role</code></td><td>string</td><td><code>author</code>, <code>moderator</code>, <code>admin</code></td></tr>
+        </tbody>
+      </table>
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Cannot change own role (self-demotion prevention)</td></tr>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Invalid role value</td></tr>
+        </tbody>
+      </table>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/admin/users/:user_id/deactivate</code> &nbsp; <span class="badge badge-red">Admin</span></h4>
+      <p>Deactivates a user account. Prevents the user from logging in. Admins cannot deactivate themselves.</p>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "User deactivated" }</code></pre>
+
+      <h4><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/admin/users/:user_id/reactivate</code> &nbsp; <span class="badge badge-red">Admin</span></h4>
+      <p>Reactivates a previously deactivated user account.</p>
+      <h5>Response <span class="badge badge-green">200 OK</span></h5>
+      <pre><code>{ "message": "User reactivated" }</code></pre>
+
+      <!-- ── Audit Logs ─────────────────────────────── -->
+      <h3 id="admin-audit"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/admin/audit-logs</code> &nbsp; <span class="badge badge-orange">Staff</span></h3>
+      <p>Returns a paginated list of admin actions for compliance and review.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>integer</td><td><code>1</code></td><td>Page number</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "data": [
+    {
+      "id": "uuid",
+      "actor_username": "admin_user",
+      "action": "plugin.deactivate",
+      "target_type": "plugin",
+      "target_id": "uuid",
+      "details": { "plugin_name": "Bad Plugin", "reason": "policy violation" },
+      "created_at": "2026-03-10T09:15:00Z"
+    }
+  ],
+  "page": 1,
+  "total": 24
+}</code></pre>
+
+      <h4>Recorded Actions</h4>
+      <table>
+        <thead><tr><th>Action</th><th>Target</th><th>Details</th></tr></thead>
+        <tbody>
+          <tr><td><code>plugin.deactivate</code></td><td>plugin</td><td>Plugin name</td></tr>
+          <tr><td><code>plugin.reactivate</code></td><td>plugin</td><td>Plugin name</td></tr>
+          <tr><td><code>user.role_change</code></td><td>user</td><td>Old role → new role</td></tr>
+          <tr><td><code>user.deactivate</code></td><td>user</td><td>Username</td></tr>
+          <tr><td><code>user.reactivate</code></td><td>user</td><td>Username</td></tr>
         </tbody>
       </table>
 

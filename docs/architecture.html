@@ -106,7 +106,9 @@
 │       ├── lib.rs          # build_app() and middleware stack
 │       ├── config.rs       # Configuration from ENV
 │       ├── db.rs           # PostgreSQL connection pool &amp; migrations
+│       ├── email.rs        # Async SMTP email service (lettre)
 │       ├── error.rs        # Centralized error type (AppError)
+│       ├── rate_limit.rs   # Per-IP rate limiting (tower-governor)
 │       ├── state.rs        # Shared state (AppState + PgPool + ObjectStorage)
 │       ├── auth/           # Multi-provider authentication
 │       │   ├── mod.rs      # Auth module exports
@@ -123,21 +125,36 @@
 │       │   ├── version.rs  # Version (semver release)
 │       │   ├── binary.rs   # Binary (compiled artifact per version+platform)
 │       │   ├── category.rs # Category (classification tag)
-│       │   └── plugin_category.rs # Junction table
+│       │   ├── plugin_category.rs # Junction table
+│       │   └── plugin_dependency.rs # Inter-plugin dependency
+│       ├── search/         # Meilisearch integration
+│       │   └── mod.rs      # Plugin indexing, search, suggestions, Pumpkin versions
 │       ├── storage/        # Object storage abstraction
 │       │   └── mod.rs      # S3/MinIO client (upload, presigned URLs, delete)
 │       └── routes/
 │           ├── mod.rs      # Sub-router assembly
 │           ├── health.rs   # GET /api/v1/health (+ DB check)
-│           ├── auth.rs     # Auth routes (register, login, OAuth callbacks, me, logout)
+│           ├── auth.rs     # Auth routes (register, login, OAuth, email verification, password reset)
+│           ├── users.rs    # Public author profiles
 │           ├── categories/ # Category listing module
 │           │   ├── mod.rs      # Route declarations
 │           │   ├── dto.rs      # CategoryResponse DTO
 │           │   └── handlers.rs # list_categories handler
-│           └── plugins/    # Plugin CRUD module
-│               ├── mod.rs      # Route declarations
-│               ├── dto.rs      # Request/response DTOs &amp; validation
-│               └── handlers.rs # Handler functions &amp; helpers
+│           ├── plugins/    # Plugin CRUD module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # Request/response DTOs &amp; validation
+│           │   └── handlers.rs # Handler functions &amp; helpers
+│           ├── dependencies/# Dependency management module
+│           │   ├── mod.rs      # Route declarations &amp; graph resolution
+│           │   ├── dto.rs      # Dependency DTOs
+│           │   └── handlers.rs # CRUD handlers &amp; conflict detection
+│           ├── search/     # Search endpoints
+│           │   ├── mod.rs      # Route declarations
+│           │   └── handlers.rs # Search &amp; suggest handlers
+│           └── admin/      # Admin moderation module
+│               ├── mod.rs      # Route declarations (role-protected)
+│               ├── dto.rs      # Admin DTOs
+│               └── handlers.rs # Stats, plugin/user mgmt, audit logs
 │
 ├── frontend/               # Next.js frontend
 │   ├── package.json        # NPM dependencies
@@ -147,24 +164,40 @@
 │   ├── tsconfig.json       # TypeScript configuration
 │   ├── eslint.config.mjs   # ESLint flat config
 │   ├── postcss.config.mjs  # PostCSS with @tailwindcss/postcss
+│   ├── vitest.config.ts    # Vitest test configuration
+│   ├── vitest.setup.ts     # Test setup (mocks, environment)
 │   ├── lib/
 │   │   ├── types.ts        # API DTOs (UserProfile, PluginSummary, CategoryResponse, etc.)
 │   │   ├── api.ts          # Fetch helpers &amp; SWR key generators (plugins, categories, auth)
 │   │   └── hooks.ts        # SWR hooks (usePlugins, usePlugin, useCategories, useCurrentUser)
 │   ├── components/
-│   │   ├── layout/         # Navbar, Footer
-│   │   └── ui/             # Badge, Button, PluginCard
+│   │   ├── layout/         # Navbar, Footer, NotificationProvider (Sonner)
+│   │   └── ui/             # Badge, Button, PluginCard, FormField, Pagination
 │   └── app/
-│       ├── layout.tsx      # Root layout (next/font, metadata)
+│       ├── layout.tsx      # Root layout (next/font, metadata, NotificationProvider)
 │       ├── globals.css     # Design tokens (@theme inline) &amp; global styles
 │       ├── page.tsx        # Landing page
+│       ├── error.tsx       # Global error boundary
+│       ├── global-error.tsx# Root error boundary (500)
+│       ├── not-found.tsx   # Custom 404 page
+│       ├── loading.tsx     # Global loading skeleton
 │       ├── _components/    # Landing sub-components (Hero, Trending, Features, CTA, Ticker)
+│       ├── auth/
+│       │   ├── login/      # Login page
+│       │   ├── register/   # Registration page
+│       │   ├── forgot-password/ # Password recovery request
+│       │   ├── reset-password/  # Password reset form
+│       │   └── verify-email/    # Email verification handler
 │       ├── explorer/
 │       │   ├── page.tsx    # Explorer with Suspense boundary
 │       │   └── _components/# ExplorerContent, ExplorerSidebar, ExplorerResults
-│       └── plugins/[slug]/
-│           ├── page.tsx    # Plugin detail page
-│           └── _components/# PluginHeader, PluginContent, PluginSidebar
+│       ├── plugins/[slug]/
+│       │   ├── page.tsx    # Plugin detail page
+│       │   └── _components/# PluginHeader, PluginContent, PluginSidebar
+│       ├── dashboard/      # Authenticated user dashboard (my plugins)
+│       ├── profile/        # Profile editing (avatar, bio, links)
+│       ├── users/[username]/ # Public author profile
+│       └── admin/          # Admin moderation panel (stats, plugins, users, audit)
 │
 ├── docs/                   # Documentation (GitHub Pages)
 │   └── mockup/             # Design system HTML mockups
@@ -198,6 +231,8 @@
           <tr><td>4</td><td><code>TimeoutLayer</code></td><td>Global 30s timeout → 504 Gateway Timeout</td></tr>
           <tr><td>5</td><td><code>CompressionLayer</code></td><td>Gzip response compression</td></tr>
           <tr><td>6</td><td><code>CorsLayer</code></td><td>Configurable multi-origin CORS policy</td></tr>
+          <tr><td>7</td><td><code>GovernorLayer</code> (general)</td><td>Per-IP rate limiting (30 burst, 1/s sustained) for all routes</td></tr>
+          <tr><td>8</td><td><code>GovernorLayer</code> (auth)</td><td>Strict per-IP rate limiting (5 burst, 1/4s) on auth-sensitive endpoints</td></tr>
         </tbody>
       </table>
 
@@ -255,11 +290,11 @@
 │ avatar_url     │       │ description       │       │ pumpkin_max    │
 │ bio            │       │ license           │       │ downloads      │
 │ password_hash  │       │ downloads_total   │       │ is_yanked      │
-│ role       CHK │       │ is_active         │       │ published_at   │
-│ created_at     │       └────────────────────┘       └────────────────┘
-└───────┬────────┘        │                    │
-        │           ┌─────┴──────────────────┤
-        │           │  plugin_categories   │       ┌────────────────┐
+│ email_verified │       │ is_active         │       │ published_at   │
+│ is_active      │       └────────────────────┘       └────────────────┘
+│ role       CHK │        │                    │
+│ created_at     │       ┌─────┴──────────────────┤
+└───────┬────────┘           │  plugin_categories   │       ┌────────────────┐
         │           ├────────────────────────┤       │   categories   │
         │           │ plugin_id     FK PK  │       ├────────────────┤
         │           │ category_id   FK PK  │─────►│ id          PK │
@@ -276,6 +311,18 @@
 │ UQ(provider,   │
 │   provider_id) │
 └────────────────┘
+
+┌──────────────────────────┐  ┌──────────────────────────┐  ┌──────────────────────┐
+│ email_verification_tokens │  │  password_reset_tokens  │  │     audit_logs        │
+├──────────────────────────┤  ├──────────────────────────┤  ├──────────────────────┤
+│ id             PK        │  │ id             PK        │  │ id            PK    │
+│ user_id        FK        │  │ user_id        FK        │  │ actor_id      FK    │
+│ token_hash                │  │ token_hash                │  │ action              │
+│ expires_at                │  │ expires_at                │  │ target_type         │
+└──────────────────────────┘  └──────────────────────────┘  │ target_id           │
+  TTL: 24 hours                TTL: 1 hour                │ details (JSONB)     │
+  Single-use (SHA-256 hash)    Single-use (SHA-256 hash)  │ created_at          │
+                                                          └──────────────────────┘
 * email: unique partial index (WHERE email IS NOT NULL)</code></pre>
 
       <h3>Key Constraints</h3>
@@ -287,6 +334,8 @@
           <tr><td><code>users</code></td><td><code>username</code></td><td>UNIQUE</td></tr>
           <tr><td><code>users</code></td><td><code>email</code> (case-insensitive, WHERE NOT NULL)</td><td>UNIQUE INDEX</td></tr>
           <tr><td><code>users</code></td><td><code>role</code> IN (admin, moderator, author)</td><td>CHECK</td></tr>
+          <tr><td><code>users</code></td><td><code>email_verified</code></td><td>BOOLEAN DEFAULT FALSE</td></tr>
+          <tr><td><code>users</code></td><td><code>is_active</code></td><td>BOOLEAN DEFAULT TRUE</td></tr>
           <tr><td><code>auth_providers</code></td><td><code>(provider, provider_id)</code></td><td>UNIQUE</td></tr>
           <tr><td><code>auth_providers</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>auth_providers</code></td><td><code>provider</code> IN (github, google, discord)</td><td>CHECK</td></tr>
@@ -296,6 +345,9 @@
           <tr><td><code>versions</code></td><td><code>plugin_id</code> → <code>plugins(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>plugin_categories</code></td><td><code>(plugin_id, category_id)</code></td><td>COMPOSITE PK</td></tr>
           <tr><td><code>categories</code></td><td><code>name</code>, <code>slug</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>email_verification_tokens</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>password_reset_tokens</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>audit_logs</code></td><td><code>actor_id</code> → <code>users(id)</code></td><td>FK SET NULL</td></tr>
         </tbody>
       </table>
 
@@ -338,9 +390,19 @@
         </thead>
         <tbody>
           <tr><td>Landing</td><td><code>/</code></td><td>Hero section, trending bento grid, feature cards, CTA, live ticker</td></tr>
-          <tr><td>Explorer</td><td><code>/explorer</code></td><td>Sidebar filters (search, sort, categories), paginated results, URL-based state</td></tr>
+          <tr><td>Explorer</td><td><code>/explorer</code></td><td>Meilisearch-powered sidebar filters, faceted search, paginated results</td></tr>
           <tr><td>Plugin Detail</td><td><code>/plugins/[slug]</code></td><td>Install panel, tabbed content (Overview/Versions/Dependencies), sidebar stats</td></tr>
-          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Author space with analytics and management (Phase 3)</td></tr>
+          <tr><td>Plugin Create</td><td><code>/plugins/new</code></td><td>Authenticated plugin submission form</td></tr>
+          <tr><td>Plugin Edit</td><td><code>/plugins/[slug]/edit</code></td><td>Pre-populated edit form (ownership enforced)</td></tr>
+          <tr><td>Auth</td><td><code>/auth</code></td><td>Sign-in/sign-up forms with email/password and OAuth provider buttons</td></tr>
+          <tr><td>Reset Password</td><td><code>/auth/reset-password</code></td><td>Token-based password reset form</td></tr>
+          <tr><td>Verify Email</td><td><code>/auth/verify-email</code></td><td>Email verification via token</td></tr>
+          <tr><td>Profile</td><td><code>/profile</code></td><td>Editable display name, bio, and avatar upload</td></tr>
+          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Author's published plugins with stats and quick-action links</td></tr>
+          <tr><td>Public Profile</td><td><code>/users/[username]</code></td><td>Public author profile with bio, stats, and plugin portfolio</td></tr>
+          <tr><td>Admin Panel</td><td><code>/admin</code></td><td>Moderation dashboard: stats, plugin/user management, audit logs</td></tr>
+          <tr><td>404 Not Found</td><td>—</td><td>Custom 404 page consistent with Brutalist Industrial design</td></tr>
+          <tr><td>500 Error</td><td>—</td><td>Custom error page with recovery actions</td></tr>
         </tbody>
       </table>
 

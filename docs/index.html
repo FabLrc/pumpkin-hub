@@ -60,9 +60,10 @@
 
       <div class="callout">
         <div class="callout-label">Current State</div>
-        <strong>Phase 1.5 — Integration &amp; Quality is complete.</strong>
-        Categories API, multi-provider auth, plugin submission forms, user profiles &amp; dashboard, versions tab, unit/integration tests, and SEO &amp; Metadata are all shipped.
-        Next milestone: <strong>Phase 2 — Distribution</strong> (version management, binary storage, Meilisearch full-text search).
+        <strong>Phase 2.5 — Hardening &amp; Polish is complete.</strong>
+        Rate limiting, email verification &amp; password recovery, custom error pages, toast notifications,
+        public author profiles, admin moderation panel with audit logs, and user account management are all shipped.
+        Next milestone: <strong>Phase 3 — Community</strong> (advanced analytics, GitHub publishing, review system, collections &amp; curations).
       </div>
 
       <!-- ── About ─────────────────────────────────────────── -->
@@ -102,7 +103,11 @@
         </div>
         <div class="card">
           <div class="card-title">Author Dashboard</div>
-          <div class="card-desc">Download analytics, version management and direct publishing from GitHub.</div>
+          <div class="card-desc">Download analytics, version management, plugin publishing and profile customization.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Admin Moderation</div>
+          <div class="card-desc">Role-based moderation panel with plugin/user management and a complete audit trail.</div>
         </div>
         <div class="card">
           <div class="card-title">Brutalist Interface</div>
@@ -122,7 +127,7 @@
           <tr><td><strong>Rust</strong></td><td>Primary language</td><td>Edition 2021</td></tr>
           <tr><td><strong>Axum</strong></td><td>Async HTTP framework</td><td>0.8</td></tr>
           <tr><td><strong>Tokio</strong></td><td>Async runtime</td><td>1.x</td></tr>
-          <tr><td><strong>Tower HTTP</strong></td><td>Middlewares (CORS, Trace, Compression)</td><td>0.6</td></tr>
+          <tr><td><strong>Tower HTTP</strong></td><td>Middlewares (CORS, Trace, Compression, Rate Limiting)</td><td>0.6</td></tr>
           <tr><td><strong>PostgreSQL</strong></td><td>Relational database</td><td>16</td></tr>
           <tr><td><strong>Meilisearch</strong></td><td>Full-text search engine</td><td>1.7</td></tr>
         </tbody>
@@ -152,7 +157,8 @@
           <tr><td><strong>Docker Compose</strong></td><td>Development container orchestration</td></tr>
           <tr><td><strong>GitHub Actions</strong></td><td>CI/CD (lint, type-check, clippy, tests)</td></tr>
           <tr><td><strong>Cloudflare R2</strong></td><td>Binary storage (planned)</td></tr>
-          <tr><td><strong>GitHub OAuth</strong></td><td>User authentication (JWT + HttpOnly cookies)</td></tr>
+          <tr><td><strong>Multi-Provider OAuth</strong></td><td>User authentication — GitHub, Google, Discord (JWT + HttpOnly cookies)</td></tr>
+          <tr><td><strong>SMTP</strong></td><td>Email verification &amp; password recovery (lettre)</td></tr>
         </tbody>
       </table>
 
