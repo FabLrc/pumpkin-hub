@@ -16,10 +16,9 @@ use axum::{
         header::{AUTHORIZATION, CONTENT_TYPE},
         HeaderValue, Method,
     },
-    Router,
+    middleware as axum_middleware, Router,
 };
 use tower::ServiceBuilder;
-use tower_governor::GovernorLayer;
 use tower_http::{
     compression::CompressionLayer,
     cors::{AllowOrigin, CorsLayer},
@@ -33,6 +32,7 @@ use sqlx::PgPool;
 use crate::{
     config::Config,
     email::EmailService,
+    rate_limit::ApiKeyRateLimiters,
     search::{PumpkinVersionFetcher, SearchService},
     state::AppState,
     storage::ObjectStorage,
@@ -68,6 +68,11 @@ pub fn build_app(
         }
     });
 
+    // Rate limiters
+    let ip_rate_limiter = rate_limit::build_ip_rate_limiter(&config.rate_limit);
+    let api_key_rate_limiters = ApiKeyRateLimiters::new();
+    let auth_governor = rate_limit::build_auth_governor(&config.rate_limit);
+
     let state = AppState::new(
         config.clone(),
         pool,
@@ -75,27 +80,24 @@ pub fn build_app(
         search,
         pumpkin_versions,
         email_service,
+        ip_rate_limiter.clone(),
+        api_key_rate_limiters,
     );
     let cors = build_cors_layer(&config);
     let x_request_id = axum::http::HeaderName::from_static(REQUEST_ID_HEADER);
 
-    // Rate limiters — separate configs for general and auth-sensitive routes
-    let general_governor = rate_limit::build_general_governor(&config.rate_limit);
-    let auth_governor = rate_limit::build_auth_governor(&config.rate_limit);
-
     // Spawn background task to clean up expired rate-limit entries
-    let general_limiter = general_governor.limiter().clone();
+    let ip_limiter_for_cleanup = ip_rate_limiter;
     let auth_limiter = auth_governor.limiter().clone();
     tokio::spawn(async move {
         let interval = std::time::Duration::from_secs(60);
         loop {
             tokio::time::sleep(interval).await;
-            general_limiter.retain_recent();
+            ip_limiter_for_cleanup.retain_recent();
             auth_limiter.retain_recent();
         }
     });
 
-    let general_governor = std::sync::Arc::new(general_governor);
     let auth_governor = std::sync::Arc::new(auth_governor);
 
     let middleware = ServiceBuilder::new()
@@ -116,9 +118,9 @@ pub fn build_app(
         // Gzip compression for applicable responses
         .layer(CompressionLayer::new())
         // CORS policy
-        .layer(cors)
-        // Global rate limiter — relaxed for read-heavy routes
-        .layer(GovernorLayer::new(general_governor));
+        .layer(cors);
+    // Note: the former global GovernorLayer is replaced by the api_key_middleware
+    // which applies per-API-key quotas or per-IP limits depending on the request.
 
     // Cap the global body limit just above the maximum allowed binary size
     // (+ 5 MB overhead for multipart metadata).
@@ -127,7 +129,14 @@ pub fn build_app(
     let body_limit = usize::try_from(config.binary_max_size_bytes)
         .unwrap_or(usize::MAX)
         .saturating_add(5 * 1024 * 1024);
+
+    let state_for_middleware = state.clone();
+
     routes::create_router(state, auth_governor)
+        .layer(axum_middleware::from_fn_with_state(
+            state_for_middleware,
+            auth::api_key_middleware::api_key_middleware,
+        ))
         .layer(DefaultBodyLimit::max(body_limit))
         .layer(middleware)
 }

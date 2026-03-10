@@ -43,6 +43,7 @@ pub async fn get_author_stats(
     State(state): State<AppState>,
     Query(params): Query<DownloadStatsParams>,
 ) -> Result<Json<AuthorDashboardStats>, AppError> {
+    auth.require_permission("read")?;
     let pool = &state.db;
     let author_id = auth.user_id;
 
@@ -104,6 +105,7 @@ pub async fn get_author_downloads(
     State(state): State<AppState>,
     Query(params): Query<DownloadStatsParams>,
 ) -> Result<Json<Vec<DownloadDataPoint>>, AppError> {
+    auth.require_permission("read")?;
     let pool = &state.db;
     let data =
         aggregate_author_downloads(pool, auth.user_id, params.granularity(), params.periods())

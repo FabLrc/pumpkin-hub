@@ -8,21 +8,44 @@ use crate::{auth::jwt, error::AppError, state::AppState};
 pub const AUTH_COOKIE_NAME: &str = "pumpkin_hub_token";
 
 /// Header name for API key authentication.
-const API_KEY_HEADER: &str = "x-api-key";
+pub const API_KEY_HEADER: &str = "x-api-key";
+
+/// Pre-resolved API key context, inserted into request extensions
+/// by the `api_key_middleware` layer so that `AuthUser` can read it
+/// without a second DB round-trip.
+#[derive(Clone, Debug)]
+pub struct ApiKeyContext {
+    pub api_key_id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
+    pub username: String,
+    pub role: String,
+    pub is_active: bool,
+    pub permissions: Vec<String>,
+    pub rate_limit_per_second: i32,
+    pub rate_limit_burst_size: i32,
+}
 
 /// Extractor that validates authentication from:
-/// 1. JWT cookie (`pumpkin_hub_token`)
-/// 2. `Authorization: Bearer <jwt>` header
-/// 3. `X-API-Key: phub_...` header
+/// 1. Pre-resolved `ApiKeyContext` (set by the API key middleware)
+/// 2. JWT cookie (`pumpkin_hub_token`)
+/// 3. `Authorization: Bearer <jwt>` header
 pub struct AuthUser {
     pub user_id: uuid::Uuid,
     pub username: String,
     pub role: String,
+    /// Set when authenticated via API key.
+    pub api_key_id: Option<uuid::Uuid>,
+    /// Scoped permissions granted by the API key. `None` means JWT auth (full access).
+    pub api_key_permissions: Option<Vec<String>>,
 }
 
 impl AuthUser {
     /// Returns `Ok(())` if the user has the `admin` or `moderator` role.
+    /// API key authentication is **not** allowed for staff actions.
     pub fn require_staff(&self) -> Result<(), AppError> {
+        if self.api_key_id.is_some() {
+            return Err(AppError::Forbidden);
+        }
         if self.role == "admin" || self.role == "moderator" {
             Ok(())
         } else {
@@ -31,12 +54,27 @@ impl AuthUser {
     }
 
     /// Returns `Ok(())` if the user has the `admin` role.
+    /// API key authentication is **not** allowed for admin actions.
     pub fn require_admin(&self) -> Result<(), AppError> {
+        if self.api_key_id.is_some() {
+            return Err(AppError::Forbidden);
+        }
         if self.role == "admin" {
             Ok(())
         } else {
             Err(AppError::Forbidden)
         }
+    }
+
+    /// Validates that the current authentication carries the required permission.
+    /// JWT sessions have full access; API keys must hold the permission explicitly.
+    pub fn require_permission(&self, permission: &str) -> Result<(), AppError> {
+        if let Some(ref permissions) = self.api_key_permissions {
+            if !permissions.iter().any(|p| p == permission) {
+                return Err(AppError::Forbidden);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -47,12 +85,21 @@ impl FromRequestParts<AppState> for AuthUser {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        // Try API key first (X-API-Key header)
-        if let Some(api_key) = extract_api_key(parts) {
-            return resolve_api_key(&api_key, state).await;
+        // 1. Check for pre-resolved API key context (set by the api_key_middleware layer).
+        if let Some(ctx) = parts.extensions.get::<ApiKeyContext>() {
+            if !ctx.is_active {
+                return Err(AppError::Unauthorized);
+            }
+            return Ok(AuthUser {
+                user_id: ctx.user_id,
+                username: ctx.username.clone(),
+                role: ctx.role.clone(),
+                api_key_id: Some(ctx.api_key_id),
+                api_key_permissions: Some(ctx.permissions.clone()),
+            });
         }
 
-        // Fall back to JWT (cookie or Authorization header)
+        // 2. Fall back to JWT (cookie or Authorization header)
         let token = extract_token(parts)?;
 
         let token_data =
@@ -78,6 +125,8 @@ impl FromRequestParts<AppState> for AuthUser {
             user_id: token_data.claims.sub,
             username: token_data.claims.username,
             role,
+            api_key_id: None,
+            api_key_permissions: None,
         })
     }
 }
@@ -108,8 +157,13 @@ fn extract_token(parts: &Parts) -> Result<String, AppError> {
 }
 
 /// Extracts the API key from the `X-API-Key` header if present and prefixed with `phub_`.
-fn extract_api_key(parts: &Parts) -> Option<String> {
+pub fn extract_api_key(parts: &Parts) -> Option<String> {
     let value = parts.headers.get(API_KEY_HEADER)?.to_str().ok()?;
+    extract_api_key_from_header_value(value)
+}
+
+/// Extracts the API key from a raw header value.
+pub fn extract_api_key_from_header_value(value: &str) -> Option<String> {
     let trimmed = value.trim();
     if trimmed.starts_with("phub_") && trimmed.len() > 10 {
         Some(trimmed.to_string())
@@ -118,8 +172,8 @@ fn extract_api_key(parts: &Parts) -> Option<String> {
     }
 }
 
-/// Resolves an API key to an `AuthUser` by hashing it and looking it up in the DB.
-async fn resolve_api_key(raw_key: &str, state: &AppState) -> Result<AuthUser, AppError> {
+/// Resolves an API key to a full `ApiKeyContext` by hashing it and looking it up in the DB.
+pub async fn resolve_api_key(raw_key: &str, state: &AppState) -> Result<ApiKeyContext, AppError> {
     let mut hasher = Sha256::new();
     hasher.update(raw_key.as_bytes());
     let key_hash = hex::encode(hasher.finalize());
@@ -128,13 +182,20 @@ async fn resolve_api_key(raw_key: &str, state: &AppState) -> Result<AuthUser, Ap
         uuid::Uuid,
         uuid::Uuid,
         Option<chrono::DateTime<chrono::Utc>>,
-    )> = sqlx::query_as("SELECT id, user_id, expires_at FROM api_keys WHERE key_hash = $1")
-        .bind(&key_hash)
-        .fetch_optional(&state.db)
-        .await
-        .map_err(AppError::internal)?;
+        Vec<String>,
+        i32,
+        i32,
+    )> = sqlx::query_as(
+        "SELECT id, user_id, expires_at, permissions, rate_limit_per_second, rate_limit_burst_size
+         FROM api_keys WHERE key_hash = $1",
+    )
+    .bind(&key_hash)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(AppError::internal)?;
 
-    let (api_key_id, user_id, expires_at) = row.ok_or(AppError::Unauthorized)?;
+    let (api_key_id, user_id, expires_at, permissions, rl_per_second, rl_burst_size) =
+        row.ok_or(AppError::Unauthorized)?;
 
     // Check expiration
     if let Some(exp) = expires_at {
@@ -153,10 +214,6 @@ async fn resolve_api_key(raw_key: &str, state: &AppState) -> Result<AuthUser, Ap
 
     let (username, role, is_active) = user_row.ok_or(AppError::Unauthorized)?;
 
-    if !is_active {
-        return Err(AppError::Unauthorized);
-    }
-
     // Update last_used_at (fire-and-forget — don't block the request)
     let db = state.db.clone();
     tokio::spawn(async move {
@@ -166,9 +223,14 @@ async fn resolve_api_key(raw_key: &str, state: &AppState) -> Result<AuthUser, Ap
             .await;
     });
 
-    Ok(AuthUser {
+    Ok(ApiKeyContext {
+        api_key_id,
         user_id,
         username,
         role,
+        is_active,
+        permissions,
+        rate_limit_per_second: rl_per_second,
+        rate_limit_burst_size: rl_burst_size,
     })
 }

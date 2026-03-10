@@ -368,6 +368,7 @@ pub async fn create_plugin(
     auth: AuthUser,
     Json(payload): Json<CreatePluginRequest>,
 ) -> Result<(StatusCode, Json<PluginResponse>), AppError> {
+    auth.require_permission("publish")?;
     payload.validate()?;
 
     let pool = &state.db;
@@ -453,6 +454,7 @@ pub async fn update_plugin(
     Path(slug): Path<String>,
     Json(payload): Json<UpdatePluginRequest>,
 ) -> Result<Json<PluginResponse>, AppError> {
+    auth.require_permission("publish")?;
     payload.validate()?;
 
     let pool = &state.db;
@@ -527,6 +529,7 @@ pub async fn delete_plugin(
     auth: AuthUser,
     Path(slug): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    auth.require_permission("publish")?;
     let pool = &state.db;
     let row = fetch_plugin_by_slug(pool, &slug).await?;
 
@@ -625,6 +628,7 @@ pub async fn create_version(
     Path(slug): Path<String>,
     Json(payload): Json<CreateVersionRequest>,
 ) -> Result<(StatusCode, Json<VersionResponse>), AppError> {
+    auth.require_permission("publish")?;
     payload.validate()?;
 
     let pool = &state.db;
@@ -769,6 +773,7 @@ pub async fn yank_version(
     Path((slug, version)): Path<(String, String)>,
     Json(payload): Json<YankVersionRequest>,
 ) -> Result<Json<VersionResponse>, AppError> {
+    auth.require_permission("publish")?;
     let pool = &state.db;
     let plugin_row = fetch_plugin_by_slug(pool, &slug).await?;
     require_ownership(&auth, plugin_row.author_id)?;
@@ -827,6 +832,7 @@ pub async fn upload_binary(
     Path((slug, version)): Path<(String, String)>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<BinaryUploadResponse>), AppError> {
+    auth.require_permission("upload")?;
     let pool = &state.db;
     let plugin_row = fetch_plugin_by_slug(pool, &slug).await?;
     require_ownership(&auth, plugin_row.author_id)?;

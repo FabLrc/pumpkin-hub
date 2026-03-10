@@ -62,11 +62,14 @@ pub async fn create_api_key(
     let key_hash = hash_key(&raw_key);
     let key_prefix = extract_prefix(&raw_key);
     let name = body.name.trim().to_string();
+    let rl_per_second = body.rate_limit_per_second();
+    let rl_burst_size = body.rate_limit_burst_size();
     let permissions: Vec<String> = body.permissions;
 
     let row: (Uuid, chrono::DateTime<chrono::Utc>) = sqlx::query_as(
-        "INSERT INTO api_keys (user_id, name, key_hash, key_prefix, permissions, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        "INSERT INTO api_keys (user_id, name, key_hash, key_prefix, permissions, expires_at,
+                               rate_limit_per_second, rate_limit_burst_size)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id, created_at",
     )
     .bind(auth.user_id)
@@ -75,6 +78,8 @@ pub async fn create_api_key(
     .bind(&key_prefix)
     .bind(&permissions)
     .bind(body.expires_at)
+    .bind(rl_per_second)
+    .bind(rl_burst_size)
     .fetch_one(pool)
     .await
     .map_err(AppError::internal)?;
@@ -86,6 +91,8 @@ pub async fn create_api_key(
         key_prefix,
         permissions,
         expires_at: body.expires_at,
+        rate_limit_per_second: rl_per_second,
+        rate_limit_burst_size: rl_burst_size,
         created_at: row.1,
     }))
 }
@@ -105,10 +112,13 @@ pub async fn list_api_keys(
             Vec<String>,
             Option<chrono::DateTime<chrono::Utc>>,
             Option<chrono::DateTime<chrono::Utc>>,
+            i32,
+            i32,
             chrono::DateTime<chrono::Utc>,
         ),
     >(
-        "SELECT id, name, key_prefix, permissions, last_used_at, expires_at, created_at
+        "SELECT id, name, key_prefix, permissions, last_used_at, expires_at,
+                rate_limit_per_second, rate_limit_burst_size, created_at
          FROM api_keys
          WHERE user_id = $1
          ORDER BY created_at DESC",
@@ -127,7 +137,9 @@ pub async fn list_api_keys(
             permissions: r.3,
             last_used_at: r.4,
             expires_at: r.5,
-            created_at: r.6,
+            rate_limit_per_second: r.6,
+            rate_limit_burst_size: r.7,
+            created_at: r.8,
         })
         .collect();
 
@@ -151,6 +163,9 @@ pub async fn revoke_api_key(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound);
     }
+
+    // Remove the per-key rate limiter to free memory
+    state.api_key_rate_limiters.remove(&key_id);
 
     Ok(Json(serde_json::json!({ "deleted": true })))
 }

@@ -17,6 +17,7 @@ pub async fn list_notifications(
     State(state): State<AppState>,
     Query(params): Query<NotificationListParams>,
 ) -> Result<Json<NotificationListResponse>, AppError> {
+    auth.require_permission("read")?;
     let pool = &state.db;
     let page = params.page();
     let per_page = params.per_page();
@@ -94,6 +95,7 @@ pub async fn unread_count(
     auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<UnreadCountResponse>, AppError> {
+    auth.require_permission("read")?;
     let (count,): (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE")
             .bind(auth.user_id)
@@ -111,6 +113,7 @@ pub async fn mark_read(
     State(state): State<AppState>,
     Path(notification_id): Path<Uuid>,
 ) -> Result<Json<NotificationResponse>, AppError> {
+    auth.require_permission("read")?;
     let notification = sqlx::query_as::<_, NotificationResponse>(
         "UPDATE notifications SET is_read = TRUE
          WHERE id = $1 AND user_id = $2
@@ -132,6 +135,7 @@ pub async fn mark_all_read(
     auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    auth.require_permission("read")?;
     let result = sqlx::query(
         "UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND is_read = FALSE",
     )
