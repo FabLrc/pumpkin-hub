@@ -36,6 +36,12 @@ import type {
   VersionResponse,
   VersionsListResponse,
   YankVersionRequest,
+  CreateReportRequest,
+  CreateReviewRequest,
+  ReportResponse,
+  ReviewListResponse,
+  ReviewResponse,
+  UpdateReviewRequest,
 } from "./types";
 
 const API_BASE_URL =
@@ -721,5 +727,80 @@ export async function unlinkGithub(slug: string): Promise<void> {
   await apiFetch<unknown>(
     `/plugins/${encodeURIComponent(slug)}/github`,
     { method: "DELETE" },
+  );
+}
+
+// ── Review Endpoints ─────────────────────────────────────────────────────
+
+export function getReviewsPath(
+  slug: string,
+  page?: number,
+  perPage?: number,
+): string {
+  const params = new URLSearchParams();
+  if (page) params.set("page", String(page));
+  if (perPage) params.set("per_page", String(perPage));
+  const qs = params.toString();
+  return `/plugins/${encodeURIComponent(slug)}/reviews${qs ? `?${qs}` : ""}`;
+}
+
+export async function fetchReviews(
+  slug: string,
+  page?: number,
+  perPage?: number,
+): Promise<ReviewListResponse> {
+  return apiFetch<ReviewListResponse>(getReviewsPath(slug, page, perPage));
+}
+
+export async function createReview(
+  slug: string,
+  body: CreateReviewRequest,
+): Promise<ReviewResponse> {
+  return apiFetch<ReviewResponse>(
+    `/plugins/${encodeURIComponent(slug)}/reviews`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export async function updateReview(
+  slug: string,
+  reviewId: string,
+  body: UpdateReviewRequest,
+): Promise<ReviewResponse> {
+  return apiFetch<ReviewResponse>(
+    `/plugins/${encodeURIComponent(slug)}/reviews/${encodeURIComponent(reviewId)}`,
+    { method: "PUT", body: JSON.stringify(body) },
+  );
+}
+
+export async function deleteReview(
+  slug: string,
+  reviewId: string,
+): Promise<void> {
+  await apiFetch<void>(
+    `/plugins/${encodeURIComponent(slug)}/reviews/${encodeURIComponent(reviewId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function toggleReviewVisibility(
+  slug: string,
+  reviewId: string,
+  hidden: boolean,
+): Promise<void> {
+  await apiFetch<unknown>(
+    `/plugins/${encodeURIComponent(slug)}/reviews/${encodeURIComponent(reviewId)}/hide`,
+    { method: "PATCH", body: JSON.stringify({ hidden }) },
+  );
+}
+
+export async function reportReview(
+  slug: string,
+  reviewId: string,
+  body: CreateReportRequest,
+): Promise<ReportResponse> {
+  return apiFetch<ReportResponse>(
+    `/plugins/${encodeURIComponent(slug)}/reviews/${encodeURIComponent(reviewId)}/report`,
+    { method: "POST", body: JSON.stringify(body) },
   );
 }

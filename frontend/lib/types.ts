@@ -72,6 +72,8 @@ export interface PluginSummary {
   license: string | null;
   downloads_total: number;
   categories: CategorySummary[];
+  average_rating: number;
+  review_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +90,8 @@ export interface PluginResponse {
   license: string | null;
   downloads_total: number;
   categories: CategorySummary[];
+  average_rating: number;
+  review_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -524,4 +528,79 @@ export interface GitHubLinkResponse {
   auto_publish: boolean;
   last_webhook_at: string | null;
   created_at: string;
+}
+
+// ── Review Types ─────────────────────────────────────────────────────────────
+
+export interface ReviewAuthorSummary {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
+export interface ReviewResponse {
+  id: string;
+  plugin_id: string;
+  author: ReviewAuthorSummary;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RatingDistribution {
+  star_1: number;
+  star_2: number;
+  star_3: number;
+  star_4: number;
+  star_5: number;
+}
+
+export interface ReviewListResponse {
+  reviews: ReviewResponse[];
+  total: number;
+  average_rating: number;
+  rating_distribution: RatingDistribution;
+}
+
+export interface CreateReviewRequest {
+  rating: number;
+  title?: string;
+  body?: string;
+}
+
+export interface UpdateReviewRequest {
+  rating?: number;
+  title?: string;
+  body?: string;
+}
+
+export type ReportReason =
+  | "spam"
+  | "harassment"
+  | "hate_speech"
+  | "misinformation"
+  | "other";
+
+export interface CreateReportRequest {
+  reason: ReportReason;
+  details?: string;
+}
+
+export interface ReportResponse {
+  id: string;
+  review_id: string;
+  reporter_id: string;
+  reason: string;
+  details: string | null;
+  status: string;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+export interface ReportListResponse {
+  reports: ReportResponse[];
+  total: number;
 }

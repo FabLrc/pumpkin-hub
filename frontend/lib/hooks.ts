@@ -4,7 +4,7 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath, getReviewsPath } from "./api";
 import type {
   ApiKeySummary,
   AuthorDashboardStats,
@@ -23,6 +23,7 @@ import type {
   PluginSummary,
   PumpkinVersion,
   ReverseDependencyResponse,
+  ReviewListResponse,
   SearchParams,
   SearchResponse,
   UnreadCountResponse,
@@ -208,5 +209,19 @@ export function useGithubLink(slug: string | null) {
   return useSWR<GitHubLinkResponse>(path, swrFetcher, {
     revalidateOnFocus: false,
     shouldRetryOnError: false,
+  });
+}
+
+// ── Review Hooks ──────────────────────────────────────────────────────────
+
+/** Fetch paginated reviews for a plugin with rating distribution. */
+export function useReviews(
+  slug: string | null,
+  page?: number,
+  perPage?: number,
+) {
+  const path = slug ? getReviewsPath(slug, page, perPage) : null;
+  return useSWR<ReviewListResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
   });
 }
