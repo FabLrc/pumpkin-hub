@@ -328,6 +328,8 @@ export interface SearchHit {
   pumpkin_versions: string[];
   created_at_timestamp: number;
   updated_at_timestamp: number;
+  average_rating: number;
+  review_count: number;
 }
 
 export interface FacetDistribution {

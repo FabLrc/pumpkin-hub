@@ -97,7 +97,11 @@ export function SearchHitCard({ hit, featured = false }: SearchHitCardProps) {
           <div className="font-mono text-[10px] text-text-dim">downloads</div>
           <div className="flex items-center justify-end gap-1 mt-2">
             <Star className="w-[11px] h-[11px] text-accent fill-accent" />
-            <span className="font-mono text-xs text-text-subtle">—</span>
+            <span className="font-mono text-xs text-text-subtle">
+              {hit.review_count > 0
+                ? `${hit.average_rating.toFixed(1)} (${hit.review_count})`
+                : "—"}
+            </span>
           </div>
         </div>
       </div>

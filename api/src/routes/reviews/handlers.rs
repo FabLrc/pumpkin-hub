@@ -84,6 +84,21 @@ async fn fetch_plugin_author_id(pool: &sqlx::PgPool, plugin_id: Uuid) -> Result<
     row.map(|(id,)| id).ok_or(AppError::NotFound)
 }
 
+/// Reindexes a plugin in Meilisearch after a review mutation (fire-and-forget).
+async fn reindex_plugin_in_search(state: &AppState, plugin_id: Uuid) {
+    match crate::search::indexer::build_single_plugin_document(&state.db, plugin_id).await {
+        Ok(Some(doc)) => {
+            if let Err(e) = state.search.index_plugin(&doc).await {
+                tracing::warn!(error = %e, %plugin_id, "Failed to reindex plugin after review mutation");
+            }
+        }
+        Ok(None) => {}
+        Err(e) => {
+            tracing::warn!(error = %e, %plugin_id, "Failed to build plugin document for reindex");
+        }
+    }
+}
+
 // ── GET /plugins/:slug/reviews ──────────────────────────────────────────────
 
 pub async fn list_reviews(
@@ -224,6 +239,8 @@ pub async fn create_review(
         tracing::warn!(error = %e, "Failed to create review notification");
     }
 
+    reindex_plugin_in_search(&state, plugin_id).await;
+
     Ok((StatusCode::CREATED, Json(row.into_response())))
 }
 
@@ -275,6 +292,8 @@ pub async fn update_review(
     .await
     .map_err(AppError::internal)?;
 
+    reindex_plugin_in_search(&state, plugin_id).await;
+
     Ok(Json(row.into_response()))
 }
 
@@ -317,6 +336,8 @@ pub async fn delete_review(
         .await
         .map_err(AppError::internal)?;
 
+    reindex_plugin_in_search(&state, plugin_id).await;
+
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -355,6 +376,8 @@ pub async fn toggle_review_visibility(
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound);
     }
+
+    reindex_plugin_in_search(&state, plugin_id).await;
 
     Ok(Json(serde_json::json!({ "hidden": body.hidden })))
 }

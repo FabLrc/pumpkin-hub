@@ -29,6 +29,8 @@ pub struct PluginDocument {
     pub pumpkin_versions: Vec<String>,
     pub created_at_timestamp: i64,
     pub updated_at_timestamp: i64,
+    pub average_rating: f64,
+    pub review_count: i64,
 }
 
 /// Search query parameters received from the API.
@@ -59,6 +61,8 @@ pub struct SearchHit {
     pub pumpkin_versions: Vec<String>,
     pub created_at_timestamp: i64,
     pub updated_at_timestamp: i64,
+    pub average_rating: f64,
+    pub review_count: i64,
 }
 
 /// Facet distribution returned alongside search results.
@@ -123,6 +127,7 @@ impl SearchService {
                 "created_at_timestamp",
                 "updated_at_timestamp",
                 "name",
+                "average_rating",
             ])
             .with_displayed_attributes([
                 "id",
@@ -138,6 +143,8 @@ impl SearchService {
                 "pumpkin_versions",
                 "created_at_timestamp",
                 "updated_at_timestamp",
+                "average_rating",
+                "review_count",
             ])
             .with_ranking_rules([
                 "words",
@@ -247,6 +254,8 @@ impl SearchService {
             "updated" => vec!["updated_at_timestamp:desc"],
             "name_asc" => vec!["name:asc"],
             "name_desc" => vec!["name:desc"],
+            "rating" | "rating_desc" => vec!["average_rating:desc"],
+            "rating_asc" => vec!["average_rating:asc"],
             _ => vec!["downloads_total:desc"],
         });
 
@@ -379,6 +388,26 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
 
     let plugin_ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
 
+    // Batch-load review stats
+    let review_stat_rows: Vec<ReviewStatRow> = sqlx::query_as(
+        "SELECT plugin_id,
+                COUNT(*) FILTER (WHERE is_hidden = FALSE) AS review_count,
+                COALESCE(AVG(rating::float8) FILTER (WHERE is_hidden = FALSE), 0.0) AS average_rating
+         FROM reviews
+         WHERE plugin_id = ANY($1)
+         GROUP BY plugin_id",
+    )
+    .bind(&plugin_ids)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let mut review_stats_map: std::collections::HashMap<Uuid, (i64, f64)> =
+        std::collections::HashMap::new();
+    for stat in review_stat_rows {
+        review_stats_map.insert(stat.plugin_id, (stat.review_count, stat.average_rating));
+    }
+
     // Batch-load categories
     let cat_rows: Vec<PluginCategoryRow> = sqlx::query_as(
         "SELECT pc.plugin_id, c.name AS category_name, c.slug AS category_slug
@@ -454,6 +483,11 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
             let platforms = platforms_map.remove(&row.id).unwrap_or_default();
             let pumpkin_versions = pumpkin_versions_map.remove(&row.id).unwrap_or_default();
 
+            let (review_count, average_rating) = review_stats_map
+                .get(&row.id)
+                .copied()
+                .unwrap_or((0, 0.0));
+
             PluginDocument {
                 id: row.id.to_string(),
                 name: row.name,
@@ -470,6 +504,8 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
                 pumpkin_versions,
                 created_at_timestamp: row.created_at.timestamp(),
                 updated_at_timestamp: row.updated_at.timestamp(),
+                average_rating,
+                review_count,
             }
         })
         .collect();
@@ -552,6 +588,23 @@ pub async fn build_single_plugin_document(
         }
     }
 
+    let review_stat: Option<ReviewStatRow> = sqlx::query_as(
+        "SELECT plugin_id,
+                COUNT(*) FILTER (WHERE is_hidden = FALSE) AS review_count,
+                COALESCE(AVG(rating::float8) FILTER (WHERE is_hidden = FALSE), 0.0) AS average_rating
+         FROM reviews
+         WHERE plugin_id = $1
+         GROUP BY plugin_id",
+    )
+    .bind(plugin_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let (review_count, average_rating) = review_stat
+        .map(|s| (s.review_count, s.average_rating))
+        .unwrap_or((0, 0.0));
+
     Ok(Some(PluginDocument {
         id: row.id.to_string(),
         name: row.name,
@@ -568,6 +621,8 @@ pub async fn build_single_plugin_document(
         pumpkin_versions,
         created_at_timestamp: row.created_at.timestamp(),
         updated_at_timestamp: row.updated_at.timestamp(),
+        average_rating,
+        review_count,
     }))
 }
 
@@ -594,6 +649,14 @@ struct PluginCategoryRow {
     plugin_id: Uuid,
     category_name: String,
     category_slug: String,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct ReviewStatRow {
+    #[allow(dead_code)]
+    plugin_id: Uuid,
+    review_count: i64,
+    average_rating: f64,
 }
 
 #[derive(Debug, sqlx::FromRow)]
