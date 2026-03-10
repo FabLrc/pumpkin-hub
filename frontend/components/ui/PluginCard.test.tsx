@@ -33,6 +33,8 @@ const makePlugin = (overrides: Partial<PluginSummary> = {}): PluginSummary => ({
   short_description: "A short description",
   license: "MIT",
   downloads_total: 42,
+  average_rating: 0,
+  review_count: 0,
   author: { id: "u-1", username: "rustdev", avatar_url: null },
   categories: [
     { id: "c-1", name: "Performance", slug: "performance" },

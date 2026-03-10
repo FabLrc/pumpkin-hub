@@ -545,6 +545,7 @@ export interface ReviewResponse {
   rating: number;
   title: string | null;
   body: string | null;
+  is_hidden: boolean;
   created_at: string;
   updated_at: string;
 }

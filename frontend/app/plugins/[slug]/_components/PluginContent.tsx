@@ -11,13 +11,15 @@ import { VersionForm } from "@/components/plugins/VersionForm";
 import { VersionManager } from "@/components/plugins/VersionManager";
 import { BinaryUpload } from "@/components/plugins/BinaryUpload";
 import { BinaryList } from "@/components/plugins/BinaryList";
+import { ReviewSection } from "@/components/reviews";
 
-type TabId = "overview" | "versions" | "dependencies";
+type TabId = "overview" | "versions" | "dependencies" | "reviews";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "versions", label: "Versions" },
   { id: "dependencies", label: "Dependencies" },
+  { id: "reviews", label: "Reviews" },
 ];
 
 interface PluginContentProps {
@@ -54,6 +56,7 @@ export function PluginContent({
       {activeTab === "overview" && <OverviewTab plugin={plugin} />}
       {activeTab === "versions" && <VersionsTab plugin={plugin} />}
       {activeTab === "dependencies" && <DependenciesTab plugin={plugin} />}
+      {activeTab === "reviews" && <ReviewSection plugin={plugin} />}
     </div>
   );
 }
