@@ -46,10 +46,26 @@ impl FromRequestParts<AppState> for AuthUser {
         let token_data =
             jwt::decode_token(&state.config.jwt, &token).map_err(|_| AppError::Unauthorized)?;
 
+        // Fetch role and active status fresh from the DB on every request.
+        // This ensures role changes and account bans take effect immediately,
+        // without waiting for the JWT to expire.
+        let row: Option<(String, bool)> =
+            sqlx::query_as("SELECT role, is_active FROM users WHERE id = $1")
+                .bind(token_data.claims.sub)
+                .fetch_optional(&state.db)
+                .await
+                .map_err(AppError::internal)?;
+
+        let (role, is_active) = row.ok_or(AppError::Unauthorized)?;
+
+        if !is_active {
+            return Err(AppError::Unauthorized);
+        }
+
         Ok(AuthUser {
             user_id: token_data.claims.sub,
             username: token_data.claims.username,
-            role: token_data.claims.role,
+            role,
         })
     }
 }
