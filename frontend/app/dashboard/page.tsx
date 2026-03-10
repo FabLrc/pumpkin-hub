@@ -17,6 +17,7 @@ import {
   Trophy,
   Calendar,
   BarChart3,
+  Key,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar, Footer } from "@/components/layout";
@@ -235,6 +236,25 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+
+        {/* Quick Actions */}
+        <Link
+          href="/dashboard/api-keys"
+          className="flex items-center gap-3 border border-border-default bg-bg-elevated p-4 mb-8 hover:border-accent/40 transition-colors group"
+        >
+          <div className="w-9 h-9 bg-bg-surface border border-border-default flex items-center justify-center shrink-0 group-hover:border-accent/40 transition-colors">
+            <Key className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-raleway font-bold text-sm text-text-primary group-hover:text-accent transition-colors">
+              API Keys
+            </span>
+            <span className="block font-mono text-[10px] text-text-dim">
+              Manage keys for CI/CD integration and programmatic access
+            </span>
+          </div>
+          <ExternalLink className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors shrink-0" />
+        </Link>
 
         {/* Plugins Table */}
         <div className="border border-border-default bg-bg-elevated">

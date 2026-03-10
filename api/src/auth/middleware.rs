@@ -1,13 +1,19 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
 use axum_extra::extract::CookieJar;
+use sha2::{Digest, Sha256};
 
 use crate::{auth::jwt, error::AppError, state::AppState};
 
 /// Name of the cookie holding the JWT token.
 pub const AUTH_COOKIE_NAME: &str = "pumpkin_hub_token";
 
-/// Extractor that validates the JWT from cookies or `Authorization: Bearer` header.
-/// Inject as a handler parameter to protect a route.
+/// Header name for API key authentication.
+const API_KEY_HEADER: &str = "x-api-key";
+
+/// Extractor that validates authentication from:
+/// 1. JWT cookie (`pumpkin_hub_token`)
+/// 2. `Authorization: Bearer <jwt>` header
+/// 3. `X-API-Key: phub_...` header
 pub struct AuthUser {
     pub user_id: uuid::Uuid,
     pub username: String,
@@ -41,6 +47,12 @@ impl FromRequestParts<AppState> for AuthUser {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
+        // Try API key first (X-API-Key header)
+        if let Some(api_key) = extract_api_key(parts) {
+            return resolve_api_key(&api_key, state).await;
+        }
+
+        // Fall back to JWT (cookie or Authorization header)
         let token = extract_token(parts)?;
 
         let token_data =
@@ -93,4 +105,70 @@ fn extract_token(parts: &Parts) -> Result<String, AppError> {
     }
 
     Err(AppError::Unauthorized)
+}
+
+/// Extracts the API key from the `X-API-Key` header if present and prefixed with `phub_`.
+fn extract_api_key(parts: &Parts) -> Option<String> {
+    let value = parts.headers.get(API_KEY_HEADER)?.to_str().ok()?;
+    let trimmed = value.trim();
+    if trimmed.starts_with("phub_") && trimmed.len() > 10 {
+        Some(trimmed.to_string())
+    } else {
+        None
+    }
+}
+
+/// Resolves an API key to an `AuthUser` by hashing it and looking it up in the DB.
+async fn resolve_api_key(raw_key: &str, state: &AppState) -> Result<AuthUser, AppError> {
+    let mut hasher = Sha256::new();
+    hasher.update(raw_key.as_bytes());
+    let key_hash = hex::encode(hasher.finalize());
+
+    let row: Option<(
+        uuid::Uuid,
+        uuid::Uuid,
+        Option<chrono::DateTime<chrono::Utc>>,
+    )> = sqlx::query_as("SELECT id, user_id, expires_at FROM api_keys WHERE key_hash = $1")
+        .bind(&key_hash)
+        .fetch_optional(&state.db)
+        .await
+        .map_err(AppError::internal)?;
+
+    let (api_key_id, user_id, expires_at) = row.ok_or(AppError::Unauthorized)?;
+
+    // Check expiration
+    if let Some(exp) = expires_at {
+        if exp < chrono::Utc::now() {
+            return Err(AppError::Unauthorized);
+        }
+    }
+
+    // Fetch user info
+    let user_row: Option<(String, String, bool)> =
+        sqlx::query_as("SELECT username, role, is_active FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&state.db)
+            .await
+            .map_err(AppError::internal)?;
+
+    let (username, role, is_active) = user_row.ok_or(AppError::Unauthorized)?;
+
+    if !is_active {
+        return Err(AppError::Unauthorized);
+    }
+
+    // Update last_used_at (fire-and-forget — don't block the request)
+    let db = state.db.clone();
+    tokio::spawn(async move {
+        let _ = sqlx::query("UPDATE api_keys SET last_used_at = NOW() WHERE id = $1")
+            .bind(api_key_id)
+            .execute(&db)
+            .await;
+    });
+
+    Ok(AuthUser {
+        user_id,
+        username,
+        role,
+    })
 }

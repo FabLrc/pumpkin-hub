@@ -643,3 +643,24 @@ export function getPluginDownloadStatsPath(
 ): string {
   return `/plugins/${encodeURIComponent(slug)}/download-stats${buildStatsQueryString(granularity, periods)}`;
 }
+
+// ── API Key Endpoints ─────────────────────────────────────────────────────
+
+export function getApiKeysPath(): string {
+  return "/api-keys";
+}
+
+export async function createApiKey(
+  body: import("./types").CreateApiKeyRequest,
+): Promise<import("./types").CreateApiKeyResponse> {
+  return apiFetch<import("./types").CreateApiKeyResponse>("/api-keys", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function revokeApiKey(id: string): Promise<void> {
+  await apiFetch<unknown>(`/api-keys/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}

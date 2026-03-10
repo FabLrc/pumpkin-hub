@@ -455,3 +455,25 @@ export interface PluginDownloadStats {
 }
 
 export type DownloadGranularity = "daily" | "weekly" | "monthly";
+
+// ── API Keys ──────────────────────────────────────────────────────────────
+
+export interface ApiKeySummary {
+  id: string;
+  name: string;
+  key_prefix: string;
+  permissions: string[];
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface CreateApiKeyRequest {
+  name: string;
+  permissions: string[];
+  expires_at?: string;
+}
+
+export interface CreateApiKeyResponse extends ApiKeySummary {
+  key: string;
+}

@@ -1,4 +1,5 @@
 mod admin;
+mod api_keys;
 pub mod auth;
 mod categories;
 mod dashboard;
@@ -33,5 +34,6 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(search::routes())
         .merge(users::routes())
         .merge(dashboard::routes())
+        .merge(api_keys::routes())
         .merge(admin::routes())
 }

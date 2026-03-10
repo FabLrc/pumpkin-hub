@@ -4,8 +4,9 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath } from "./api";
 import type {
+  ApiKeySummary,
   AuthorDashboardStats,
   BinariesListResponse,
   CategoryResponse,
@@ -162,5 +163,12 @@ export function usePluginDownloadStats(
   return useSWR<PluginDownloadStats>(path, swrFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 10_000,
+  });
+}
+
+/** Fetch the authenticated user's API keys. */
+export function useApiKeys() {
+  return useSWR<ApiKeySummary[]>(getApiKeysPath(), swrFetcher, {
+    revalidateOnFocus: false,
   });
 }
