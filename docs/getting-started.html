@@ -49,6 +49,7 @@
         <div class="sidebar-label">On this page</div>
         <a href="#prerequisites" class="sidebar-sublink">Prerequisites</a>
         <a href="#installation" class="sidebar-sublink">Installation</a>
+        <a href="#env-setup" class="sidebar-sublink">Environment Setup</a>
         <a href="#docker" class="sidebar-sublink">Docker Launch</a>
         <a href="#local" class="sidebar-sublink">Local Launch</a>
         <a href="#env" class="sidebar-sublink">Environment Variables</a>
@@ -86,6 +87,59 @@
       <p>Clone the repository and navigate to the directory:</p>
       <pre><code>git clone https://github.com/FabLrc/pumpkin-hub.git
 cd pumpkin-hub</code></pre>
+
+      <!-- ── Environment Setup ───────────────────────────── -->
+      <h2 id="env-setup">Environment Setup</h2>
+
+      <p>
+        Pumpkin Hub uses two separate <code>.env</code> files depending on how you run the project.
+        Understanding which one to fill is the most common source of confusion.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>File</th><th>Used by</th><th>When</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>.env</code> <em>(project root)</em></td>
+            <td>Docker Compose</td>
+            <td>When running <code>docker compose up</code>. Compose reads this file for variable substitution (<code>${GITHUB_CLIENT_ID}</code>, etc.).</td>
+          </tr>
+          <tr>
+            <td><code>api/.env</code></td>
+            <td>Rust API directly</td>
+            <td>When running <code>cargo run</code> inside <code>api/</code> without Docker. Loaded by the <code>dotenvy</code> crate at startup.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">Common Pitfall</div>
+        <strong>Only the root <code>.env</code> is needed for Docker Compose.</strong>
+        If <code>GITHUB_CLIENT_ID</code> is set in <code>api/.env</code> but the root <code>.env</code> is missing or empty,
+        Docker Compose will inject an empty string into the container — causing GitHub OAuth to return a 404.
+      </div>
+
+      <h3>Minimal root <code>.env</code> (Docker Compose)</h3>
+      <p>Create this file at the project root (same directory as <code>docker-compose.yml</code>):</p>
+      <pre><code># Required — create at https://github.com/settings/developers
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# Optional — enables Google / Discord login
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+
+# JWT secret (change in production)
+JWT_SECRET=dev_jwt_secret_change_me_in_production</code></pre>
+
+      <p>
+        All other variables (database URL, Meilisearch, MinIO, SMTP) are already hardcoded
+        in <code>docker-compose.yml</code> for local development and do not need to appear in the root <code>.env</code>.
+      </p>
 
       <!-- ── Docker ────────────────────────────────────────── -->
       <h2 id="docker">Launch with Docker Compose</h2>
@@ -165,11 +219,14 @@ npm run lint
 npm run build</code></pre>
 
       <!-- ── Environment Variables ─────────────────────────── -->
-      <h2 id="env">Environment Variables</h2>
+      <h2 id="env">Environment Variables Reference</h2>
 
       <p>
-        The API automatically loads a <code>.env</code> file at the root of <code>api/</code>
-        via <code>dotenvy</code>. In Docker mode, variables are injected by the compose file.
+        Full reference of all variables accepted by the API.
+        In Docker mode, most are already set by <code>docker-compose.yml</code> — only
+        the secrets listed in the <a href="#env-setup">Environment Setup</a> section
+        need to be provided via the root <code>.env</code>.
+        When running with <code>cargo run</code> directly, set all required variables in <code>api/.env</code>.
       </p>
 
       <table>
@@ -248,7 +305,7 @@ npm run build</code></pre>
         </tbody>
       </table>
 
-      <h3>Example <code>.env</code> file</h3>
+      <h3>Example <code>api/.env</code> (local development without Docker)</h3>
       <pre><code>DATABASE_URL=postgres://pumpkin_user:dev_password@localhost:5432/pumpkin_hub_dev
 MEILISEARCH_URL=http://localhost:7700
 MEILISEARCH_KEY=dev_master_key

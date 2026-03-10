@@ -37,6 +37,28 @@
 ```bash
 git clone https://github.com/FabLrc/pumpkin-hub.git
 cd pumpkin-hub
+```
+
+Create a `.env` file at the **project root** (next to `docker-compose.yml`) with your OAuth credentials:
+
+```env
+# Required — create a GitHub OAuth App at https://github.com/settings/developers
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# Optional — enables Google / Discord login
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+
+# JWT secret (change in production)
+JWT_SECRET=dev_jwt_secret_change_me_in_production
+```
+
+Then start all services:
+
+```bash
 docker compose up --build
 ```
 
@@ -46,8 +68,8 @@ docker compose up --build
 | API | http://localhost:8080 |
 | API Health | http://localhost:8080/api/v1/health |
 
-> [!NOTE]
-> GitHub OAuth requires a `.env` file with `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Google and Discord OAuth are optional — set `GOOGLE_CLIENT_ID` / `DISCORD_CLIENT_ID` to enable them. See the [Getting Started guide](https://fablrc.github.io/pumpkin-hub/getting-started.html) for the full `.env` reference.
+> [!IMPORTANT]
+> The root `.env` is **only** read by Docker Compose for variable substitution. When running the API directly with `cargo run` (without Docker), use `api/.env` instead — see the [Getting Started guide](https://fablrc.github.io/pumpkin-hub/getting-started.html) for the full reference.
 
 ## Documentation
 

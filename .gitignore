@@ -19,6 +19,11 @@ Thumbs.db
 .AppleDouble
 .LSOverride
 
+# Environment — secrets Docker Compose
+.env
+.env.local
+.env.*.local
+
 # Misc
 *.log
 
