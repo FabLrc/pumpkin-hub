@@ -25,12 +25,14 @@
 
 ## Current Features
 
-- **Multi-provider Authentication** — GitHub, Google, Discord OAuth + email/password
-- **Plugin Registry** — Full CRUD with categories, search, and author management
+- **Multi-provider Authentication** — GitHub, Google, Discord OAuth + email/password, email verification, password recovery
+- **Plugin Registry** — Full CRUD with categories, full-text search (Meilisearch), and author management
 - **Version Management** — Publish versions with semver validation, Pumpkin compatibility ranges, changelogs, download counters, and yank/restore
 - **Binary Storage & Distribution** — Multi-platform binary uploads, secure presigned download URLs, S3-compatible storage (MinIO / Cloudflare R2)
-- **Creator Dashboard** — Profile management, avatar upload, plugin administration
-- **Brutalist UI** — Industrial design system with responsive layouts
+- **Dependency Graph** — Inter-plugin dependency declaration, semver compatibility resolution, conflict detection, and reverse lookup
+- **Advanced Author Dashboard** — Download analytics with charts, advanced KPIs with trends, API key management for CI/CD, notification center with download milestones
+- **Admin Moderation** — Role-based moderation panel with plugin/user management, audit logs, and account management
+- **Brutalist UI** — Industrial design system with responsive layouts, custom error pages, toast notifications
 
 ## Quick Start
 

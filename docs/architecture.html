@@ -151,6 +151,18 @@
 │           ├── search/     # Search endpoints
 │           │   ├── mod.rs      # Route declarations
 │           │   └── handlers.rs # Search &amp; suggest handlers
+│           ├── dashboard/  # Author analytics module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # Stats &amp; chart DTOs
+│           │   └── handlers.rs # KPIs, download charts, per-plugin stats
+│           ├── api_keys/   # API key management module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # Key request/response DTOs
+│           │   └── handlers.rs # Create, list, revoke API keys
+│           ├── notifications/# Notification center module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # Notification DTOs
+│           │   └── handlers.rs # List, unread count, mark read, create helpers
 │           └── admin/      # Admin moderation module
 │               ├── mod.rs      # Route declarations (role-protected)
 │               ├── dto.rs      # Admin DTOs
@@ -167,12 +179,13 @@
 │   ├── vitest.config.ts    # Vitest test configuration
 │   ├── vitest.setup.ts     # Test setup (mocks, environment)
 │   ├── lib/
-│   │   ├── types.ts        # API DTOs (UserProfile, PluginSummary, CategoryResponse, etc.)
-│   │   ├── api.ts          # Fetch helpers &amp; SWR key generators (plugins, categories, auth)
-│   │   └── hooks.ts        # SWR hooks (usePlugins, usePlugin, useCategories, useCurrentUser)
+│   │   ├── types.ts        # API DTOs (UserProfile, PluginSummary, ApiKeySummary, NotificationItem, etc.)
+│   │   ├── api.ts          # Fetch helpers &amp; SWR key generators (plugins, auth, api-keys, notifications)
+│   │   └── hooks.ts        # SWR hooks (usePlugins, useApiKeys, useNotifications, useAuthorDashboardStats, etc.)
 │   ├── components/
-│   │   ├── layout/         # Navbar, Footer, NotificationProvider (Sonner)
-│   │   └── ui/             # Badge, Button, PluginCard, FormField, Pagination
+│   │   ├── layout/         # Navbar (with NotificationBell), Footer, NotificationProvider (Sonner)
+│   │   ├── notifications/  # NotificationBell (dropdown with unread badge)
+│   │   └── ui/             # Badge, Button, PluginCard, FormField, Pagination, DownloadChart
 │   └── app/
 │       ├── layout.tsx      # Root layout (next/font, metadata, NotificationProvider)
 │       ├── globals.css     # Design tokens (@theme inline) &amp; global styles
@@ -194,7 +207,10 @@
 │       ├── plugins/[slug]/
 │       │   ├── page.tsx    # Plugin detail page
 │       │   └── _components/# PluginHeader, PluginContent, PluginSidebar
-│       ├── dashboard/      # Authenticated user dashboard (my plugins)
+│       ├── dashboard/      # Author dashboard (plugins, analytics, API keys, notifications)
+│       │   ├── page.tsx        # KPIs, download charts, plugin list
+│       │   ├── api-keys/       # API key management page
+│       │   └── notifications/  # Notification center page
 │       ├── profile/        # Profile editing (avatar, bio, links)
 │       ├── users/[username]/ # Public author profile
 │       └── admin/          # Admin moderation panel (stats, plugins, users, audit)
@@ -323,7 +339,24 @@
   TTL: 24 hours                TTL: 1 hour                │ details (JSONB)     │
   Single-use (SHA-256 hash)    Single-use (SHA-256 hash)  │ created_at          │
                                                           └──────────────────────┘
-* email: unique partial index (WHERE email IS NOT NULL)</code></pre>
+* email: unique partial index (WHERE email IS NOT NULL)
+
+┌──────────────────────────┐  ┌──────────────────────────┐  ┌──────────────────────┐
+│     download_events      │  │         api_keys         │  │     notifications    │
+├──────────────────────────┤  ├──────────────────────────┤  ├──────────────────────┤
+│ id             PK        │  │ id             PK        │  │ id            PK     │
+│ plugin_id      FK        │  │ user_id        FK        │  │ user_id       FK     │
+│ version_id     FK        │  │ name                     │  │ kind                 │
+│ platform                 │  │ key_hash                 │  │ title                │
+│ downloaded_at            │  │ key_prefix               │  │ body                 │
+└──────────────────────────┘  │ permissions    TEXT[]     │  │ link                 │
+  FK → plugins, versions      │ last_used_at             │  │ is_read              │
+  Indexes on (plugin_id,      │ expires_at               │  │ created_at           │
+    downloaded_at DESC)        │ created_at               │  └──────────────────────┘
+                               └──────────────────────────┘    FK → users(id)
+                                 FK → users(id)                Indexes on (user_id,
+                                 Indexes on (user_id),           is_read, created_at)
+                                   (key_hash)</code></pre>
 
       <h3>Key Constraints</h3>
       <table>
@@ -348,6 +381,13 @@
           <tr><td><code>email_verification_tokens</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>password_reset_tokens</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>audit_logs</code></td><td><code>actor_id</code> → <code>users(id)</code></td><td>FK SET NULL</td></tr>
+          <tr><td><code>download_events</code></td><td><code>plugin_id</code> → <code>plugins(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>download_events</code></td><td><code>version_id</code> → <code>versions(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>download_events</code></td><td><code>(plugin_id, downloaded_at DESC)</code></td><td>INDEX</td></tr>
+          <tr><td><code>api_keys</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>api_keys</code></td><td><code>key_hash</code></td><td>INDEX</td></tr>
+          <tr><td><code>notifications</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>notifications</code></td><td><code>(user_id, is_read, created_at DESC)</code></td><td>INDEX</td></tr>
         </tbody>
       </table>
 
@@ -398,7 +438,9 @@
           <tr><td>Reset Password</td><td><code>/auth/reset-password</code></td><td>Token-based password reset form</td></tr>
           <tr><td>Verify Email</td><td><code>/auth/verify-email</code></td><td>Email verification via token</td></tr>
           <tr><td>Profile</td><td><code>/profile</code></td><td>Editable display name, bio, and avatar upload</td></tr>
-          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Author's published plugins with stats and quick-action links</td></tr>
+          <tr><td>Dashboard</td><td><code>/dashboard</code></td><td>Advanced KPIs, download charts, plugin list with stats and quick-action links</td></tr>
+          <tr><td>API Keys</td><td><code>/dashboard/api-keys</code></td><td>Create, list, and revoke API keys with scoped permissions</td></tr>
+          <tr><td>Notifications</td><td><code>/dashboard/notifications</code></td><td>Paginated notification center with filtering and mark-as-read</td></tr>
           <tr><td>Public Profile</td><td><code>/users/[username]</code></td><td>Public author profile with bio, stats, and plugin portfolio</td></tr>
           <tr><td>Admin Panel</td><td><code>/admin</code></td><td>Moderation dashboard: stats, plugin/user management, audit logs</td></tr>
           <tr><td>404 Not Found</td><td>—</td><td>Custom 404 page consistent with Brutalist Industrial design</td></tr>
@@ -411,9 +453,9 @@
         The frontend communicates with the Rust API via a typed layer in <code>frontend/lib/</code>:
       </p>
       <ul>
-        <li><code>types.ts</code> — TypeScript DTOs mirroring the API response shapes (<code>UserProfile</code>, <code>PluginSummary</code>, <code>CategoryResponse</code>, etc.)</li>
-        <li><code>api.ts</code> — Fetch helpers and SWR key generators with <code>credentials: "include"</code> for cookie auth</li>
-        <li><code>hooks.ts</code> — SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>, <code>useCategories</code>, <code>useCurrentUser</code>) with typed parameters</li>
+        <li><code>types.ts</code> — TypeScript DTOs mirroring the API response shapes (<code>UserProfile</code>, <code>PluginSummary</code>, <code>ApiKeySummary</code>, <code>NotificationItem</code>, <code>AuthorDashboardStats</code>, etc.)</li>
+        <li><code>api.ts</code> — Fetch helpers and SWR key generators with <code>credentials: "include"</code> for cookie auth, plus mutation helpers for API keys and notifications</li>
+        <li><code>hooks.ts</code> — SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>, <code>useCategories</code>, <code>useCurrentUser</code>, <code>useAuthorDashboardStats</code>, <code>useApiKeys</code>, <code>useNotifications</code>, <code>useUnreadCount</code>) with typed parameters</li>
       </ul>
 
       <!-- ── Infrastructure ────────────────────────────────── -->

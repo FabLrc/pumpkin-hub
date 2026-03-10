@@ -85,6 +85,19 @@
         <a href="#dependencies-graph" class="sidebar-sublink" style="padding-left:2rem;">Resolve Graph</a>
         <a href="#dependencies-dependants" class="sidebar-sublink" style="padding-left:2rem;">List Dependants</a>
         <a href="#search" class="sidebar-sublink">Search</a>
+        <a href="#dashboard-analytics" class="sidebar-sublink">Dashboard Analytics</a>
+        <a href="#dashboard-stats" class="sidebar-sublink" style="padding-left:2rem;">Author Stats</a>
+        <a href="#dashboard-downloads" class="sidebar-sublink" style="padding-left:2rem;">Author Downloads</a>
+        <a href="#dashboard-plugin-stats" class="sidebar-sublink" style="padding-left:2rem;">Plugin Download Stats</a>
+        <a href="#api-keys" class="sidebar-sublink">API Keys</a>
+        <a href="#api-keys-list" class="sidebar-sublink" style="padding-left:2rem;">List API Keys</a>
+        <a href="#api-keys-create" class="sidebar-sublink" style="padding-left:2rem;">Create API Key</a>
+        <a href="#api-keys-revoke" class="sidebar-sublink" style="padding-left:2rem;">Revoke API Key</a>
+        <a href="#notifications" class="sidebar-sublink">Notifications</a>
+        <a href="#notifications-list" class="sidebar-sublink" style="padding-left:2rem;">List Notifications</a>
+        <a href="#notifications-unread" class="sidebar-sublink" style="padding-left:2rem;">Unread Count</a>
+        <a href="#notifications-mark-read" class="sidebar-sublink" style="padding-left:2rem;">Mark as Read</a>
+        <a href="#notifications-read-all" class="sidebar-sublink" style="padding-left:2rem;">Mark All Read</a>
         <a href="#users" class="sidebar-sublink">Users (Public Profiles)</a>
         <a href="#users-profile" class="sidebar-sublink" style="padding-left:2rem;">Get Author Profile</a>
         <a href="#users-plugins" class="sidebar-sublink" style="padding-left:2rem;">Author's Plugins</a>
@@ -104,9 +117,9 @@
       </p>
 
       <div class="callout callout-warn">
-        <div class="callout-label">Active development — Phase 2.5 Complete</div>
-        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>.<br>
-        Next milestone: Phase 3 — Community (advanced analytics, GitHub publishing, review system).
+        <div class="callout-label">Active development — Phase 3 In Progress</div>
+        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>, <strong>download analytics &amp; KPIs</strong>, <strong>API key management</strong>, <strong>notification center</strong>.<br>
+        Next up: Publishing from GitHub, Review System, Collections &amp; Curations.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -1296,6 +1309,264 @@
 
       <h3>GET /api/v1/pumpkin-versions</h3>
       <p>Returns all known Pumpkin MC release versions, fetched and cached from the official <a href="https://github.com/Pumpkin-MC/Pumpkin">Pumpkin GitHub repository</a>.</p>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                    DASHBOARD ANALYTICS                          -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="dashboard-analytics">Dashboard Analytics</h2>
+      <p>Endpoints providing download statistics and KPIs for authenticated plugin authors. All endpoints require authentication via cookie or Bearer token.</p>
+
+      <!-- ── Author Stats ──────────────────────────────────── -->
+      <h3 id="dashboard-stats"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/dashboard/stats</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Returns aggregated KPIs for the authenticated author: total plugins, total downloads, 7-day and 30-day download windows, trend percentage, top plugin, and recent download chart data.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>granularity</code></td><td>string</td><td><code>weekly</code></td><td>Chart granularity: <code>daily</code>, <code>weekly</code>, <code>monthly</code></td></tr>
+          <tr><td><code>periods</code></td><td>integer</td><td><code>12</code></td><td>Number of chart periods (1–52)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Request</h4>
+      <pre><code>curl -b cookies.txt http://localhost:8080/api/v1/dashboard/stats?granularity=weekly&amp;periods=12</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "total_plugins": 5,
+  "total_downloads": 12450,
+  "downloads_last_30_days": 1230,
+  "downloads_last_7_days": 340,
+  "downloads_trend_percent": 15.3,
+  "most_downloaded_plugin": {
+    "name": "Pumpkin Voice",
+    "slug": "pumpkin-voice",
+    "downloads_total": 8200
+  },
+  "recent_downloads": [
+    { "period": "2026-W01", "downloads": 280 },
+    { "period": "2026-W02", "downloads": 340 }
+  ]
+}</code></pre>
+
+      <!-- ── Author Downloads ──────────────────────────────── -->
+      <h3 id="dashboard-downloads"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/dashboard/downloads</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Returns download chart data aggregated across all of the author's plugins.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>granularity</code></td><td>string</td><td><code>weekly</code></td><td>Chart granularity: <code>daily</code>, <code>weekly</code>, <code>monthly</code></td></tr>
+          <tr><td><code>periods</code></td><td>integer</td><td><code>12</code></td><td>Number of chart periods (1–52)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>[
+  { "period": "2026-W01", "downloads": 280 },
+  { "period": "2026-W02", "downloads": 340 }
+]</code></pre>
+
+      <!-- ── Plugin Download Stats ─────────────────────────── -->
+      <h3 id="dashboard-plugin-stats"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/:slug/download-stats</code></h3>
+      <p>Returns detailed download statistics for a specific plugin including a time-series chart and per-version breakdown. No authentication required.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>granularity</code></td><td>string</td><td><code>weekly</code></td><td>Chart granularity: <code>daily</code>, <code>weekly</code>, <code>monthly</code></td></tr>
+          <tr><td><code>periods</code></td><td>integer</td><td><code>12</code></td><td>Number of chart periods (1–52)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Request</h4>
+      <pre><code>curl http://localhost:8080/api/v1/plugins/pumpkin-voice/download-stats?granularity=monthly&amp;periods=6</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "plugin_slug": "pumpkin-voice",
+  "total_downloads": 8200,
+  "downloads_last_30_days": 650,
+  "downloads_last_7_days": 180,
+  "downloads_trend_percent": 12.5,
+  "chart": [
+    { "period": "2026-01", "downloads": 1200 },
+    { "period": "2026-02", "downloads": 1350 }
+  ],
+  "by_version": [
+    { "version": "0.3.0", "downloads": 4500, "published_at": "2025-12-01T00:00:00Z" },
+    { "version": "0.2.1", "downloads": 3700, "published_at": "2025-10-15T00:00:00Z" }
+  ]
+}</code></pre>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                         API KEYS                                -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="api-keys">API Keys</h2>
+      <p>
+        Manage personal API keys for programmatic access and CI/CD integration. Keys are stored as SHA-256 hashes.
+        The full key is only returned once at creation. Maximum 10 keys per user.
+        Key format: <code>phub_</code> prefix + 8 hex characters (visible prefix) + random secret.
+      </p>
+
+      <!-- ── List API Keys ─────────────────────────────────── -->
+      <h3 id="api-keys-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/api-keys</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Lists all API keys for the authenticated user. The key secret is never returned — only the <code>key_prefix</code>.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>[
+  {
+    "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    "name": "CI Deploy Key",
+    "key_prefix": "phub_ab12cd34",
+    "permissions": ["publish", "upload"],
+    "last_used_at": "2026-03-15T14:30:00Z",
+    "expires_at": "2027-03-15T00:00:00Z",
+    "created_at": "2026-03-01T10:00:00Z"
+  }
+]</code></pre>
+
+      <!-- ── Create API Key ────────────────────────────────── -->
+      <h3 id="api-keys-create"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/api-keys</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Creates a new API key. The full key is returned <strong>only in this response</strong> — store it securely.</p>
+
+      <h4>Request Body</h4>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>string</td><td>Yes</td><td>Key label (max 64 characters)</td></tr>
+          <tr><td><code>permissions</code></td><td>string[]</td><td>Yes</td><td>Scoped permissions: <code>publish</code>, <code>upload</code>, <code>read</code></td></tr>
+          <tr><td><code>expires_at</code></td><td>string (ISO 8601)</td><td>No</td><td>Expiration date (must be in the future)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Request</h4>
+      <pre><code>curl -X POST -b cookies.txt http://localhost:8080/api/v1/api-keys \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "CI Deploy Key",
+    "permissions": ["publish", "upload"],
+    "expires_at": "2027-03-15T00:00:00Z"
+  }'</code></pre>
+
+      <h4>Response <span class="badge badge-green">201 Created</span></h4>
+      <pre><code>{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "CI Deploy Key",
+  "key": "phub_ab12cd34_7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c",
+  "key_prefix": "phub_ab12cd34",
+  "permissions": ["publish", "upload"],
+  "expires_at": "2027-03-15T00:00:00Z",
+  "created_at": "2026-03-01T10:00:00Z"
+}</code></pre>
+
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">422</span></td><td>Name exceeds 64 chars, invalid permission, or <code>expires_at</code> in the past</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Maximum 10 keys per user reached</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Revoke API Key ────────────────────────────────── -->
+      <h3 id="api-keys-revoke"><span class="badge badge-red">DELETE</span> &nbsp; <code>/api/v1/api-keys/:id</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Permanently revokes (deletes) an API key. Only the key owner can revoke their own keys.</p>
+
+      <h4>Request</h4>
+      <pre><code>curl -X DELETE -b cookies.txt http://localhost:8080/api/v1/api-keys/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{ "deleted": true }</code></pre>
+
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Key not found or does not belong to the authenticated user</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                       NOTIFICATIONS                             -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="notifications">Notifications</h2>
+      <p>
+        In-app notification system for plugin authors. Notifications are automatically created when
+        a plugin reaches download milestones (10, 50, 100, 500, 1K, 5K, 10K, 50K, 100K downloads).
+        All endpoints require authentication.
+      </p>
+
+      <!-- ── List Notifications ────────────────────────────── -->
+      <h3 id="notifications-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/notifications</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Returns a paginated list of notifications for the authenticated user.</p>
+
+      <h4>Query Parameters</h4>
+      <table>
+        <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>integer</td><td><code>1</code></td><td>Page number</td></tr>
+          <tr><td><code>per_page</code></td><td>integer</td><td><code>20</code></td><td>Items per page (max 50)</td></tr>
+          <tr><td><code>unread_only</code></td><td>boolean</td><td><code>false</code></td><td>Filter to unread notifications only</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "notifications": [
+    {
+      "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "kind": "download_milestone",
+      "title": "Pumpkin Voice reached 1,000 downloads!",
+      "body": "Your plugin Pumpkin Voice has reached 1,000 total downloads. Congratulations!",
+      "link": "/plugins/pumpkin-voice",
+      "is_read": false,
+      "created_at": "2026-03-15T14:00:00Z"
+    }
+  ],
+  "total": 12,
+  "unread": 3
+}</code></pre>
+
+      <!-- ── Unread Count ──────────────────────────────────── -->
+      <h3 id="notifications-unread"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/notifications/unread-count</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Returns the number of unread notifications. Used by the notification bell badge in the UI (auto-refreshes every 30 seconds).</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{ "count": 3 }</code></pre>
+
+      <!-- ── Mark as Read ──────────────────────────────────── -->
+      <h3 id="notifications-mark-read"><span class="badge badge-orange">PATCH</span> &nbsp; <code>/api/v1/notifications/:id/read</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Marks a single notification as read. Only the notification owner can mark it.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "kind": "download_milestone",
+  "title": "Pumpkin Voice reached 1,000 downloads!",
+  "body": "Your plugin Pumpkin Voice has reached 1,000 total downloads. Congratulations!",
+  "link": "/plugins/pumpkin-voice",
+  "is_read": true,
+  "created_at": "2026-03-15T14:00:00Z"
+}</code></pre>
+
+      <h5>Error Cases</h5>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Notification not found or does not belong to the authenticated user</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Mark All Read ─────────────────────────────────── -->
+      <h3 id="notifications-read-all"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/notifications/read-all</code> &nbsp; <span class="badge badge-orange">Auth</span></h3>
+      <p>Marks all unread notifications as read for the authenticated user.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{ "marked_read": 3 }</code></pre>
 
       <!-- ══════════════════════════════════════════════════════════════ -->
       <!--                    PUBLIC AUTHOR PROFILES                       -->
