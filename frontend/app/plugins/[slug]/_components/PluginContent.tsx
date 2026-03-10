@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Package, AlertTriangle, Plus, ChevronDown, ChevronRight, GitBranch, ArrowRight, X, Loader2 } from "lucide-react";
 import { mutate } from "swr";

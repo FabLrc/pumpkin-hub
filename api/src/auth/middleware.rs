@@ -172,20 +172,22 @@ pub fn extract_api_key_from_header_value(value: &str) -> Option<String> {
     }
 }
 
+type ApiKeyRow = Option<(
+    uuid::Uuid,
+    uuid::Uuid,
+    Option<chrono::DateTime<chrono::Utc>>,
+    Vec<String>,
+    i32,
+    i32,
+)>;
+
 /// Resolves an API key to a full `ApiKeyContext` by hashing it and looking it up in the DB.
 pub async fn resolve_api_key(raw_key: &str, state: &AppState) -> Result<ApiKeyContext, AppError> {
     let mut hasher = Sha256::new();
     hasher.update(raw_key.as_bytes());
     let key_hash = hex::encode(hasher.finalize());
 
-    let row: Option<(
-        uuid::Uuid,
-        uuid::Uuid,
-        Option<chrono::DateTime<chrono::Utc>>,
-        Vec<String>,
-        i32,
-        i32,
-    )> = sqlx::query_as(
+    let row: ApiKeyRow = sqlx::query_as(
         "SELECT id, user_id, expires_at, permissions, rate_limit_per_second, rate_limit_burst_size
          FROM api_keys WHERE key_hash = $1",
     )

@@ -83,8 +83,7 @@ pub async fn link_github(
 
     // Verify that the GitHub App config is available
     let github_app_config = state.config.github_app.as_ref().ok_or_else(|| {
-        AppError::internal(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        AppError::internal(std::io::Error::other(
             "GitHub App is not configured on this server",
         ))
     })?;

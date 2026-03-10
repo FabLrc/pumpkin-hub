@@ -247,7 +247,7 @@ async fn handle_release_published(
         .config
         .github_app
         .as_ref()
-        .map(|cfg| GitHubAppClient::new(cfg));
+        .map(GitHubAppClient::new);
 
     if let Some(client) = github_client {
         for asset in &release.assets {

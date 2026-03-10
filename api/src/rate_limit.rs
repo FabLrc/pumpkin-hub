@@ -102,6 +102,12 @@ pub struct ApiKeyRateLimiters {
     limiters: Arc<RwLock<HashMap<uuid::Uuid, Arc<DirectRateLimiter>>>>,
 }
 
+impl Default for ApiKeyRateLimiters {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApiKeyRateLimiters {
     pub fn new() -> Self {
         Self {

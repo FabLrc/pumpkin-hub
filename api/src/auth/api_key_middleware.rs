@@ -46,7 +46,7 @@ pub async fn api_key_middleware(
 
     // No API key — apply global IP-based rate limiting
     if let Err(response) = check_ip_rate_limit(&state, ip) {
-        return response;
+        return *response;
     }
 
     next.run(request).await
@@ -73,7 +73,7 @@ async fn handle_api_key_request(
                 check_api_key_rate_limit(state, api_key_id, rl_per_second, rl_burst_size)
             {
                 record_usage(state, api_key_id, method, path, false);
-                return response;
+                return *response;
             }
 
             // Inject context for the AuthUser extractor
@@ -96,7 +96,7 @@ async fn handle_api_key_request(
 
 // ── Rate Limiting ───────────────────────────────────────────────────────────
 
-fn check_ip_rate_limit(state: &AppState, ip: IpAddr) -> Result<(), Response> {
+fn check_ip_rate_limit(state: &AppState, ip: IpAddr) -> Result<(), Box<Response>> {
     state
         .ip_rate_limiter
         .check_key(&ip)
@@ -106,7 +106,7 @@ fn check_ip_rate_limit(state: &AppState, ip: IpAddr) -> Result<(), Response> {
                 &governor::clock::DefaultClock::default(),
             ));
             let retry_after = wait.as_secs().saturating_add(1);
-            build_rate_limit_response(retry_after)
+            Box::new(build_rate_limit_response(retry_after))
         })
 }
 
@@ -115,11 +115,11 @@ fn check_api_key_rate_limit(
     api_key_id: uuid::Uuid,
     per_second: i32,
     burst_size: i32,
-) -> Result<(), Response> {
+) -> Result<(), Box<Response>> {
     state
         .api_key_rate_limiters
         .check_or_create(api_key_id, per_second as u64, burst_size as u32)
-        .map_err(|retry_after| build_rate_limit_response(retry_after))
+        .map_err(|retry_after| Box::new(build_rate_limit_response(retry_after)))
 }
 
 fn build_rate_limit_response(retry_after: u64) -> Response {

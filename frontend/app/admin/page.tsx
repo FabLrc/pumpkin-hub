@@ -12,7 +12,6 @@ import {
   Download,
   Search,
   ToggleLeft,
-  ToggleRight,
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
