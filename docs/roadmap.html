@@ -573,16 +573,17 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
             <span class="timeline-title">User Experience Improvements</span>
+            <span class="status-badge status-completed">Completed</span>
           </div>
           <ul class="timeline-features">
             <li><strong>Grid View</strong> toggle on Explorer page — switch between list and card grid layouts for plugin browsing</li>
-            <li>Persistent user preference (localStorage / profile setting)</li>
+            <li>Persistent user preference via <code>localStorage</code> (<code>pumpkin-hub:explorer-view</code> key)</li>
             <li><strong>Search Bar on Landing Page</strong> — unified search experience linking to Explorer with pre-filled query</li>
-            <li>Auto-focus and keyboard navigation for accessibility</li>
-            <li>Hero section updated with prominent search CTA</li>
+            <li>Auto-focus and <kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd> global keyboard shortcut on Landing &amp; Explorer pages</li>
+            <li>Hero section updated with prominent search CTA, OS-aware shortcut hints, and Escape-to-clear</li>
           </ul>
         </div>
 
