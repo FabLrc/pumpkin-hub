@@ -4,18 +4,20 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath, getReviewsPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath, getReviewsPath, getMediaPath, getChangelogPath } from "./api";
 import type {
   ApiKeySummary,
   AuthorDashboardStats,
   BinariesListResponse,
   CategoryResponse,
+  ChangelogResponse,
   DependencyGraphResponse,
   DependencyListResponse,
   DownloadDataPoint,
   DownloadGranularity,
   GitHubLinkResponse,
   ListPluginsParams,
+  MediaListResponse,
   NotificationListResponse,
   PaginatedResponse,
   PluginDownloadStats,
@@ -222,6 +224,26 @@ export function useReviews(
 ) {
   const path = slug ? getReviewsPath(slug, page, perPage) : null;
   return useSWR<ReviewListResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
+  });
+}
+
+// ── Media Gallery Hooks ───────────────────────────────────────────────────
+
+/** Fetch all media items for a plugin's gallery. */
+export function useMedia(slug: string | null) {
+  const path = slug ? getMediaPath(slug) : null;
+  return useSWR<MediaListResponse>(path, swrFetcher, {
+    revalidateOnFocus: false,
+  });
+}
+
+// ── Changelog Hooks ───────────────────────────────────────────────────────
+
+/** Fetch the changelog for a plugin. */
+export function useChangelog(slug: string | null) {
+  const path = slug ? getChangelogPath(slug) : null;
+  return useSWR<ChangelogResponse>(path, swrFetcher, {
     revalidateOnFocus: false,
   });
 }

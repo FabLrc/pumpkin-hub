@@ -324,6 +324,59 @@ body::before {
   line-height: 1.7;
 }
 
+.md-content pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+.md-content h1 {
+  font-family: var(--font-raleway);
+  font-weight: 900;
+  font-size: 1.5rem;
+  color: #fff;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.md-content h4 {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #e5e5e5;
+  margin: 1rem 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.md-content a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.md-content a:hover {
+  border-bottom-color: var(--color-accent);
+}
+
+.md-content strong {
+  color: #e5e5e5;
+  font-weight: 700;
+}
+
+.md-content em {
+  color: #a3a3a3;
+  font-style: italic;
+}
+
+.md-content .changelog-version {
+  border-bottom-color: var(--color-accent);
+  border-bottom-width: 2px;
+}
+
 /* ── Download Button Hover ─────────────────────────────────────────────── */
 
 .dl-btn {

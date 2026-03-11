@@ -13,7 +13,7 @@ interface PluginPageClientProps {
 
 export function PluginPageClient({ slug }: PluginPageClientProps) {
   const { data: plugin, isLoading, error } = usePlugin(slug);
-  const [activeTab, setActiveTab] = useState<"overview" | "versions" | "dependencies" | "reviews">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "versions" | "dependencies" | "gallery" | "changelog" | "reviews">("overview");
 
   if (isLoading) {
     return (

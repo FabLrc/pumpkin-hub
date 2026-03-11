@@ -653,3 +653,52 @@ export interface ReportListResponse {
   reports: ReportResponse[];
   total: number;
 }
+
+// ── Media Gallery Types ───────────────────────────────────────────────────
+
+export type MediaType = "image" | "video";
+
+export interface MediaResponse {
+  id: string;
+  media_type: MediaType;
+  file_name: string;
+  file_size: number;
+  content_type: string;
+  url: string;
+  thumbnail_url: string | null;
+  caption: string | null;
+  sort_order: number;
+  uploaded_at: string;
+}
+
+export interface MediaListResponse {
+  plugin_slug: string;
+  total: number;
+  media: MediaResponse[];
+}
+
+export interface MediaUploadResponse {
+  media: MediaResponse;
+}
+
+export interface UpdateMediaRequest {
+  caption?: string;
+  sort_order?: number;
+}
+
+export interface ReorderMediaRequest {
+  media_ids: string[];
+}
+
+// ── Changelog Types ───────────────────────────────────────────────────────
+
+export interface ChangelogResponse {
+  plugin_slug: string;
+  content: string;
+  source: "github" | "manual";
+  updated_at: string;
+}
+
+export interface UpdateChangelogRequest {
+  content: string;
+}

@@ -42,6 +42,13 @@ import type {
   ReviewListResponse,
   ReviewResponse,
   UpdateReviewRequest,
+  ChangelogResponse,
+  MediaListResponse,
+  MediaResponse,
+  MediaUploadResponse,
+  ReorderMediaRequest,
+  UpdateChangelogRequest,
+  UpdateMediaRequest,
 } from "./types";
 
 const API_BASE_URL =
@@ -836,4 +843,109 @@ export async function reportReview(
     `/plugins/${encodeURIComponent(slug)}/reviews/${encodeURIComponent(reviewId)}/report`,
     { method: "POST", body: JSON.stringify(body) },
   );
+}
+
+// ── Media Gallery Endpoints ───────────────────────────────────────────────
+
+export function getMediaPath(slug: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/media`;
+}
+
+export async function fetchMedia(
+  slug: string,
+): Promise<MediaListResponse> {
+  return apiFetch<MediaListResponse>(getMediaPath(slug));
+}
+
+export async function uploadMedia(
+  slug: string,
+  file: File,
+  caption?: string,
+  onProgress?: (percent: number) => void,
+): Promise<MediaUploadResponse> {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (caption) formData.append("caption", caption);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_PREFIX}${getMediaPath(slug)}`);
+    xhr.withCredentials = true;
+
+    if (onProgress) {
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          onProgress(Math.round((event.loaded / event.total) * 100));
+        }
+      });
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText) as MediaUploadResponse);
+      } else {
+        reject(new Error(`Upload failed: ${xhr.status} ${xhr.responseText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.send(formData);
+  });
+}
+
+export async function updateMedia(
+  slug: string,
+  mediaId: string,
+  body: UpdateMediaRequest,
+): Promise<MediaResponse> {
+  return apiFetch<MediaResponse>(
+    `/plugins/${encodeURIComponent(slug)}/media/${encodeURIComponent(mediaId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+}
+
+export async function deleteMedia(
+  slug: string,
+  mediaId: string,
+): Promise<void> {
+  await apiFetch<void>(
+    `/plugins/${encodeURIComponent(slug)}/media/${encodeURIComponent(mediaId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function reorderMedia(
+  slug: string,
+  body: ReorderMediaRequest,
+): Promise<void> {
+  await apiFetch<void>(
+    `/plugins/${encodeURIComponent(slug)}/media/reorder`,
+    { method: "PUT", body: JSON.stringify(body) },
+  );
+}
+
+// ── Changelog Endpoints ───────────────────────────────────────────────────
+
+export function getChangelogPath(slug: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/changelog`;
+}
+
+export async function fetchChangelog(
+  slug: string,
+): Promise<ChangelogResponse> {
+  return apiFetch<ChangelogResponse>(getChangelogPath(slug));
+}
+
+export async function updateChangelog(
+  slug: string,
+  body: UpdateChangelogRequest,
+): Promise<ChangelogResponse> {
+  return apiFetch<ChangelogResponse>(getChangelogPath(slug), {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteChangelog(slug: string): Promise<void> {
+  await apiFetch<void>(getChangelogPath(slug), { method: "DELETE" });
 }

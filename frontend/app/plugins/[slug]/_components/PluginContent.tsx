@@ -12,13 +12,17 @@ import { VersionManager } from "@/components/plugins/VersionManager";
 import { BinaryUpload } from "@/components/plugins/BinaryUpload";
 import { BinaryList } from "@/components/plugins/BinaryList";
 import { ReviewSection } from "@/components/reviews";
+import { GalleryTab } from "@/components/plugins/GalleryTab";
+import { ChangelogTab } from "@/components/plugins/ChangelogTab";
 
-type TabId = "overview" | "versions" | "dependencies" | "reviews";
+type TabId = "overview" | "versions" | "dependencies" | "gallery" | "changelog" | "reviews";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "versions", label: "Versions" },
   { id: "dependencies", label: "Dependencies" },
+  { id: "gallery", label: "Gallery" },
+  { id: "changelog", label: "Changelog" },
   { id: "reviews", label: "Reviews" },
 ];
 
@@ -56,6 +60,8 @@ export function PluginContent({
       {activeTab === "overview" && <OverviewTab plugin={plugin} />}
       {activeTab === "versions" && <VersionsTab plugin={plugin} />}
       {activeTab === "dependencies" && <DependenciesTab plugin={plugin} />}
+      {activeTab === "gallery" && <GalleryTab plugin={plugin} />}
+      {activeTab === "changelog" && <ChangelogTab plugin={plugin} />}
       {activeTab === "reviews" && <ReviewSection plugin={plugin} />}
     </div>
   );
