@@ -4,6 +4,7 @@
 
 [![Status: Active Development](https://img.shields.io/badge/Status-Active_Development-orange?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
 [![Built with: Rust & Next.js](https://img.shields.io/badge/Stack-Rust_%2F_Next.js-black?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=FabLrc_pumpkin-hub)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
 
 ---
 

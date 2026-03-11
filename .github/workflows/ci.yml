@@ -41,8 +41,15 @@ jobs:
       - name: Test de Build
         run: npm run build
 
-      - name: Tests unitaires et composants
-        run: npm test
+      - name: Tests unitaires et composants (avec couverture)
+        run: npm run test:coverage
+
+      - name: Upload de la couverture frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
+          retention-days: 1
 
   backend-ci:
     name: Validation de l'API Rust
@@ -97,7 +104,48 @@ jobs:
         env:
           DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
 
-      - name: Tests unitaires et intégration
-        run: cargo test
+      - name: Installation de cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Tests unitaires et intégration (avec couverture)
+        run: cargo tarpaulin --out Lcov --output-dir ./
         env:
+          DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
           TEST_DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
+
+      - name: Upload de la couverture backend
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: api/lcov.info
+          retention-days: 1
+
+  sonarqube:
+    name: Analyse SonarQube
+    needs: [frontend-ci, backend-ci]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code (historique complet)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Téléchargement de la couverture frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+
+      - name: Téléchargement de la couverture backend
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: api
+
+      - name: Analyse SonarQube
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
