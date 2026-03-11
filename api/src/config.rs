@@ -25,6 +25,9 @@ pub struct ServerConfig {
     /// Publicly reachable base URL of this API (e.g. "http://localhost:8080").
     /// Used to construct self-referencing URLs stored in the database.
     pub api_public_url: String,
+    /// Whether cookies should be marked `Secure` (HTTPS-only).
+    /// Auto-detected from `COOKIE_SECURE` env or inferred from `ALLOWED_ORIGINS`.
+    pub secure_cookies: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -115,7 +118,7 @@ impl Config {
             reason: format!("'{host}' is not a valid IP address"),
         })?;
 
-        let allowed_origins = std::env::var("ALLOWED_ORIGINS")
+        let allowed_origins: Vec<String> = std::env::var("ALLOWED_ORIGINS")
             .unwrap_or_else(|_| "http://localhost:3000".to_string())
             .split(',')
             .map(|s| s.trim().to_string())
@@ -123,6 +126,11 @@ impl Config {
 
         let api_public_url =
             std::env::var("API_PUBLIC_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+
+        let secure_cookies = match std::env::var("COOKIE_SECURE") {
+            Ok(val) => val.parse::<bool>().unwrap_or(true),
+            Err(_) => allowed_origins.iter().any(|o| o.starts_with("https://")),
+        };
 
         let database_url = require_env("DATABASE_URL")?;
         let meilisearch_url = require_env("MEILISEARCH_URL")?;
@@ -173,6 +181,7 @@ impl Config {
                 address: SocketAddr::new(ip, port),
                 allowed_origins,
                 api_public_url,
+                secure_cookies,
             },
             database_url,
             meilisearch: MeilisearchConfig {
@@ -214,6 +223,7 @@ impl Default for Config {
                 address: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080),
                 allowed_origins: vec!["http://localhost:3000".to_string()],
                 api_public_url: "http://localhost:8080".to_string(),
+                secure_cookies: false,
             },
             database_url: String::new(),
             meilisearch: MeilisearchConfig {

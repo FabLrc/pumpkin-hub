@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { LogOut, User, ChevronDown, LayoutDashboard, Shield } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
-import { getLogoutUrl } from "@/lib/api";
+import { logout } from "@/lib/api";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function Navbar() {
@@ -22,8 +22,9 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function handleLogout() {
-    window.location.href = getLogoutUrl();
+  async function handleLogout() {
+    await logout();
+    window.location.href = "/";
   }
 
   return (
@@ -54,12 +55,6 @@ export function Navbar() {
           >
             Explorer
           </Link>
-          <a href="#" className="hover:text-text-primary transition-colors">
-            Docs
-          </a>
-          <a href="#" className="hover:text-text-primary transition-colors">
-            Status
-          </a>
           <Link
             href="/plugins/new"
             className="text-accent hover:text-accent-light transition-colors"

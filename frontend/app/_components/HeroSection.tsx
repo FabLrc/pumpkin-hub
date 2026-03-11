@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
 import { Terminal } from "lucide-react";
 import Image from "next/image";
 
@@ -9,15 +9,19 @@ interface HeroSectionProps {
   totalPlugins: number;
 }
 
+const noopSubscribe = () => () => {};
+function getIsMacSnapshot() {
+  return navigator.platform.toUpperCase().includes("MAC");
+}
+function getIsMacServerSnapshot() {
+  return true;
+}
+
 export function HeroSection({ totalPlugins }: HeroSectionProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isMac, setIsMac] = useState(true);
-
-  useEffect(() => {
-    setIsMac(navigator.platform.toUpperCase().includes("MAC"));
-  }, []);
+  const isMac = useSyncExternalStore(noopSubscribe, getIsMacSnapshot, getIsMacServerSnapshot);
 
   const focusSearchInput = useCallback(() => {
     inputRef.current?.focus();

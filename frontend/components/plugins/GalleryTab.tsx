@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Image, Film, Trash2, GripVertical, Loader2 } from "lucide-react";
+import { Image as ImageIcon, Film, Trash2, Loader2 } from "lucide-react";
 import { mutate } from "swr";
 import type { PluginResponse, MediaResponse } from "@/lib/types";
 import { useMedia, useCurrentUser } from "@/lib/hooks";
@@ -64,7 +64,7 @@ export function GalleryTab({ plugin }: GalleryTabProps) {
       {/* Empty state */}
       {mediaItems.length === 0 && (
         <div className="text-center py-16 border border-border-default bg-bg-elevated">
-          <Image size={32} className="mx-auto mb-3 text-text-dim" />
+          <ImageIcon size={32} className="mx-auto mb-3 text-text-dim" />
           <p className="text-text-muted font-mono text-sm">
             No media items yet
           </p>
@@ -130,6 +130,7 @@ function GalleryCard({
         aria-label={`View ${item.file_name}`}
       >
         {item.media_type === "image" ? (
+          // eslint-disable-next-line @next/next/no-img-element -- user-uploaded media with unknown dimensions from external storage
           <img
             src={item.thumbnail_url ?? item.url}
             alt={item.caption ?? item.file_name}
@@ -151,7 +152,7 @@ function GalleryCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             {item.media_type === "image" ? (
-              <Image size={10} className="text-text-dim flex-shrink-0" />
+              <ImageIcon size={10} className="text-text-dim flex-shrink-0" />
             ) : (
               <Film size={10} className="text-text-dim flex-shrink-0" />
             )}

@@ -65,7 +65,7 @@ pub fn routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .route("/auth/google/callback", get(google_callback))
         .route("/auth/discord/callback", get(discord_callback))
         .route("/auth/me", get(me).put(update_profile))
-        .route("/auth/logout", get(logout))
+        .route("/auth/logout", post(logout))
         .route("/auth/avatar", post(upload_avatar))
         .route("/auth/verify-email", post(verify_email))
         .route("/auth/resend-verification", post(resend_verification))
@@ -229,7 +229,11 @@ async fn github_login(State(state): State<AppState>) -> Result<Response, AppErro
         .add_scope(oauth2::Scope::new("user:email".to_string()))
         .url();
 
-    set_csrf_and_redirect(&csrf_state, auth_url.as_str())
+    set_csrf_and_redirect(
+        &csrf_state,
+        auth_url.as_str(),
+        state.config.server.secure_cookies,
+    )
 }
 
 #[derive(Debug, Deserialize)]
@@ -305,7 +309,11 @@ async fn google_login(State(state): State<AppState>) -> Result<Response, AppErro
         .add_scope(oauth2::Scope::new("profile".to_string()))
         .url();
 
-    set_csrf_and_redirect(&csrf_state, auth_url.as_str())
+    set_csrf_and_redirect(
+        &csrf_state,
+        auth_url.as_str(),
+        state.config.server.secure_cookies,
+    )
 }
 
 /// `GET /api/v1/auth/google/callback` — handles the Google OAuth callback.
@@ -387,7 +395,11 @@ async fn discord_login(State(state): State<AppState>) -> Result<Response, AppErr
         .add_scope(oauth2::Scope::new("email".to_string()))
         .url();
 
-    set_csrf_and_redirect(&csrf_state, auth_url.as_str())
+    set_csrf_and_redirect(
+        &csrf_state,
+        auth_url.as_str(),
+        state.config.server.secure_cookies,
+    )
 }
 
 /// `GET /api/v1/auth/discord/callback` — handles the Discord OAuth callback.
@@ -451,10 +463,11 @@ async fn me(State(state): State<AppState>, auth: AuthUser) -> Result<Json<UserPr
     Ok(Json(UserProfile::from(user)))
 }
 
-/// `GET /api/v1/auth/logout` — clears the auth cookie.
-async fn logout(jar: CookieJar) -> impl IntoResponse {
+/// `POST /api/v1/auth/logout` — clears the auth cookie.
+async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
     let remove_cookie = Cookie::build(AUTH_COOKIE_NAME)
         .path("/")
+        .secure(state.config.server.secure_cookies)
         .max_age(time::Duration::ZERO)
         .build();
 
@@ -1123,11 +1136,16 @@ async fn ensure_unique_username(
 }
 
 /// Sets a CSRF cookie and returns a redirect response.
-fn set_csrf_and_redirect(csrf_state: &CsrfToken, url: &str) -> Result<Response, AppError> {
+fn set_csrf_and_redirect(
+    csrf_state: &CsrfToken,
+    url: &str,
+    secure: bool,
+) -> Result<Response, AppError> {
     let csrf_cookie = Cookie::build((CSRF_COOKIE_NAME, csrf_state.secret().to_string()))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
+        .secure(secure)
         .max_age(time::Duration::minutes(10))
         .build();
 
@@ -1224,6 +1242,7 @@ fn issue_jwt_cookie(
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
+        .secure(state.config.server.secure_cookies)
         .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64))
         .build();
 
@@ -1244,11 +1263,13 @@ fn issue_jwt_redirect(
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
+        .secure(state.config.server.secure_cookies)
         .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64))
         .build();
 
     let remove_csrf = Cookie::build(CSRF_COOKIE_NAME)
         .path("/")
+        .secure(state.config.server.secure_cookies)
         .max_age(time::Duration::ZERO)
         .build();
 

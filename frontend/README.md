@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pumpkin Hub — Frontend
+
+> **Next.js 16 frontend for Pumpkin Hub — the plugin registry for Pumpkin MC (Rust).**
+
+## Stack
+
+- **Framework**: Next.js 16 with App Router, Turbopack
+- **UI**: React 19 with Tailwind CSS 4
+- **Data**: SWR for client-side data fetching with automatic revalidation
+- **Testing**: Vitest with React Testing Library
+- **Linting**: ESLint with Next.js config (core-web-vitals + TypeScript)
+- **Design**: Custom Brutalist design system (Raleway + JetBrains Mono, orange/black palette)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 20+
+- Backend API running on `http://localhost:8080` (or set `NEXT_PUBLIC_API_URL`)
+
+### Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Quality Assurance
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Run ESLint (0 errors, 0 warnings enforced)
+npm run lint
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Run Vitest unit tests
+npm run test
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Build production bundle (validates all routes)
+npm run build
+```
 
-## Deploy on Vercel
+## Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Key Directories
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/` — Next.js App Router pages, layouts, and route groups
+- `components/` — Reusable React components (UI, plugins, layout, notifications)
+- `lib/` — API client (`api.ts`), hooks (`useCurrentUser`, `useMedia`, `useViewPreference`), types, and utilities
+- `public/` — Static assets (images, favicons)
+
+### Core Patterns
+
+- **API Client**: Centralized `apiFetch()` wrapper in `lib/api.ts` with automatic error handling, JSON content-type, and credentials
+- **Authentication**: JWT cookies (HttpOnly, Secure in production, SameSite=Lax)
+- **SWR Hooks**: Data fetching with automatic revalidation and offline support (e.g., `useCurrentUser()`, `useMedia()`)
+- **Form Validation**: Shared validators in `lib/validation.ts` (email, semver, plugin slug, password strength)
+- **State Management**: React hooks + localStorage for view preferences (list/grid)
+- **Security**: CSP, HSTS, X-Frame-Options, no dangerouslySetInnerHTML (or properly escaped)
+
+## Environment Variables
+
+Create a `.env.local` file:
+
+```env
+# Optional — defaults to http://localhost:8080
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+## Deployment
+
+### On Coolify (Recommended)
+
+1. Point Coolify to the `pumpkin-hub` repository root
+2. Set the **Build Command** to:
+   ```bash
+   cd frontend && npm run build
+   ```
+3. Set the **Start Command** to:
+   ```bash
+   cd frontend && npm run start
+   ```
+4. Set environment variables:
+   ```
+   NEXT_PUBLIC_API_URL=https://api.your-domain.com
+   NODE_ENV=production
+   ```
+5. Coolify handles HTTPS (Traefik) and reverse proxy automatically
+
+### Security Headers
+
+Security headers are configured in `next.config.ts` and applied automatically:
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+If using a CDN/reverse proxy (Coolify/Cloudflare), ensure they don't strip these headers.
+
+## Contributing
+
+See the main project [CONTRIBUTING](../README.md) guide.
+
+## License
+
+MIT License — see LICENSE in project root.
+

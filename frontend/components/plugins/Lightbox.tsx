@@ -95,6 +95,7 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {item.media_type === "image" ? (
+          // eslint-disable-next-line @next/next/no-img-element -- lightbox media from external storage
           <img
             src={item.url}
             alt={item.caption ?? item.file_name}
@@ -152,6 +153,7 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
               aria-label={`View media ${index + 1}`}
             >
               {m.media_type === "image" ? (
+                // eslint-disable-next-line @next/next/no-img-element -- thumbnail strip from external storage
                 <img
                   src={m.thumbnail_url ?? m.url}
                   alt=""

@@ -134,6 +134,7 @@ export function MediaUpload({ pluginSlug }: MediaUploadProps) {
           {/* Preview */}
           <div className="relative inline-block">
             {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- blob URL preview from local file selection
               <img
                 src={previewUrl}
                 alt="Preview"

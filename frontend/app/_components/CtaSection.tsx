@@ -17,7 +17,7 @@ export function CtaSection() {
           <Button variant="ghost" href="/explorer" className="text-sm px-6 py-3">
             Browse Plugins
           </Button>
-          <Button href="#" className="text-sm px-6 py-3">
+          <Button href="/plugins/new" className="text-sm px-6 py-3">
             Publish a Plugin <Upload className="w-[14px] h-[14px]" />
           </Button>
         </div>

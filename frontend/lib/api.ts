@@ -214,8 +214,8 @@ export function getAuthMePath(): string {
   return "/auth/me";
 }
 
-export function getLogoutUrl(): string {
-  return `${API_PREFIX}/auth/logout`;
+export async function logout(): Promise<void> {
+  await apiFetch<{ message: string }>("/auth/logout", { method: "POST" });
 }
 
 export async function fetchCurrentUser(): Promise<UserProfile> {

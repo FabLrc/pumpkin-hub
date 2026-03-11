@@ -13,17 +13,13 @@ export function Footer() {
           </span>
         </div>
         <div className="flex items-center gap-6 font-mono text-xs text-text-dim">
-          <a href="#" className="hover:text-text-primary transition-colors">
+          <a
+            href="https://github.com/Snowiiii/Pumpkin"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-text-primary transition-colors"
+          >
             GitHub
-          </a>
-          <a href="#" className="hover:text-text-primary transition-colors">
-            Discord
-          </a>
-          <a href="#" className="hover:text-text-primary transition-colors">
-            API Docs
-          </a>
-          <a href="#" className="hover:text-text-primary transition-colors">
-            Status
           </a>
         </div>
       </div>
