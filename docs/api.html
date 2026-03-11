@@ -122,6 +122,16 @@
         <a href="#reviews-report" class="sidebar-sublink" style="padding-left:2rem;">Report Review</a>
         <a href="#admin-review-reports" class="sidebar-sublink" style="padding-left:2rem;">Admin: List Reports</a>
         <a href="#admin-review-reports-resolve" class="sidebar-sublink" style="padding-left:2rem;">Admin: Resolve Report</a>
+        <a href="#media" class="sidebar-sublink">Media Gallery</a>
+        <a href="#media-list" class="sidebar-sublink" style="padding-left:2rem;">List Media</a>
+        <a href="#media-upload" class="sidebar-sublink" style="padding-left:2rem;">Upload Media</a>
+        <a href="#media-update" class="sidebar-sublink" style="padding-left:2rem;">Update Media</a>
+        <a href="#media-delete" class="sidebar-sublink" style="padding-left:2rem;">Delete Media</a>
+        <a href="#media-reorder" class="sidebar-sublink" style="padding-left:2rem;">Reorder Media</a>
+        <a href="#changelog" class="sidebar-sublink">Changelog</a>
+        <a href="#changelog-get" class="sidebar-sublink" style="padding-left:2rem;">Get Changelog</a>
+        <a href="#changelog-update" class="sidebar-sublink" style="padding-left:2rem;">Update Changelog</a>
+        <a href="#changelog-delete" class="sidebar-sublink" style="padding-left:2rem;">Delete Changelog</a>
       </div>
     </aside>
 
@@ -134,8 +144,8 @@
 
       <div class="callout callout-warn">
         <div class="callout-label">Active development — Phase 3 In Progress</div>
-        Implemented: multi-provider auth, Plugin CRUD, Categories, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>, <strong>download analytics &amp; KPIs</strong>, <strong>API key management</strong> (permission enforcement, per-key rate limiting, usage audit trail), <strong>notification center</strong>, <strong>review system</strong> (star ratings, moderation, abuse reporting, Meilisearch sync).<br>
-        Next up: Publishing from GitHub, Collections &amp; Curations.
+        Implemented: multi-provider auth, Plugin CRUD, user profile management, avatar upload, creator dashboard, version management, <strong>binary storage &amp; distribution</strong> (S3-compatible upload, SHA-256 checksums, pre-signed download URLs), <strong>full-text search</strong> (Meilisearch), <strong>dependency graph</strong>, <strong>rate limiting</strong>, <strong>email verification &amp; password recovery</strong>, <strong>public author profiles</strong>, <strong>admin moderation &amp; audit logs</strong>, <strong>download analytics &amp; KPIs</strong>, <strong>API key management</strong> (permission enforcement, per-key rate limiting, usage audit trail), <strong>notification center</strong>, <strong>review system</strong> (star ratings, moderation, abuse reporting, Meilisearch sync), <strong>media gallery</strong> (image/video upload, lightbox, reordering), <strong>changelog tab</strong> (markdown rendering, inline editor, GitHub-sync source), <strong>plugin categories</strong> (17 categories, soft-deletion, display ordering).<br>
+        Next up: User Experience Improvements, Collections &amp; Curations.
       </div>
 
       <!-- ── Base URL ──────────────────────────────────────── -->
@@ -615,22 +625,24 @@
       <!-- ══════════════════════════════════════════════════════════════ -->
       <h2 id="categories">Categories</h2>
       <p>
-        Categories are classification tags that can be assigned to plugins.
-        This is a read-only public endpoint — categories are managed via database seeds.
+        Categories are classification tags that can be assigned to plugins (max 5 per plugin).
+        The endpoint returns only <strong>active</strong> categories ordered by <code>display_order</code>.
+        Categories are managed via database migrations, not the API.
       </p>
 
       <!-- ── List Categories ─────────────────────────────── -->
       <h3 id="categories-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/categories</code></h3>
-      <p>Returns all available categories, ordered alphabetically by name.</p>
+      <p>Returns all active categories ordered by <code>display_order</code>, then alphabetically.</p>
 
       <h4>Response <span class="badge badge-green">200 OK</span></h4>
       <pre><code>[
   {
-    "id": "c2000000-0000-0000-0000-000000000001",
-    "name": "Gameplay",
-    "slug": "gameplay",
-    "description": "Mechanics, game modes and player experience enhancements.",
-    "icon": "gamepad-2",
+    "id": "c2000000-0000-0000-0000-000000000009",
+    "name": "Adventure",
+    "slug": "adventure",
+    "description": "Quests, dungeons, RPG mechanics and narrative experiences.",
+    "icon": "compass",
+    "display_order": 1,
     "created_at": "2026-03-06T12:00:00Z"
   }
 ]</code></pre>
@@ -642,8 +654,33 @@
           <tr><td><code>name</code></td><td>string</td><td>Display name</td></tr>
           <tr><td><code>slug</code></td><td>string</td><td>URL-safe slug for filtering</td></tr>
           <tr><td><code>description</code></td><td>string | null</td><td>Short description of the category</td></tr>
-          <tr><td><code>icon</code></td><td>string | null</td><td>Lucide icon name (e.g. <code>gamepad-2</code>, <code>shield</code>)</td></tr>
+          <tr><td><code>icon</code></td><td>string | null</td><td>Lucide icon name (e.g. <code>compass</code>, <code>swords</code>, <code>database</code>)</td></tr>
+          <tr><td><code>display_order</code></td><td>integer</td><td>Sort position in the UI (ascending)</td></tr>
           <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Creation timestamp</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Available Categories (17)</h4>
+      <table>
+        <thead><tr><th>Slug</th><th>Display Name</th><th>Icon</th></tr></thead>
+        <tbody>
+          <tr><td><code>adventure</code></td><td>Adventure</td><td><code>compass</code></td></tr>
+          <tr><td><code>chat</code></td><td>Chat</td><td><code>message-square</code></td></tr>
+          <tr><td><code>decoration</code></td><td>Decoration</td><td><code>palette</code></td></tr>
+          <tr><td><code>economy</code></td><td>Economy</td><td><code>coins</code></td></tr>
+          <tr><td><code>equipment</code></td><td>Equipment</td><td><code>swords</code></td></tr>
+          <tr><td><code>game-mechanics</code></td><td>Game Mechanics</td><td><code>gamepad-2</code></td></tr>
+          <tr><td><code>library</code></td><td>Library</td><td><code>code</code></td></tr>
+          <tr><td><code>management</code></td><td>Management</td><td><code>shield</code></td></tr>
+          <tr><td><code>minigame</code></td><td>Minigame</td><td><code>trophy</code></td></tr>
+          <tr><td><code>mobs</code></td><td>Mobs</td><td><code>bug</code></td></tr>
+          <tr><td><code>optimization</code></td><td>Optimization</td><td><code>zap</code></td></tr>
+          <tr><td><code>security</code></td><td>Security</td><td><code>lock</code></td></tr>
+          <tr><td><code>social</code></td><td>Social</td><td><code>users</code></td></tr>
+          <tr><td><code>storage</code></td><td>Storage</td><td><code>database</code></td></tr>
+          <tr><td><code>transportation</code></td><td>Transportation</td><td><code>arrow-right-left</code></td></tr>
+          <tr><td><code>utility</code></td><td>Utility</td><td><code>wrench</code></td></tr>
+          <tr><td><code>world-generation</code></td><td>World Generation</td><td><code>globe</code></td></tr>
         </tbody>
       </table>
 
@@ -2094,11 +2131,230 @@
         </tbody>
       </table>
 
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                      MEDIA GALLERY                            -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="media">Media Gallery</h2>
+      <p>
+        Each plugin can have up to <strong>10 media items</strong> (images or videos) displayed in a lightbox gallery.
+        Images must be JPEG, PNG, or WebP and cannot exceed 10 MB. Videos must be MP4 or WebM and cannot exceed 100 MB.
+        Files are stored in MinIO (S3-compatible) and served via pre-signed URLs. Write endpoints require plugin ownership.
+      </p>
+
+      <!-- ── List Media ──────────────────────────────────── -->
+      <h3 id="media-list"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/{slug}/media</code></h3>
+      <p>Returns all media items for a plugin, ordered by <code>position</code>.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>[
+  {
+    "id": "m1000000-0000-0000-0000-000000000001",
+    "plugin_id": "550e8400-e29b-41d4-a716-446655440000",
+    "media_type": "image",
+    "original_filename": "screenshot.png",
+    "file_size": 204800,
+    "mime_type": "image/png",
+    "url": "https://storage.../media/screenshot.png?X-Amz-...",
+    "caption": "Main gameplay overview",
+    "position": 0,
+    "created_at": "2026-05-01T10:00:00Z"
+  }
+]</code></pre>
+
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>UUID</td><td>Media item identifier</td></tr>
+          <tr><td><code>plugin_id</code></td><td>UUID</td><td>Parent plugin identifier</td></tr>
+          <tr><td><code>media_type</code></td><td>string</td><td><code>image</code> or <code>video</code></td></tr>
+          <tr><td><code>original_filename</code></td><td>string</td><td>Original upload filename</td></tr>
+          <tr><td><code>file_size</code></td><td>integer</td><td>File size in bytes</td></tr>
+          <tr><td><code>mime_type</code></td><td>string</td><td>MIME type (e.g. <code>image/png</code>, <code>video/mp4</code>)</td></tr>
+          <tr><td><code>url</code></td><td>string</td><td>Pre-signed S3 URL (expires in 1 hour)</td></tr>
+          <tr><td><code>caption</code></td><td>string | null</td><td>Optional caption text</td></tr>
+          <tr><td><code>position</code></td><td>integer</td><td>Display order (0-indexed)</td></tr>
+          <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Upload timestamp</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Upload Media ────────────────────────────────── -->
+      <h3 id="media-upload"><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/plugins/{slug}/media</code> &nbsp; <span class="badge badge-yellow">Auth</span></h3>
+      <p>Uploads a new media item. The request must use <code>multipart/form-data</code>.</p>
+
+      <h4>Form Fields</h4>
+      <table>
+        <thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>file</code></td><td>Yes</td><td>Binary file payload. Accepted: JPEG, PNG, WebP (&le; 10 MB), MP4, WebM (&le; 100 MB)</td></tr>
+          <tr><td><code>caption</code></td><td>No</td><td>Optional caption text (max 200 chars)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">201 Created</span></h4>
+      <p>Returns the created media item object.</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Unsupported file type or file exceeds size limit</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin owner</td></tr>
+          <tr><td><span class="badge badge-yellow">409</span></td><td>Plugin already has 10 media items</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Update Media ────────────────────────────────── -->
+      <h3 id="media-update"><span class="badge badge-orange">PATCH</span> &nbsp; <code>/api/v1/plugins/{slug}/media/{media_id}</code> &nbsp; <span class="badge badge-yellow">Auth</span></h3>
+      <p>Updates the caption of an existing media item.</p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "caption": "Updated caption text"
+}</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the updated media item object.</p>
+
+      <!-- ── Delete Media ────────────────────────────────── -->
+      <h3 id="media-delete"><span class="badge badge-red">DELETE</span> &nbsp; <code>/api/v1/plugins/{slug}/media/{media_id}</code> &nbsp; <span class="badge badge-yellow">Auth</span></h3>
+      <p>Permanently deletes a media item and its associated file from object storage.</p>
+
+      <h4>Response <span class="badge badge-green">204 No Content</span></h4>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin owner</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Media item not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Reorder Media ───────────────────────────────── -->
+      <h3 id="media-reorder"><span class="badge badge-blue">PUT</span> &nbsp; <code>/api/v1/plugins/{slug}/media/reorder</code> &nbsp; <span class="badge badge-yellow">Auth</span></h3>
+      <p>Updates the display order of all media items for a plugin in a single atomic operation.</p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "order": [
+    "m1000000-0000-0000-0000-000000000003",
+    "m1000000-0000-0000-0000-000000000001",
+    "m1000000-0000-0000-0000-000000000002"
+  ]
+}</code></pre>
+      <p>The array must contain <strong>all</strong> media item IDs for the plugin. Items receive positions 0, 1, 2… in the order given.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the full reordered list of media item objects.</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Order array does not contain all media IDs, or contains unknown IDs</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin owner</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <!--                        CHANGELOG                              -->
+      <!-- ══════════════════════════════════════════════════════════════ -->
+      <h2 id="changelog">Changelog</h2>
+      <p>
+        Each plugin can have a single changelog document written in
+        <a href="https://keepachangelog.com/" target="_blank" rel="noopener">Keep a Changelog</a>-style Markdown.
+        The record stores the raw Markdown content and an optional <code>source</code> flag indicating whether the
+        changelog was written manually (<code>manual</code>) or synced from a GitHub release (<code>github</code>).
+        Write endpoints require plugin ownership.
+      </p>
+
+      <!-- ── Get Changelog ──────────────────────────────── -->
+      <h3 id="changelog-get"><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/plugins/{slug}/changelog</code></h3>
+      <p>Returns the changelog for a plugin, if one exists.</p>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "id": "ch000000-0000-0000-0000-000000000001",
+  "plugin_id": "550e8400-e29b-41d4-a716-446655440000",
+  "content": "## [1.2.0] - 2026-04-20\n### Added\n- Async chunk streaming\n### Fixed\n- Memory leak on reload",
+  "source": "manual",
+  "created_at": "2026-04-20T14:00:00Z",
+  "updated_at": "2026-04-25T09:30:00Z"
+}</code></pre>
+
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>UUID</td><td>Changelog record identifier</td></tr>
+          <tr><td><code>plugin_id</code></td><td>UUID</td><td>Parent plugin identifier</td></tr>
+          <tr><td><code>content</code></td><td>string</td><td>Raw Markdown changelog content (sanitized server-side)</td></tr>
+          <tr><td><code>source</code></td><td>string</td><td><code>manual</code> (inline editor) or <code>github</code> (synced from GitHub release)</td></tr>
+          <tr><td><code>created_at</code></td><td>ISO 8601</td><td>Creation timestamp</td></tr>
+          <tr><td><code>updated_at</code></td><td>ISO 8601</td><td>Last update timestamp</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or changelog not found</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Update Changelog ───────────────────────────── -->
+      <h3 id="changelog-update"><span class="badge badge-blue">PUT</span> &nbsp; <code>/api/v1/plugins/{slug}/changelog</code> &nbsp; <span class="badge badge-yellow">Auth</span></h3>
+      <p>
+        Creates or replaces the plugin changelog (UPSERT). The <code>content</code> is sanitized
+        server-side to prevent XSS before being persisted.
+      </p>
+
+      <h4>Request Body</h4>
+      <pre><code>{
+  "content": "## [1.3.0] - 2026-05-10\n### Added\n- New biome support\n### Changed\n- Performance improvements",
+  "source": "manual"
+}</code></pre>
+
+      <table>
+        <thead><tr><th>Field</th><th>Required</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>content</code></td><td>Yes</td><td>Markdown changelog content (max 64 KB)</td></tr>
+          <tr><td><code>source</code></td><td>No</td><td><code>manual</code> (default) or <code>github</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <p>Returns the full changelog object.</p>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">400</span></td><td>Content exceeds 64 KB or is empty</td></tr>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin owner</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Delete Changelog ───────────────────────────── -->
+      <h3 id="changelog-delete"><span class="badge badge-red">DELETE</span> &nbsp; <code>/api/v1/plugins/{slug}/changelog</code> &nbsp; <span class="badge badge-yellow">Auth</span></h3>
+      <p>Permanently deletes the plugin changelog.</p>
+
+      <h4>Response <span class="badge badge-green">204 No Content</span></h4>
+
+      <h4>Error Cases</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Cause</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-yellow">403</span></td><td>Not the plugin owner</td></tr>
+          <tr><td><span class="badge badge-yellow">404</span></td><td>Plugin or changelog not found</td></tr>
+        </tbody>
+      </table>
+
     </main>
   </div>
 
   <footer class="footer">
-    Pumpkin Hub · Documentation · Open Source under MIT License
+    Pumpkin Hub &middot; Documentation &middot; Open Source under MIT License
   </footer>
 
 </body>

@@ -128,9 +128,13 @@
 │       │   ├── plugin.rs   # Plugin (registry entry)
 │       │   ├── version.rs  # Version (semver release)
 │       │   ├── binary.rs   # Binary (compiled artifact per version+platform)
-│       │   ├── category.rs # Category (classification tag)
+│       │   ├── category.rs # Category (is_active, display_order)
 │       │   ├── plugin_category.rs # Junction table
-│       │   └── plugin_dependency.rs # Inter-plugin dependency
+│       │   ├── plugin_dependency.rs # Inter-plugin dependency
+│       │   ├── plugin_media.rs # Media gallery item (image/video)
+│       │   ├── plugin_changelog.rs # Plugin changelog (UPSERT, source flag)
+│       │   ├── review.rs   # Plugin review (star rating + text)
+│       │   └── review_report.rs # Abuse report on a review
 │       ├── search/         # Meilisearch integration
 │       │   └── mod.rs      # Plugin indexing, search, suggestions, Pumpkin versions
 │       ├── storage/        # Object storage abstraction
@@ -167,6 +171,18 @@
 │           │   ├── mod.rs      # Route declarations
 │           │   ├── dto.rs      # Notification DTOs
 │           │   └── handlers.rs # List, unread count, mark read, create helpers
+│           ├── reviews/    # Plugin review system module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # Review request/response DTOs
+│           │   └── handlers.rs # Create, update, delete, hide, report, admin moderation
+│           ├── media/      # Plugin media gallery module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # MediaItem response DTO
+│           │   └── handlers.rs # Upload, update caption, delete, reorder
+│           ├── changelogs/ # Plugin changelog module
+│           │   ├── mod.rs      # Route declarations
+│           │   ├── dto.rs      # ChangelogResponse DTO
+│           │   └── handlers.rs # Get, upsert (PUT), delete
 │           └── admin/      # Admin moderation module
 │               ├── mod.rs      # Route declarations (role-protected)
 │               ├── dto.rs      # Admin DTOs
@@ -183,9 +199,10 @@
 │   ├── vitest.config.ts    # Vitest test configuration
 │   ├── vitest.setup.ts     # Test setup (mocks, environment)
 │   ├── lib/
-│   │   ├── types.ts        # API DTOs (UserProfile, PluginSummary, ApiKeySummary, NotificationItem, etc.)
-│   │   ├── api.ts          # Fetch helpers &amp; SWR key generators (plugins, auth, api-keys, notifications)
-│   │   └── hooks.ts        # SWR hooks (usePlugins, useApiKeys, useNotifications, useAuthorDashboardStats, etc.)
+│   │   ├── types.ts        # API DTOs (UserProfile, PluginSummary, MediaItem, ChangelogResponse, ReviewSummary, etc.)
+│   │   ├── api.ts          # Fetch helpers &amp; SWR key generators (plugins, auth, api-keys, notifications, media, changelog)
+│   │   ├── hooks.ts        # SWR hooks (usePlugins, useApiKeys, useNotifications, useMedia, useChangelog, useReviews, etc.)
+│   │   └── category-icons.ts # Shared Lucide icon map for the 17 plugin categories
 │   ├── components/
 │   │   ├── layout/         # Navbar (with NotificationBell), Footer, NotificationProvider (Sonner)
 │   │   ├── notifications/  # NotificationBell (dropdown with unread badge)
@@ -210,7 +227,9 @@
 │       │   └── _components/# ExplorerContent, ExplorerSidebar, ExplorerResults
 │       ├── plugins/[slug]/
 │       │   ├── page.tsx    # Plugin detail page
-│       │   └── _components/# PluginHeader, PluginContent, PluginSidebar
+│       │   └── _components/# PluginHeader, PluginContent, PluginSidebar,
+│       │                   #   GalleryTab (media lightbox), ChangelogTab (Markdown renderer),
+│       │                   #   Lightbox (keyboard-navigable carousel), MediaUpload (drag-and-drop)
 │       ├── dashboard/      # Author dashboard (plugins, analytics, API keys, notifications)
 │       │   ├── page.tsx        # KPIs, download charts, plugin list
 │       │   ├── api-keys/       # API key management page
@@ -360,7 +379,25 @@
                                └──────────────────────────┘    FK → users(id)
                                  FK → users(id)                Indexes on (user_id,
                                  Indexes on (user_id),           is_read, created_at)
-                                   (key_hash)</code></pre>
+                                   (key_hash)
+
+┌──────────────────────────┐  ┌──────────────────────────┐
+│      plugin_media        │  │    plugin_changelogs     │
+├──────────────────────────┤  ├──────────────────────────┤
+│ id             PK        │  │ id             PK        │
+│ plugin_id      FK        │  │ plugin_id   FK UNIQUE    │
+│ media_type  CHK          │  │ content      TEXT        │
+│ s3_key                   │  │ source      CHK          │
+│ original_filename        │  │ created_at               │
+│ file_size                │  │ updated_at               │
+│ mime_type                │  └──────────────────────────┘
+│ caption                  │    FK → plugins(id) CASCADE
+│ position                 │    source IN (manual, github)
+│ created_at               │    UNIQUE(plugin_id): one per plugin
+└──────────────────────────┘
+  FK → plugins(id) CASCADE
+  media_type IN (image, video)
+  Max 10 items per plugin</code></pre>
 
       <h3>Key Constraints</h3>
       <table>
@@ -381,7 +418,6 @@
           <tr><td><code>versions</code></td><td><code>(plugin_id, version)</code></td><td>UNIQUE</td></tr>
           <tr><td><code>versions</code></td><td><code>plugin_id</code> → <code>plugins(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>plugin_categories</code></td><td><code>(plugin_id, category_id)</code></td><td>COMPOSITE PK</td></tr>
-          <tr><td><code>categories</code></td><td><code>name</code>, <code>slug</code></td><td>UNIQUE</td></tr>
           <tr><td><code>email_verification_tokens</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>password_reset_tokens</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>audit_logs</code></td><td><code>actor_id</code> → <code>users(id)</code></td><td>FK SET NULL</td></tr>
@@ -392,6 +428,15 @@
           <tr><td><code>api_keys</code></td><td><code>key_hash</code></td><td>INDEX</td></tr>
           <tr><td><code>notifications</code></td><td><code>user_id</code> → <code>users(id)</code></td><td>FK CASCADE</td></tr>
           <tr><td><code>notifications</code></td><td><code>(user_id, is_read, created_at DESC)</code></td><td>INDEX</td></tr>
+          <tr><td><code>categories</code></td><td><code>name</code>, <code>slug</code></td><td>UNIQUE</td></tr>
+          <tr><td><code>categories</code></td><td><code>is_active</code></td><td>BOOLEAN DEFAULT TRUE</td></tr>
+          <tr><td><code>categories</code></td><td><code>display_order</code></td><td>INTEGER DEFAULT 999</td></tr>
+          <tr><td><code>plugin_media</code></td><td><code>plugin_id</code> → <code>plugins(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>plugin_media</code></td><td><code>media_type</code> IN (image, video)</td><td>CHECK</td></tr>
+          <tr><td><code>plugin_media</code></td><td>Max 10 items per plugin (enforced in handler)</td><td>BUSINESS RULE</td></tr>
+          <tr><td><code>plugin_changelogs</code></td><td><code>plugin_id</code> → <code>plugins(id)</code></td><td>FK CASCADE</td></tr>
+          <tr><td><code>plugin_changelogs</code></td><td><code>plugin_id</code></td><td>UNIQUE (one per plugin)</td></tr>
+          <tr><td><code>plugin_changelogs</code></td><td><code>source</code> IN (manual, github)</td><td>CHECK</td></tr>
         </tbody>
       </table>
 
@@ -435,7 +480,7 @@
         <tbody>
           <tr><td>Landing</td><td><code>/</code></td><td>Hero section, trending bento grid, feature cards, CTA, live ticker</td></tr>
           <tr><td>Explorer</td><td><code>/explorer</code></td><td>Meilisearch-powered sidebar filters, faceted search, paginated results</td></tr>
-          <tr><td>Plugin Detail</td><td><code>/plugins/[slug]</code></td><td>Install panel, tabbed content (Overview/Versions/Dependencies), sidebar stats</td></tr>
+          <tr><td>Plugin Detail</td><td><code>/plugins/[slug]</code></td><td>Install panel, tabbed content (Overview / Versions / Dependencies / Gallery / Changelog / Reviews), sidebar stats</td></tr>
           <tr><td>Plugin Create</td><td><code>/plugins/new</code></td><td>Authenticated plugin submission form</td></tr>
           <tr><td>Plugin Edit</td><td><code>/plugins/[slug]/edit</code></td><td>Pre-populated edit form (ownership enforced)</td></tr>
           <tr><td>Auth</td><td><code>/auth</code></td><td>Sign-in/sign-up forms with email/password and OAuth provider buttons</td></tr>
@@ -457,9 +502,10 @@
         The frontend communicates with the Rust API via a typed layer in <code>frontend/lib/</code>:
       </p>
       <ul>
-        <li><code>types.ts</code> — TypeScript DTOs mirroring the API response shapes (<code>UserProfile</code>, <code>PluginSummary</code>, <code>ApiKeySummary</code>, <code>NotificationItem</code>, <code>AuthorDashboardStats</code>, etc.)</li>
-        <li><code>api.ts</code> — Fetch helpers and SWR key generators with <code>credentials: "include"</code> for cookie auth, plus mutation helpers for API keys and notifications</li>
-        <li><code>hooks.ts</code> — SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>, <code>useCategories</code>, <code>useCurrentUser</code>, <code>useAuthorDashboardStats</code>, <code>useApiKeys</code>, <code>useNotifications</code>, <code>useUnreadCount</code>) with typed parameters</li>
+        <li><code>types.ts</code> — TypeScript DTOs mirroring API response shapes (<code>UserProfile</code>, <code>PluginSummary</code>, <code>ApiKeySummary</code>, <code>NotificationItem</code>, <code>AuthorDashboardStats</code>, <code>MediaItem</code>, <code>ChangelogResponse</code>, <code>ReviewSummary</code>, etc.)</li>
+        <li><code>api.ts</code> — Fetch helpers and SWR key generators with <code>credentials: "include"</code> for cookie auth, plus mutation helpers for API keys, notifications, media, and changelog</li>
+        <li><code>hooks.ts</code> — SWR hooks (<code>usePlugins</code>, <code>usePlugin</code>, <code>useCategories</code>, <code>useCurrentUser</code>, <code>useAuthorDashboardStats</code>, <code>useApiKeys</code>, <code>useNotifications</code>, <code>useUnreadCount</code>, <code>useMedia</code>, <code>useChangelog</code>, <code>useReviews</code>) with typed parameters</li>
+        <li><code>category-icons.ts</code> — Shared <code>Record&lt;string, LucideIcon&gt;</code> map from category slug to Lucide icon component, used by <code>CategoryPicker</code>, <code>ExplorerSidebar</code>, and plugin forms</li>
       </ul>
 
       <!-- ── Infrastructure ────────────────────────────────── -->
