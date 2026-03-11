@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Terminal } from "lucide-react";
 import Image from "next/image";
 
@@ -12,11 +12,45 @@ interface HeroSectionProps {
 export function HeroSection({ totalPlugins }: HeroSectionProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isMac, setIsMac] = useState(true);
+
+  useEffect(() => {
+    setIsMac(navigator.platform.toUpperCase().includes("MAC"));
+  }, []);
+
+  const focusSearchInput = useCallback(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  // Global Cmd+K / Ctrl+K shortcut
+  useEffect(() => {
+    function handleGlobalKeydown(event: KeyboardEvent) {
+      const isModifier = event.metaKey || event.ctrlKey;
+      if (isModifier && event.key === "k") {
+        event.preventDefault();
+        focusSearchInput();
+      }
+    }
+
+    document.addEventListener("keydown", handleGlobalKeydown);
+    return () => document.removeEventListener("keydown", handleGlobalKeydown);
+  }, [focusSearchInput]);
+
+  function handleSearchKeydown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setSearchQuery("");
+      inputRef.current?.blur();
+    }
+  }
 
   function handleSearchSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/explorer?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push("/explorer");
     }
   }
 
@@ -58,15 +92,19 @@ export function HeroSection({ totalPlugins }: HeroSectionProps) {
               <div className="border border-border-hover bg-bg-elevated flex items-center gap-4 px-5 py-4 hover:border-border-hover transition-colors">
                 <Terminal className="text-accent flex-shrink-0 w-[18px] h-[18px]" />
                 <input
+                  ref={inputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search plugins, authors, tags... (⌘K)"
+                  onKeyDown={handleSearchKeydown}
+                  placeholder={`Search plugins, authors, tags... (${isMac ? "⌘" : "Ctrl+"}K)`}
                   className="search-input flex-1 bg-transparent font-mono text-sm text-text-primary placeholder-text-dim border-0 outline-none"
+                  autoFocus
+                  aria-label="Search plugins"
                 />
                 <div className="flex items-center gap-2">
                   <kbd className="font-mono text-[10px] text-text-dim border border-border-default px-1.5 py-0.5">
-                    ⌘
+                    {isMac ? "⌘" : "Ctrl"}
                   </kbd>
                   <kbd className="font-mono text-[10px] text-text-dim border border-border-default px-1.5 py-0.5">
                     K

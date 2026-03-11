@@ -63,6 +63,21 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Global Cmd+K / Ctrl+K shortcut to focus search
+  useEffect(() => {
+    function handleGlobalKeydown(event: KeyboardEvent) {
+      const isModifier = event.metaKey || event.ctrlKey;
+      if (isModifier && event.key === "k") {
+        event.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+    }
+
+    document.addEventListener("keydown", handleGlobalKeydown);
+    return () => document.removeEventListener("keydown", handleGlobalKeydown);
+  }, []);
+
   const submitSearch = useCallback(
     (query: string) => {
       onChange(query);
@@ -143,7 +158,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
           placeholder="Search plugins..."
           className="search-input flex-1 bg-transparent font-mono text-xs text-text-primary placeholder-text-dim border-0 outline-none"
           role="combobox"
-          aria-expanded={showDropdown}
+          aria-expanded={showDropdown ? "true" : "false"}
           aria-autocomplete="list"
           aria-controls="search-suggestions"
           aria-activedescendant={
@@ -169,7 +184,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
                 key={suggestion.slug}
                 id={`suggestion-${index}`}
                 role="option"
-                aria-selected={index === activeIndex}
+                aria-selected={index === activeIndex ? "true" : "false"}
                 onClick={() => navigateToPlugin(suggestion.slug)}
                 className={`w-full text-left px-3 py-2.5 font-mono text-xs transition-colors cursor-pointer ${
                   index === activeIndex
