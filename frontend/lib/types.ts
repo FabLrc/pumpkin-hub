@@ -60,6 +60,7 @@ export interface CategoryResponse {
   slug: string;
   description: string | null;
   icon: string | null;
+  display_order: number;
   created_at: string;
 }
 

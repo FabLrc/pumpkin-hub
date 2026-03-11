@@ -1,45 +1,10 @@
 "use client";
 
-import {
-  Shield,
-  Coins,
-  Map,
-  Users,
-  Gamepad2,
-  Database,
-  MessageSquare,
-  Globe,
-  Code,
-  Zap,
-  Lock,
-  Tag,
-  type LucideIcon,
-} from "lucide-react";
+import { getCategoryIcon } from "@/lib/category-icons";
 import type { SearchSortOption, FacetDistribution } from "@/lib/types";
 import { useCategories, usePumpkinVersions } from "@/lib/hooks";
 import { PLATFORMS } from "@/lib/types";
 import { SearchBar } from "./SearchBar";
-
-// ── Icon Mapping ──────────────────────────────────────────────────────────
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  "gamepad-2": Gamepad2,
-  shield: Shield,
-  globe: Globe,
-  coins: Coins,
-  "message-square": MessageSquare,
-  code: Code,
-  zap: Zap,
-  lock: Lock,
-  map: Map,
-  users: Users,
-  database: Database,
-};
-
-function getCategoryIcon(icon: string | null): LucideIcon {
-  if (icon && icon in ICON_MAP) return ICON_MAP[icon];
-  return Tag;
-}
 
 // ── Sort Options ──────────────────────────────────────────────────────────
 

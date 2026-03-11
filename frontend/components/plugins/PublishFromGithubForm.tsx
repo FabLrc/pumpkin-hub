@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Github, RefreshCw, Search, Check, ExternalLink } from "lucide-react";
+import {
+  Github,
+  RefreshCw,
+  Search,
+  Check,
+  ExternalLink,
+} from "lucide-react";
 import { toast } from "sonner";
+import { getCategoryIcon } from "@/lib/category-icons";
 import { useCategories } from "@/lib/hooks";
 import { listMyGithubRepos, publishPluginFromGithub } from "@/lib/api";
 import type { MyGithubRepository } from "@/lib/types";
@@ -271,19 +278,21 @@ export function PublishFromGithubForm({ onSuccess }: PublishFromGithubFormProps)
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat) => {
                     const isSelected = selectedCategoryIds.includes(cat.id);
+                    const Icon = getCategoryIcon(cat.icon);
                     return (
                       <button
                         key={cat.id}
                         type="button"
                         onClick={() => toggleCategory(cat.id)}
                         disabled={!isSelected && selectedCategoryIds.length >= 5}
-                        className={`font-mono text-[10px] px-2.5 py-1.5 border transition-colors cursor-pointer disabled:opacity-40 ${
+                        title={cat.description ?? undefined}
+                        className={`font-mono text-[10px] px-2.5 py-1.5 border transition-colors cursor-pointer disabled:opacity-40 inline-flex items-center gap-1 ${
                           isSelected
                             ? "border-accent bg-accent/10 text-accent"
                             : "border-border-default text-text-dim hover:border-accent/50"
                         }`}
                       >
-                        {isSelected && <Check className="w-2.5 h-2.5 inline mr-1" />}
+                        {isSelected ? <Check className="w-2.5 h-2.5" /> : <Icon className="w-2.5 h-2.5" />}
                         {cat.name}
                       </button>
                     );

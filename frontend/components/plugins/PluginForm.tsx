@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { AlertCircle, X } from "lucide-react";
+import { getCategoryIcon } from "@/lib/category-icons";
 import { useCategories } from "@/lib/hooks";
 import type { PluginFormData, FieldError } from "@/lib/validation";
 import { validatePluginForm, PLUGIN_RULES } from "@/lib/validation";
@@ -293,12 +294,14 @@ function CategoryPicker({
       {categories.map((cat) => {
         const isSelected = selectedIds.includes(cat.id);
         const isDisabled = !isSelected && maxReached;
+        const Icon = getCategoryIcon(cat.icon);
         return (
           <button
             key={cat.id}
             type="button"
             disabled={isDisabled}
             onClick={() => onToggle(cat.id)}
+            title={cat.description ?? undefined}
             className={`
               inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-colors cursor-pointer
               border
@@ -312,7 +315,7 @@ function CategoryPicker({
             `}
             aria-pressed={isSelected ? "true" : "false"}
           >
-            {cat.icon && <span>{cat.icon}</span>}
+            <Icon className="w-3 h-3" />
             {cat.name}
             {isSelected && <X className="w-3 h-3" />}
           </button>
