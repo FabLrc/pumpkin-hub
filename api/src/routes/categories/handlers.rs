@@ -4,12 +4,15 @@ use crate::{error::AppError, models::category::Category, state::AppState};
 
 use super::dto::CategoryResponse;
 
-/// GET /api/v1/categories — returns all categories ordered by name.
+/// GET /api/v1/categories — returns active categories ordered by display_order.
 pub async fn list_categories(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<CategoryResponse>>, AppError> {
     let categories = sqlx::query_as::<_, Category>(
-        "SELECT id, name, slug, description, icon, created_at FROM categories ORDER BY name",
+        "SELECT id, name, slug, description, icon, is_active, display_order, created_at
+         FROM categories
+         WHERE is_active = TRUE
+         ORDER BY display_order, name",
     )
     .fetch_all(&state.db)
     .await
@@ -23,6 +26,7 @@ pub async fn list_categories(
             slug: c.slug,
             description: c.description,
             icon: c.icon,
+            display_order: c.display_order,
             created_at: c.created_at,
         })
         .collect();

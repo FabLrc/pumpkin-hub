@@ -11,5 +11,7 @@ pub struct Category {
     pub slug: String,
     pub description: Option<String>,
     pub icon: Option<String>,
+    pub is_active: bool,
+    pub display_order: i32,
     pub created_at: DateTime<Utc>,
 }

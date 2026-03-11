@@ -413,7 +413,8 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
         "SELECT pc.plugin_id, c.name AS category_name, c.slug AS category_slug
          FROM plugin_categories pc
          JOIN categories c ON pc.category_id = c.id
-         WHERE pc.plugin_id = ANY($1)",
+         WHERE pc.plugin_id = ANY($1)
+           AND c.is_active = TRUE",
     )
     .bind(&plugin_ids)
     .fetch_all(pool)
@@ -539,7 +540,8 @@ pub async fn build_single_plugin_document(
         "SELECT pc.plugin_id, c.name AS category_name, c.slug AS category_slug
          FROM plugin_categories pc
          JOIN categories c ON pc.category_id = c.id
-         WHERE pc.plugin_id = $1",
+         WHERE pc.plugin_id = $1
+           AND c.is_active = TRUE",
     )
     .bind(plugin_id)
     .fetch_all(pool)

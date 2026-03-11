@@ -119,7 +119,8 @@ async fn load_categories_batch(
                 c.slug AS category_slug
          FROM plugin_categories pc
          JOIN categories c ON pc.category_id = c.id
-         WHERE pc.plugin_id = ANY($1)",
+         WHERE pc.plugin_id = ANY($1)
+           AND c.is_active = TRUE",
     )
     .bind(plugin_ids)
     .fetch_all(pool)
@@ -167,21 +168,22 @@ async fn fetch_plugin_by_slug(pool: &PgPool, slug: &str) -> Result<PluginWithAut
     .ok_or(AppError::NotFound)
 }
 
-/// Validates that every category ID in `ids` actually exists.
+/// Validates that every category ID in `ids` exists and is active.
 pub(crate) async fn validate_categories_exist(pool: &PgPool, ids: &[Uuid]) -> Result<(), AppError> {
     if ids.is_empty() {
         return Ok(());
     }
-    let count: Option<i64> =
-        sqlx::query_scalar("SELECT COUNT(*) FROM categories WHERE id = ANY($1)")
-            .bind(ids)
-            .fetch_one(pool)
-            .await
-            .map_err(AppError::internal)?;
+    let count: Option<i64> = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM categories WHERE id = ANY($1) AND is_active = TRUE",
+    )
+    .bind(ids)
+    .fetch_one(pool)
+    .await
+    .map_err(AppError::internal)?;
 
     if count.unwrap_or(0) as usize != ids.len() {
         return Err(AppError::UnprocessableEntity(
-            "One or more category IDs are invalid".to_string(),
+            "One or more category IDs are invalid or inactive".to_string(),
         ));
     }
     Ok(())

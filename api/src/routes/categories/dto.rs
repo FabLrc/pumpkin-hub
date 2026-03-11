@@ -10,5 +10,6 @@ pub struct CategoryResponse {
     pub slug: String,
     pub description: Option<String>,
     pub icon: Option<String>,
+    pub display_order: i32,
     pub created_at: DateTime<Utc>,
 }
