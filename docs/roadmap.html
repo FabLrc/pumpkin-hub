@@ -58,6 +58,7 @@
         <a href="#phase-2" class="sidebar-sublink">Phase 2 — Distribution</a>
         <a href="#phase-2-5" class="sidebar-sublink">Phase 2.5 — Hardening</a>
         <a href="#phase-3" class="sidebar-sublink">Phase 3 — Community</a>
+        <a href="#phase-3-5" class="sidebar-sublink">Phase 3.5 — Server Config</a>
         <a href="#phase-4" class="sidebar-sublink">Phase 4 — Ecosystem</a>
         <a href="#backlog" class="sidebar-sublink">Backlog</a>
       </div>
@@ -474,6 +475,20 @@
           </ul>
         </div>
 
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Performance & Caching Layer</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Redis integration for distributed caching — hot data (popular plugins, category lists, user sessions)</li>
+            <li>Cache invalidation strategy on CRUD operations (write-through pattern)</li>
+            <li>Meilisearch search result caching with TTL</li>
+            <li>Connection pooling and eviction policies (LRU/TTL)</li>
+            <li>Measurable performance gains: 90% reduction on popular plugin detail page latency, sub-100ms search responses</li>
+          </ul>
+        </div>
+
         <!-- ── PHASE 3 — Community ─────────────────────────── -->
         <h2 id="phase-3" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 3 — Community <span class="badge badge-orange">In Progress</span></h2>
 
@@ -527,12 +542,81 @@
         <div class="timeline-item">
           <div class="timeline-dot planned"></div>
           <div class="timeline-header">
+            <span class="timeline-title">Enhanced Plugin Detail & Media Gallery</span>
+          </div>
+          <ul class="timeline-features">
+            <li>New <strong>Gallery</strong> tab on plugin detail page for images and videos</li>
+            <li>Media upload with validation (JPEG, PNG, WebP images; MP4, WebM videos)</li>
+            <li>Thumbnail generation and lazy-loading for performance</li>
+            <li>New <strong>Changelog</strong> tab with automatic sync from GitHub (<code>changelog.md</code>, <code>CHANGELOG.md</code>)</li>
+            <li>Fallback to manually edited changelog from the web UI when GitHub repo is not connected</li>
+            <li>Markdown rendering with syntax highlighting in both tabs</li>
+            <li>Carousel/lightbox experience for gallery navigation</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Plugin Categories Refinement</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Audit and reorganize existing plugin categories for better semantic grouping</li>
+            <li>Addition of new categories aligned with common Minecraft plugin use cases (e.g., World, Gameplay, Economy, Moderation, Chat, etc.)</li>
+            <li>Soft-deletion of unused categories to preserve historical data</li>
+            <li>Frontend filters updated to reflect new hierarchy</li>
+            <li>Category suggestions on plugin creation form</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">User Experience Improvements</span>
+          </div>
+          <ul class="timeline-features">
+            <li><strong>Grid View</strong> toggle on Explorer page — switch between list and card grid layouts for plugin browsing</li>
+            <li>Persistent user preference (localStorage / profile setting)</li>
+            <li><strong>Search Bar on Landing Page</strong> — unified search experience linking to Explorer with pre-filled query</li>
+            <li>Auto-focus and keyboard navigation for accessibility</li>
+            <li>Hero section updated with prominent search CTA</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
             <span class="timeline-title">Collections &amp; Curations</span>
           </div>
           <ul class="timeline-features">
             <li>Thematic plugin collections (e.g., "Essential PvP Pack")</li>
             <li>Staff Picks — featured plugins by the team</li>
             <li>Editorial categories and community tags</li>
+          </ul>
+        </div>
+
+        <!-- ── PHASE 3.5 — Server Configuration ────────────── -->
+        <h2 id="phase-3-5" style="border:none;padding:0;margin:2.5rem 0 1.5rem;">Phase 3.5 — Server Configuration <span class="badge badge-blue">Planned</span></h2>
+
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Pumpkin Server Configurator</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Interactive <strong>server configuration wizard</strong> at <code>/server-configurator</code> — select plugins from catalog with granular filtering</li>
+            <li>Plugin compatibility check — auto-detect conflicts, circular dependencies, version incompatibilities</li>
+            <li>Dependency graph auto-resolution — add a plugin and its required dependencies are automatically included</li>
+            <li>Pre-configuration of selected plugins — tune parameters, settings, and game mechanics (optional)</li>
+            <li>Generate downloadable ZIP with pre-configured server files:
+              <ul>
+                <li><code>pumpkin-config.toml</code> (server configuration)</li>
+                <li>All plugin binaries organized by platform (Windows/Linux/macOS)</li>
+                <li>README with setup instructions and dependency list</li>
+              </ul>
+            </li>
+            <li>Save & share configurations — unique shareable links (<code>/configs/{id}</code>) for easy server setup distribution</li>
+            <li>Analytics dashboard — track popular plugin combinations and configuration patterns</li>
           </ul>
         </div>
 
@@ -590,6 +674,28 @@
           </ul>
         </div>
 
+        <div class="timeline-item">
+          <div class="timeline-dot planned"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Plugin Co-Creators & Advanced Permissions</span>
+          </div>
+          <ul class="timeline-features">
+            <li>Add co-creators to a plugin with granular permission roles:
+              <ul>
+                <li><strong>Owner</strong> — full control (edit, publish, delete, manage contributors)</li>
+                <li><strong>Maintainer</strong> — can edit, publish versions, manage dependencies</li>
+                <li><strong>Contributor</strong> — can edit plugin metadata and create versions (no deletion)</li>
+                <li><strong>Viewer</strong> — read-only access to dashboard and analytics</li>
+              </ul>
+            </li>
+            <li>Invite system with email notifications and acceptance flow</li>
+            <li>Permission enforcement on all plugin mutations (CRUD, version management, etc.)</li>
+            <li>Audit log showing which contributor performed each action</li>
+            <li>Remove contributors with history preservation</li>
+            <li>UI on plugin dashboard to manage contributors and their roles</li>
+          </ul>
+        </div>
+
       </div><!-- /.timeline -->
 
       <!-- ── Backlog ───────────────────────────────────────── -->
@@ -626,8 +732,8 @@
           <div class="card-desc">Alternative GraphQL endpoint for flexible client-side queries.</div>
         </div>
         <div class="card">
-          <div class="card-title">Server Configurator</div>
-          <div class="card-desc">Configure a Pumpkin MC server from the browser: select plugins, tune parameters and download a ready-to-run pre-configured zip.</div>
+          <div class="card-title">Advertising Integration</div>
+          <div class="card-desc">Community-friendly ad network integration (Google Ads, EthikAds/CarbonAds) to support hosting and development costs. Non-intrusive, focused on environmental/ethical options.</div>
         </div>
       </div>
 
