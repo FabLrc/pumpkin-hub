@@ -62,6 +62,7 @@ pub async fn build_test_app() -> (Router, PgPool) {
             auth_burst_size: 100,
         },
         smtp: None,
+        github_app: None,
     };
 
     let storage = ObjectStorage::from_config(&config.s3).await;

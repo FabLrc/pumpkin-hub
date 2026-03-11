@@ -1335,6 +1335,8 @@ mod tests {
             user_id,
             username: "test".to_string(),
             role: role.to_string(),
+            api_key_id: None,
+            api_key_permissions: None,
         }
     }
 

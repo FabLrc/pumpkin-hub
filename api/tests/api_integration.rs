@@ -382,7 +382,7 @@ async fn list_plugins_pagination_and_sorting() {
         .await
         .unwrap();
     let result: Value = serde_json::from_slice(&body).unwrap();
-    assert!(result["data"].as_array().unwrap().len() >= 1);
+    assert!(!result["data"].as_array().unwrap().is_empty());
 
     // Cleanup
     common::cleanup_test_data(&pool, &[user_id]).await;

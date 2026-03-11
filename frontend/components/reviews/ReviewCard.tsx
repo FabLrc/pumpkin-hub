@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Flag, Trash2, EyeOff, Pencil, MoreVertical } from "lucide-react";
 import type { ReviewResponse } from "@/lib/types";
 import { StarRating } from "./StarRating";
@@ -40,9 +41,11 @@ export function ReviewCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           {review.author.avatar_url ? (
-            <img
+            <Image
               src={review.author.avatar_url}
               alt={review.author.username}
+              width={32}
+              height={32}
               className="w-8 h-8 object-cover"
             />
           ) : (
