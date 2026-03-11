@@ -29,7 +29,7 @@
 - **Plugin Registry** — Full CRUD with categories, full-text search (Meilisearch), and author management
 - **Version Management** — Publish versions with semver validation, Pumpkin compatibility ranges, changelogs, and yank/restore
 - **Binary Storage & Distribution** — Multi-platform binary uploads, secure presigned download URLs, S3-compatible storage (MinIO / Cloudflare R2)
-- **GitHub Integration** — Link repositories to plugins, auto-publish on releases, sync README/changelogs, embed install badges
+- **GitHub Integration** — Publish plugins directly from a GitHub repository (one-click repo picker, no Installation ID required), auto-publish on releases, sync README/changelogs, and embed install badges
 - **Dependency Graph** — Inter-plugin dependency declaration, semver compatibility resolution, conflict detection, and reverse lookup
 - **Review System** — Star ratings (1–5), reviews with moderation, abuse reporting, rating display on explorer and plugin pages, automatic Meilisearch reindex on review mutations
 - **Author Dashboard** — Download analytics with charts, API key management for CI/CD, audit trails, notification center with milestones
@@ -58,6 +58,12 @@ DISCORD_CLIENT_SECRET=
 
 # JWT secret (change in production)
 JWT_SECRET=dev_jwt_secret_change_me_in_production
+
+# Optional — enables GitHub App integration (repo linking, auto-publish, publish-from-GitHub)
+# Create at https://github.com/settings/apps
+GITHUB_APP_ID=
+GITHUB_APP_PRIVATE_KEY=     # PEM content, single-line with \n
+GITHUB_APP_WEBHOOK_SECRET=
 ```
 
 Then start all services:

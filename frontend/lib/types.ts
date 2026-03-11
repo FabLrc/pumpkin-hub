@@ -532,6 +532,52 @@ export interface GitHubLinkResponse {
   created_at: string;
 }
 
+/** A repository returned by the GitHub App installation list. */
+export interface GitHubRepository {
+  full_name: string;
+  owner: string;
+  name: string;
+  default_branch: string;
+  description: string | null;
+}
+
+export interface InstallationRepositoriesResponse {
+  installation_id: number;
+  repositories: GitHubRepository[];
+}
+
+/** Request body for publishing a new plugin from a GitHub repository. */
+export interface PublishFromGithubRequest {
+  installation_id: number;
+  repository_owner: string;
+  repository_name: string;
+  plugin_name?: string;
+  short_description?: string;
+  category_ids?: string[];
+  sync_readme?: boolean;
+  sync_changelog?: boolean;
+  auto_publish?: boolean;
+}
+
+export interface PublishFromGithubResponse {
+  plugin_slug: string;
+  github_link: GitHubLinkResponse;
+}
+
+/** A repository returned by `GET /github/my-repositories`, includes resolved installation_id. */
+export interface MyGithubRepository {
+  installation_id: number;
+  full_name: string;
+  owner: string;
+  name: string;
+  default_branch: string;
+  description: string | null;
+}
+
+export interface MyRepositoriesResponse {
+  repositories: MyGithubRepository[];
+}
+
 // ── Review Types ─────────────────────────────────────────────────────────────
 
 export interface ReviewAuthorSummary {

@@ -24,8 +24,27 @@ struct InstallationTokenResponse {
 /// A repository returned by the GitHub API.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GitHubRepository {
+    pub name: String,
     pub full_name: String,
     pub default_branch: String,
+    pub description: Option<String>,
+}
+
+/// An installation of the GitHub App, returned by `GET /app/installations`.
+#[derive(Debug, Deserialize)]
+pub struct AppInstallation {
+    pub id: i64,
+    pub account: AppInstallationAccount,
+}
+
+/// The GitHub account (user or organization) that owns an installation.
+#[derive(Debug, Deserialize)]
+pub struct AppInstallationAccount {
+    pub id: i64,
+    pub login: String,
+    /// "User" or "Organization".
+    #[serde(rename = "type")]
+    pub account_type: String,
 }
 
 /// A release returned by the GitHub API.
@@ -120,6 +139,47 @@ impl GitHubAppClient {
             response.json().await.map_err(GitHubClientError::Http)?;
 
         Ok(token_response.token)
+    }
+
+    /// Lists all installations of this GitHub App (authenticated as the App itself).
+    pub async fn list_app_installations(&self) -> Result<Vec<AppInstallation>, GitHubClientError> {
+        let jwt = self.generate_app_jwt()?;
+
+        let mut all_installations = Vec::new();
+        let mut page = 1u32;
+
+        loop {
+            let response = self
+                .http
+                .get(format!("{GITHUB_API_BASE}/app/installations"))
+                .header("Authorization", format!("Bearer {jwt}"))
+                .header("Accept", "application/vnd.github+json")
+                .query(&[("per_page", "100"), ("page", &page.to_string())])
+                .send()
+                .await
+                .map_err(GitHubClientError::Http)?;
+
+            if !response.status().is_success() {
+                let status = response.status();
+                let body = response.text().await.unwrap_or_default();
+                return Err(GitHubClientError::Api(format!(
+                    "Failed to list app installations: {status} — {body}"
+                )));
+            }
+
+            let batch: Vec<AppInstallation> =
+                response.json().await.map_err(GitHubClientError::Http)?;
+
+            let is_last_page = batch.len() < 100;
+            all_installations.extend(batch);
+
+            if is_last_page {
+                break;
+            }
+            page += 1;
+        }
+
+        Ok(all_installations)
     }
 
     /// Lists repositories accessible to a given installation.

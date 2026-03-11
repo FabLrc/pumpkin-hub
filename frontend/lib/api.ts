@@ -730,6 +730,39 @@ export async function unlinkGithub(slug: string): Promise<void> {
   );
 }
 
+export function getInstallationReposPath(installationId: number): string {
+  return `/github/installations/${installationId}/repositories`;
+}
+
+/** Lists all repositories accessible to a GitHub App installation. */
+export async function listInstallationRepos(
+  installationId: number,
+): Promise<import("./types").InstallationRepositoriesResponse> {
+  return apiFetch<import("./types").InstallationRepositoriesResponse>(
+    getInstallationReposPath(installationId),
+  );
+}
+
+/** Creates a new plugin by importing metadata from a GitHub repository. */
+export async function publishPluginFromGithub(
+  body: import("./types").PublishFromGithubRequest,
+): Promise<import("./types").PublishFromGithubResponse> {
+  return apiFetch<import("./types").PublishFromGithubResponse>("/plugins/from-github", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** SWR key for the user's GitHub repositories. */
+export function getMyGithubReposPath(): string {
+  return "/github/my-repositories";
+}
+
+/** Lists all repositories the current user can access via the Pumpkin Hub GitHub App. */
+export async function listMyGithubRepos(): Promise<import("./types").MyRepositoriesResponse> {
+  return apiFetch<import("./types").MyRepositoriesResponse>(getMyGithubReposPath());
+}
+
 // ── Review Endpoints ─────────────────────────────────────────────────────
 
 export function getReviewsPath(

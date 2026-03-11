@@ -74,12 +74,11 @@ async fn resolve_plugin_id(pool: &sqlx::PgPool, slug: &str) -> Result<Uuid, AppE
 
 /// Returns the author_id of a plugin for ownership checks.
 async fn fetch_plugin_author_id(pool: &sqlx::PgPool, plugin_id: Uuid) -> Result<Uuid, AppError> {
-    let row: Option<(Uuid,)> =
-        sqlx::query_as("SELECT author_id FROM plugins WHERE id = $1")
-            .bind(plugin_id)
-            .fetch_optional(pool)
-            .await
-            .map_err(AppError::internal)?;
+    let row: Option<(Uuid,)> = sqlx::query_as("SELECT author_id FROM plugins WHERE id = $1")
+        .bind(plugin_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(AppError::internal)?;
 
     row.map(|(id,)| id).ok_or(AppError::NotFound)
 }
@@ -401,12 +400,11 @@ pub async fn report_review(
     let pool = &state.db;
 
     // Ensure the review exists
-    let review_exists: Option<(Uuid,)> =
-        sqlx::query_as("SELECT id FROM reviews WHERE id = $1")
-            .bind(review_id)
-            .fetch_optional(pool)
-            .await
-            .map_err(AppError::internal)?;
+    let review_exists: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM reviews WHERE id = $1")
+        .bind(review_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(AppError::internal)?;
 
     if review_exists.is_none() {
         return Err(AppError::NotFound);
@@ -466,12 +464,11 @@ pub async fn list_reports(
     .await
     .map_err(AppError::internal)?;
 
-    let (total,): (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM review_reports WHERE status = $1")
-            .bind(status_filter)
-            .fetch_one(pool)
-            .await
-            .map_err(AppError::internal)?;
+    let (total,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM review_reports WHERE status = $1")
+        .bind(status_filter)
+        .fetch_one(pool)
+        .await
+        .map_err(AppError::internal)?;
 
     Ok(Json(ReportListResponse { reports, total }))
 }

@@ -31,10 +31,7 @@ pub fn routes() -> Router<AppState> {
             post(handlers::report_review),
         )
         // Admin: manage reports
-        .route(
-            "/admin/review-reports",
-            get(handlers::list_reports),
-        )
+        .route("/admin/review-reports", get(handlers::list_reports))
         .route(
             "/admin/review-reports/{report_id}/resolve",
             patch(handlers::resolve_report),

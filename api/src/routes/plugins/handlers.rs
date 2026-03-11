@@ -68,7 +68,7 @@ pub(crate) fn slugify(input: &str) -> String {
 
 /// Generates a slug that is unique across the `plugins` table.
 /// Appends a numeric suffix (`-2`, `-3`, …) when the base slug already exists.
-async fn generate_unique_slug(pool: &PgPool, name: &str) -> Result<String, AppError> {
+pub(crate) async fn generate_unique_slug(pool: &PgPool, name: &str) -> Result<String, AppError> {
     let base = slugify(name);
 
     let existing_slugs: Vec<String> =
@@ -168,7 +168,7 @@ async fn fetch_plugin_by_slug(pool: &PgPool, slug: &str) -> Result<PluginWithAut
 }
 
 /// Validates that every category ID in `ids` actually exists.
-async fn validate_categories_exist(pool: &PgPool, ids: &[Uuid]) -> Result<(), AppError> {
+pub(crate) async fn validate_categories_exist(pool: &PgPool, ids: &[Uuid]) -> Result<(), AppError> {
     if ids.is_empty() {
         return Ok(());
     }

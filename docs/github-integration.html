@@ -53,6 +53,7 @@
         <div class="sidebar-label">On this page</div>
         <a href="#overview" class="sidebar-sublink">Overview</a>
         <a href="#setup" class="sidebar-sublink">Setup</a>
+        <a href="#publish-from-github" class="sidebar-sublink">Publish from GitHub</a>
         <a href="#linking" class="sidebar-sublink">Linking a Repository</a>
         <a href="#auto-publishing" class="sidebar-sublink">Auto-Publishing</a>
         <a href="#sync" class="sidebar-sublink">Content Synchronization</a>
@@ -93,29 +94,53 @@
         You can install it on your personal account, organization, or specific repositories.
       </p>
 
-      <h3>2. Retrieve Your Installation ID</h3>
+      <h3>2. Sign in to Pumpkin Hub with GitHub</h3>
       <p>
-        After installation, GitHub provides an <strong>Installation ID</strong> visible in:
+        Pumpkin Hub uses your GitHub OAuth session to automatically detect every repository
+        where the App is installed — on your personal account <em>and</em> any organization.
+        No Installation ID is required; the platform resolves it for you.
       </p>
-      <ul>
-        <li>Email notification from GitHub</li>
-        <li>GitHub App settings → Installation history</li>
-        <li>Webhook payload (for debugging): <code>installation.id</code></li>
-      </ul>
 
-      <h3>3. Link on Pumpkin Hub</h3>
+      <h3>3. Pick a Repository</h3>
       <p>
-        Navigate to your plugin's edit page and scroll to the <strong>GitHub Integration</strong> section:
+        On any page that needs a repository (New Plugin → From GitHub, or plugin edit →
+        GitHub Integration), click <strong>"Load my GitHub repositories"</strong>.
+        Pumpkin Hub will list every accessible repository instantly.
       </p>
-      <ul>
-        <li>Enter your <strong>Installation ID</strong></li>
-        <li>Enter repository owner and name (e.g., <code>my-org</code> / <code>my-plugin</code>)</li>
-        <li>Toggle auto-publish, sync README, and sync changelog options</li>
-        <li>Click "Connect Repository"</li>
-      </ul>
+
+      <!-- ── Publish from GitHub ─────────────────────────── -->
+      <h2 id="publish-from-github">Publish from GitHub</h2>
+
+      <p>
+        The fastest way to create a new plugin on Pumpkin Hub is to publish it directly from an
+        existing GitHub repository.
+      </p>
+
+      <ol>
+        <li>Go to <strong>Add Plugin</strong> and switch to the <strong>From GitHub</strong> tab.</li>
+        <li>Click <strong>"Load my GitHub repositories"</strong> — the picker populates automatically.</li>
+        <li>Select the target repository, fill in the plugin details (name, categories, description), and submit.</li>
+        <li>The plugin is created and immediately linked to the selected repository.</li>
+      </ol>
+
+      <p style="background:#1a1a1a;border:1px solid #444;padding:1rem;margin:1rem 0;">
+        <strong>Note:</strong> If the App is not yet installed on any of your repositories,
+        the picker displays an empty state with a direct link to the GitHub App installation page.
+      </p>
 
       <!-- ── Linking ──────────────────────────────────────── -->
       <h2 id="linking">Linking a Repository</h2>
+
+      <p>
+        To link an existing plugin to a GitHub repository, open the plugin's edit page and
+        scroll to the <strong>GitHub Integration</strong> section:
+      </p>
+      <ol>
+        <li>Click <strong>"Load my GitHub repositories"</strong> — the list populates from your GitHub App installations.</li>
+        <li>Select the repository from the dropdown.</li>
+        <li>Toggle the desired options (auto-publish, sync README, sync changelog).</li>
+        <li>Click <strong>"Connect Repository"</strong>.</li>
+      </ol>
 
       <p>
         The linking process validates that:
@@ -133,7 +158,7 @@
         <li>Repository owner and name</li>
         <li>Default branch (detected from the repository)</li>
         <li>Feature toggles (auto-publish, sync-readme, sync-changelog)</li>
-        <li>Installation ID for webhook processing</li>
+        <li>Installation ID (resolved automatically, not exposed to the user)</li>
       </ul>
 
       <p>
@@ -168,10 +193,12 @@
         <li><strong>Notification</strong> — Author receives a notification about the new version</li>
       </ol>
 
-      <p style="background:#1a1a1a;border:1px solid #444;padding:1rem;margin:1rem 0;">
-        <strong>Note:</strong> If the tag contains no valid binaries, a warning notification is sent
-        but publishing still succeeds with platform information empty.
-      </p>
+      <div style="background:#1a1a1a;border:1px solid #444;padding:1rem;margin:1rem 0;">
+        <strong>Binary requirements:</strong> A valid release must include binaries for all three
+        platforms (Linux <code>.so</code>, Windows <code>.dll</code>/<code>.exe</code>, macOS <code>.dylib</code>).
+        If one or more platforms are missing, a warning notification is sent to the author
+        but the version is still created — missing binaries can be uploaded manually afterwards.
+      </div>
 
       <!-- ── Synchronization ────────────────────────────── -->
       <h2 id="sync">Content Synchronization</h2>
@@ -229,6 +256,55 @@
 
       <!-- ── API Endpoints ────────────────────────────────── -->
       <h2 id="api">API Endpoints</h2>
+
+      <h3>List My GitHub Repositories</h3>
+      <pre><code>GET /api/v1/github/my-repositories
+Authorization: JWT cookie (must be signed in with GitHub OAuth)
+
+Response:
+{
+  "repositories": [
+    {
+      "installation_id": 12345678,
+      "full_name": "my-org/my-plugin",
+      "owner": "my-org",
+      "name": "my-plugin",
+      "default_branch": "main",
+      "description": "An awesome plugin"
+    }
+  ]
+}</code></pre>
+      <p>
+        Returns all repositories accessible via the Pumpkin Hub GitHub App across all
+        installations (personal account + organizations) matching your GitHub OAuth identity.
+        Returns <code>422</code> if your account is not linked to GitHub.
+      </p>
+
+      <h3>Publish Plugin from GitHub</h3>
+      <pre><code>POST /api/v1/plugins/from-github
+
+{
+  "name": "My Plugin",
+  "slug": "my-plugin",
+  "short_description": "A short description",
+  "category_ids": ["uuid"],
+  "installation_id": 12345678,
+  "repository_owner": "my-org",
+  "repository_name": "my-plugin",
+  "sync_readme": true,
+  "sync_changelog": true,
+  "auto_publish": true
+}
+
+Response:
+{
+  "slug": "my-plugin"
+}</code></pre>
+      <p>
+        Creates a plugin <em>and</em> links it to the specified repository in one request.
+        The <code>installation_id</code> is resolved automatically by the frontend from
+        <code>GET /github/my-repositories</code> and never needs to be entered manually.
+      </p>
 
       <h3>Link a Repository</h3>
       <pre><code>POST /api/v1/plugins/{slug}/github/link

@@ -1,12 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Github, Unlink, Copy, Check, RefreshCw, ExternalLink } from "lucide-react";
+import {
+  Github,
+  Unlink,
+  Copy,
+  Check,
+  RefreshCw,
+  ExternalLink,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 import { mutate } from "swr";
 import { useGithubLink } from "@/lib/hooks";
-import { linkGithub, unlinkGithub, getGithubLinkPath, getPluginBadgeUrl } from "@/lib/api";
-import type { LinkGitHubRequest } from "@/lib/types";
+import {
+  linkGithub,
+  unlinkGithub,
+  getGithubLinkPath,
+  getPluginBadgeUrl,
+  listMyGithubRepos,
+} from "@/lib/api";
+import type { MyGithubRepository, LinkGitHubRequest } from "@/lib/types";
 
 // ── Props ─────────────────────────────────────────────────────────────────
 
@@ -177,36 +191,57 @@ function FeatureIndicator({ label, enabled }: { label: string; enabled: boolean 
   );
 }
 
-// ── Unlinked State (Link Form) ────────────────────────────────────────────
+// ── Unlinked State (Link Form with Repo Picker) ────────────────────────────
 
 function UnlinkedState({ slug }: { slug: string }) {
-  const [installationId, setInstallationId] = useState("");
-  const [repoOwner, setRepoOwner] = useState("");
-  const [repoName, setRepoName] = useState("");
+  const [repos, setRepos] = useState<MyGithubRepository[]>([]);
+  const [repoSearch, setRepoSearch] = useState("");
+  const [selectedRepo, setSelectedRepo] = useState<MyGithubRepository | null>(null);
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [syncReadme, setSyncReadme] = useState(true);
   const [syncChangelog, setSyncChangelog] = useState(true);
   const [autoPublish, setAutoPublish] = useState(true);
   const [isLinking, setIsLinking] = useState(false);
 
+  const filteredRepos = repos.filter((r) =>
+    r.full_name.toLowerCase().includes(repoSearch.toLowerCase()),
+  );
+
+  async function handleLoadRepos() {
+    setIsLoadingRepos(true);
+    setSelectedRepo(null);
+    setRepos([]);
+    try {
+      const response = await listMyGithubRepos();
+      setRepos(response.repositories);
+      setHasLoaded(true);
+      if (response.repositories.length === 0) {
+        toast.info("No repositories found. Make sure the Pumpkin Hub GitHub App is installed.");
+      }
+    } catch {
+      toast.error(
+        "Could not load repositories. Make sure your account is linked to GitHub.",
+      );
+    } finally {
+      setIsLoadingRepos(false);
+    }
+  }
+
   async function handleLink(event: React.FormEvent) {
     event.preventDefault();
 
-    const parsedInstallationId = Number(installationId);
-    if (!parsedInstallationId || parsedInstallationId <= 0) {
-      toast.error("Installation ID must be a positive number");
-      return;
-    }
-    if (!repoOwner.trim() || !repoName.trim()) {
-      toast.error("Repository owner and name are required");
+    if (!selectedRepo) {
+      toast.error("Please select a repository");
       return;
     }
 
     setIsLinking(true);
     try {
       const body: LinkGitHubRequest = {
-        installation_id: parsedInstallationId,
-        repository_owner: repoOwner.trim(),
-        repository_name: repoName.trim(),
+        installation_id: selectedRepo.installation_id,
+        repository_owner: selectedRepo.owner,
+        repository_name: selectedRepo.name,
         sync_readme: syncReadme,
         sync_changelog: syncChangelog,
         auto_publish: autoPublish,
@@ -215,7 +250,7 @@ function UnlinkedState({ slug }: { slug: string }) {
       await mutate(getGithubLinkPath(slug), undefined, { revalidate: true });
       toast.success("Repository linked successfully");
     } catch {
-      toast.error("Failed to link repository. Make sure the GitHub App is installed.");
+      toast.error("Failed to link repository. Check the repository access and try again.");
     } finally {
       setIsLinking(false);
     }
@@ -225,78 +260,177 @@ function UnlinkedState({ slug }: { slug: string }) {
     <form onSubmit={handleLink} className="space-y-4">
       <p className="font-mono text-xs text-text-dim leading-relaxed">
         Install the{" "}
-        <span className="text-accent">Pumpkin Hub GitHub App</span>{" "}
-        on your repository, then enter the details below to enable
-        auto-publishing on release and content synchronization.
+        <a
+          href="https://github.com/apps/pumpkin-hub"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent hover:underline"
+        >
+          Pumpkin Hub GitHub App
+        </a>{" "}
+        on your repository to enable auto-publishing on release and content synchronization.
       </p>
 
-      {/* Installation ID */}
-      <div>
-        <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
-          Installation ID
-        </label>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={installationId}
-          onChange={(e) => setInstallationId(e.target.value)}
-          placeholder="12345678"
-          required
-          className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary px-3 py-2.5 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
-        />
-      </div>
+      {/* Step 1 — Load repositories */}
+      {!hasLoaded ? (
+        <div>
+          <button
+            type="button"
+            onClick={handleLoadRepos}
+            disabled={isLoadingRepos}
+            className="w-full font-mono text-xs border border-border-default hover:border-accent text-text-dim hover:text-text-primary px-4 py-3 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+          >
+            {isLoadingRepos ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Github className="w-3.5 h-3.5" />
+            )}
+            {isLoadingRepos ? "Loading..." : "Load my GitHub repositories"}
+          </button>
+          <p className="font-mono text-[10px] text-text-dim mt-1.5">
+            Make sure the{" "}
+            <a
+              href="https://github.com/apps/pumpkin-hub"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline"
+            >
+              Pumpkin Hub GitHub App
+            </a>{" "}
+            is installed on your GitHub account.
+          </p>
+        </div>
+      ) : null}
 
-      {/* Repository */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Empty state */}
+      {hasLoaded && repos.length === 0 && (
+        <div className="border border-border-default p-4 text-center space-y-2">
+          <p className="font-mono text-xs text-text-dim">
+            No repositories found.
+          </p>
+          <p className="font-mono text-[10px] text-text-dim/70">
+            Install the{" "}
+            <a
+              href="https://github.com/apps/pumpkin-hub"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline"
+            >
+              Pumpkin Hub GitHub App
+            </a>{" "}
+            on your GitHub account, then{" "}
+            <button
+              type="button"
+              onClick={handleLoadRepos}
+              className="text-accent hover:underline cursor-pointer"
+            >
+              retry
+            </button>.
+          </p>
+        </div>
+      )}
+
+      {/* Repository picker */}
+      {hasLoaded && repos.length > 0 && (
         <div>
           <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
-            Owner
+            Select Repository
           </label>
-          <input
-            type="text"
-            value={repoOwner}
-            onChange={(e) => setRepoOwner(e.target.value)}
-            placeholder="my-org"
-            required
-            className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary px-3 py-2.5 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
-          />
-        </div>
-        <div>
-          <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
-            Repository
-          </label>
-          <input
-            type="text"
-            value={repoName}
-            onChange={(e) => setRepoName(e.target.value)}
-            placeholder="my-plugin"
-            required
-            className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary px-3 py-2.5 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
-          />
-        </div>
-      </div>
 
-      {/* Toggle options */}
-      <div className="grid grid-cols-3 gap-3">
-        <ToggleOption label="Auto-publish" checked={autoPublish} onChange={setAutoPublish} />
-        <ToggleOption label="Sync README" checked={syncReadme} onChange={setSyncReadme} />
-        <ToggleOption label="Sync Changelog" checked={syncChangelog} onChange={setSyncChangelog} />
-      </div>
+          {repos.length > 5 && (
+            <div className="relative mb-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-text-dim/50" />
+              <input
+                type="text"
+                value={repoSearch}
+                onChange={(e) => setRepoSearch(e.target.value)}
+                placeholder="Filter repositories…"
+                className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary pl-8 pr-3 py-2 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
+              />
+            </div>
+          )}
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={isLinking}
-        className="w-full font-mono text-xs bg-accent hover:bg-accent-hover text-bg-base font-bold px-4 py-2.5 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-      >
-        {isLinking ? (
-          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Github className="w-3.5 h-3.5" />
-        )}
-        {isLinking ? "Linking..." : "Connect Repository"}
-      </button>
+          <div className="border border-border-default max-h-48 overflow-y-auto">
+            {filteredRepos.length === 0 ? (
+              <p className="font-mono text-[10px] text-text-dim p-3 text-center">
+                No repositories match your filter.
+              </p>
+            ) : (
+              filteredRepos.map((repo) => (
+                <button
+                  key={repo.full_name}
+                  type="button"
+                  onClick={() => setSelectedRepo(repo)}
+                  className={`w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 transition-colors cursor-pointer ${
+                    selectedRepo?.full_name === repo.full_name
+                      ? "bg-accent/10 border-l-2 border-l-accent"
+                      : "hover:bg-bg-surface"
+                  }`}
+                >
+                  <div className="font-mono text-xs text-text-primary font-bold">
+                    {repo.full_name}
+                  </div>
+                  {repo.description && (
+                    <div className="font-mono text-[10px] text-text-dim mt-0.5 truncate">
+                      {repo.description}
+                    </div>
+                  )}
+                  <div className="font-mono text-[10px] text-text-dim/60 mt-0.5">
+                    Branch: {repo.default_branch}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+
+          {selectedRepo && (
+            <div className="flex items-center gap-2 mt-2 p-2 bg-accent/5 border border-accent/20">
+              <Check className="w-3 h-3 text-accent flex-shrink-0" />
+              <span className="font-mono text-[10px] text-accent">
+                Selected: {selectedRepo.full_name}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Step 3 — Options (only shown once a repo is selected) */}
+      {selectedRepo && (
+        <>
+          <div>
+            <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-2">
+              Sync Features
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              <ToggleOption label="Auto-publish" checked={autoPublish} onChange={setAutoPublish} />
+              <ToggleOption label="Sync README" checked={syncReadme} onChange={setSyncReadme} />
+              <ToggleOption
+                label="Sync Changelog"
+                checked={syncChangelog}
+                onChange={setSyncChangelog}
+              />
+            </div>
+            <p className="font-mono text-[10px] text-text-dim mt-2 leading-relaxed">
+              <strong className="text-text-primary">Auto-publish</strong> — Creates a version on
+              each GitHub Release (needs linux + windows + macos binaries attached).
+            </p>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLinking}
+            className="w-full font-mono text-xs bg-accent hover:bg-accent-hover text-bg-base font-bold px-4 py-2.5 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {isLinking ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Github className="w-3.5 h-3.5" />
+            )}
+            {isLinking ? "Linking..." : `Connect ${selectedRepo.full_name}`}
+          </button>
+        </>
+      )}
     </form>
   );
 }

@@ -243,11 +243,9 @@ async fn handle_release_published(
     );
 
     // Download and store release assets as binaries
-    let github_client = state
-        .config
-        .github_app
-        .as_ref()
-        .map(GitHubAppClient::new);
+    let github_client = state.config.github_app.as_ref().map(GitHubAppClient::new);
+
+    let mut stored_platforms: Vec<String> = Vec::new();
 
     if let Some(client) = github_client {
         for asset in &release.assets {
@@ -269,6 +267,9 @@ async fn handle_release_published(
                             platform = %platform,
                             "Stored release asset"
                         );
+                        if !stored_platforms.contains(&platform) {
+                            stored_platforms.push(platform);
+                        }
                     }
                     Err(e) => {
                         tracing::warn!(
@@ -284,6 +285,24 @@ async fn handle_release_published(
 
     // Re-index in Meilisearch
     reindex_plugin(state, linked.plugin_id).await;
+
+    // Notify about missing platform coverage (warn if not all 3 OS are present)
+    let all_platforms = ["windows", "linux", "macos"];
+    let missing_platforms: Vec<&str> = all_platforms
+        .iter()
+        .filter(|p| !stored_platforms.iter().any(|s| s == **p))
+        .copied()
+        .collect();
+
+    if !missing_platforms.is_empty() {
+        tracing::warn!(
+            version = %version_str,
+            plugin = %linked.plugin_slug,
+            missing = ?missing_platforms,
+            "Release is missing platform binaries"
+        );
+        notify_missing_platforms(pool, linked, &version_str, &missing_platforms).await;
+    }
 
     // Send notification to the author
     notify_version_published(pool, linked, &version_str).await;
@@ -563,6 +582,40 @@ async fn notify_invalid_tag(pool: &PgPool, linked: &LinkedPlugin, tag: &str) {
         .bind(format!(
             "Tag '{}' on {} is not valid semver. Please use format vX.Y.Z (e.g. v1.0.0).",
             tag, linked.plugin_slug
+        ))
+        .bind(format!("/plugins/{}", linked.plugin_slug))
+        .execute(pool)
+        .await;
+    }
+}
+
+/// Sends a warning notification listing platforms whose binaries are absent from the release.
+async fn notify_missing_platforms(
+    pool: &PgPool,
+    linked: &LinkedPlugin,
+    version: &str,
+    missing: &[&str],
+) {
+    let author_id: Option<Uuid> = sqlx::query_scalar("SELECT author_id FROM plugins WHERE id = $1")
+        .bind(linked.plugin_id)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten();
+
+    if let Some(user_id) = author_id {
+        let missing_list = missing.join(", ");
+        let _ = sqlx::query(
+            "INSERT INTO notifications (id, user_id, kind, title, body, link)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)",
+        )
+        .bind(user_id)
+        .bind("github_missing_binaries")
+        .bind(format!("v{} — missing platform binaries", version))
+        .bind(format!(
+            "Version {} of {} was published but is missing binaries for: {}. \
+             Upload them manually or include them in the next release.",
+            version, linked.plugin_slug, missing_list
         ))
         .bind(format!("/plugins/{}", linked.plugin_slug))
         .execute(pool)

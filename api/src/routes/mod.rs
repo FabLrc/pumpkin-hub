@@ -7,7 +7,7 @@ mod dependencies;
 mod github;
 mod health;
 pub mod notifications;
-mod plugins;
+pub(crate) mod plugins;
 mod reviews;
 mod search;
 mod users;

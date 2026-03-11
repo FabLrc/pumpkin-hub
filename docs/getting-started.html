@@ -138,7 +138,13 @@ DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
 
 # JWT secret (change in production)
-JWT_SECRET=dev_jwt_secret_change_me_in_production</code></pre>
+JWT_SECRET=dev_jwt_secret_change_me_in_production
+
+# Optional — enables GitHub App features (repo linking, auto-publish, publish-from-GitHub)
+# Create at https://github.com/settings/apps
+GITHUB_APP_ID=
+GITHUB_APP_PRIVATE_KEY=     # PEM content with literal \n between lines
+GITHUB_APP_WEBHOOK_SECRET=</code></pre>
 
       <p>
         All other variables (database URL, Meilisearch, MinIO, SMTP) are already hardcoded
@@ -278,6 +284,23 @@ npm run build</code></pre>
         </tbody>
       </table>
 
+      <h3>GitHub App</h3>
+      <p>
+        The GitHub App variables are optional. When configured they unlock repository linking,
+        webhook-based auto-publishing, and the <em>Publish from GitHub</em> flow.
+        Create an App at <a href="https://github.com/settings/apps" target="_blank">github.com/settings/apps</a>.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>GITHUB_APP_ID</code></td><td>No*</td><td>—</td><td>GitHub App numeric ID. Enables App features when set.</td></tr>
+          <tr><td><code>GITHUB_APP_PRIVATE_KEY</code></td><td>If APP_ID set</td><td>—</td><td>RSA private key (PEM). Use literal <code>\n</code> between lines in <code>.env</code> files.</td></tr>
+          <tr><td><code>GITHUB_APP_WEBHOOK_SECRET</code></td><td>If APP_ID set</td><td>—</td><td>Webhook secret for HMAC-SHA256 signature verification.</td></tr>
+        </tbody>
+      </table>
+
       <h3>SMTP (Email)</h3>
       <p>
         SMTP is optional. When configured, the API sends email verification and password recovery emails.
@@ -321,6 +344,11 @@ RUST_LOG=pumpkin_hub_api=debug,tower_http=debug
 JWT_SECRET=your-super-secret-key-change-in-prod
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# GitHub App (optional — enables repo linking & auto-publish)
+# GITHUB_APP_ID=
+# GITHUB_APP_PRIVATE_KEY=
+# GITHUB_APP_WEBHOOK_SECRET=
 
 # Object storage (MinIO — local outside Docker)
 S3_ENDPOINT_URL=http://localhost:9000

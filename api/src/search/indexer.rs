@@ -483,10 +483,8 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
             let platforms = platforms_map.remove(&row.id).unwrap_or_default();
             let pumpkin_versions = pumpkin_versions_map.remove(&row.id).unwrap_or_default();
 
-            let (review_count, average_rating) = review_stats_map
-                .get(&row.id)
-                .copied()
-                .unwrap_or((0, 0.0));
+            let (review_count, average_rating) =
+                review_stats_map.get(&row.id).copied().unwrap_or((0, 0.0));
 
             PluginDocument {
                 id: row.id.to_string(),

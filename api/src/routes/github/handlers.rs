@@ -11,7 +11,13 @@ use crate::{
     auth::middleware::AuthUser, error::AppError, github::client::GitHubAppClient, state::AppState,
 };
 
-use super::dto::{GitHubLinkResponse, LinkGitHubRequest};
+use super::dto::{
+    GitHubLinkResponse, GitHubRepositoryDto, InstallationRepositoriesResponse, LinkGitHubRequest,
+    MyGithubRepositoryDto, MyRepositoriesResponse, PublishFromGithubRequest,
+    PublishFromGithubResponse,
+};
+
+use crate::routes::plugins::handlers::{generate_unique_slug, validate_categories_exist};
 
 // ── Query Helpers ───────────────────────────────────────────────────────────
 
@@ -211,6 +217,318 @@ pub async fn unlink_github(
     tracing::info!(plugin_slug = %slug, "GitHub repository unlinked from plugin");
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// GET /api/v1/github/installations/{installation_id}/repositories
+/// Lists all repositories accessible to the given GitHub App installation.
+/// Requires authentication — the user must be logged in to use this endpoint.
+pub async fn list_installation_repos(
+    State(state): State<AppState>,
+    _auth: AuthUser,
+    Path(installation_id): Path<i64>,
+) -> Result<Json<InstallationRepositoriesResponse>, AppError> {
+    let github_app_config = state.config.github_app.as_ref().ok_or_else(|| {
+        AppError::internal(std::io::Error::other(
+            "GitHub App is not configured on this server",
+        ))
+    })?;
+
+    let client = GitHubAppClient::new(github_app_config);
+    let repos = client
+        .list_installation_repositories(installation_id)
+        .await
+        .map_err(|e| {
+            AppError::UnprocessableEntity(format!(
+                "Cannot list repositories for installation {installation_id}: {e}"
+            ))
+        })?;
+
+    let repositories = repos
+        .into_iter()
+        .map(|r| {
+            let (owner, name) = r
+                .full_name
+                .split_once('/')
+                .map(|(o, n)| (o.to_string(), n.to_string()))
+                .unwrap_or_else(|| (r.full_name.clone(), r.name.clone()));
+            GitHubRepositoryDto {
+                full_name: r.full_name,
+                owner,
+                name,
+                default_branch: r.default_branch,
+                description: r.description,
+            }
+        })
+        .collect();
+
+    Ok(Json(InstallationRepositoriesResponse {
+        installation_id,
+        repositories,
+    }))
+}
+
+/// GET /api/v1/github/my-repositories
+/// Lists all repositories the authenticated user can access through the Pumpkin Hub GitHub App.
+///
+/// Finds the user's GitHub numeric ID in `auth_providers`, lists all App installations,
+/// filters those belonging to the user, and fetches repositories for each.
+pub async fn list_my_repositories(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<MyRepositoriesResponse>, AppError> {
+    let pool = &state.db;
+
+    // Resolve the user's GitHub numeric ID from auth_providers
+    let github_provider_id: Option<String> = sqlx::query_scalar(
+        "SELECT provider_id FROM auth_providers WHERE user_id = $1 AND provider = 'github'",
+    )
+    .bind(auth.user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let github_user_id: i64 = match github_provider_id {
+        Some(id) => id.parse().map_err(|_| {
+            AppError::internal(std::io::Error::other(
+                "Corrupted GitHub provider_id in auth_providers",
+            ))
+        })?,
+        None => {
+            return Err(AppError::UnprocessableEntity(
+                "Your account is not linked to GitHub. Please sign in with GitHub first."
+                    .to_string(),
+            ));
+        }
+    };
+
+    let github_app_config = state.config.github_app.as_ref().ok_or_else(|| {
+        AppError::internal(std::io::Error::other(
+            "GitHub App is not configured on this server",
+        ))
+    })?;
+
+    let client = GitHubAppClient::new(github_app_config);
+
+    // List all installations of the Pumpkin Hub App and keep only those owned by the user
+    let installations = client.list_app_installations().await.map_err(|e| {
+        AppError::internal(std::io::Error::other(format!(
+            "Failed to list GitHub App installations: {e}"
+        )))
+    })?;
+
+    let user_installations: Vec<_> = installations
+        .into_iter()
+        .filter(|inst| inst.account.id == github_user_id)
+        .collect();
+
+    // For each matching installation, fetch its repositories
+    let mut all_repos: Vec<MyGithubRepositoryDto> = Vec::new();
+
+    for installation in &user_installations {
+        match client.list_installation_repositories(installation.id).await {
+            Ok(repos) => {
+                for r in repos {
+                    let (owner, name) = r
+                        .full_name
+                        .split_once('/')
+                        .map(|(o, n)| (o.to_string(), n.to_string()))
+                        .unwrap_or_else(|| (r.full_name.clone(), r.name.clone()));
+                    all_repos.push(MyGithubRepositoryDto {
+                        installation_id: installation.id,
+                        full_name: r.full_name,
+                        owner,
+                        name,
+                        default_branch: r.default_branch,
+                        description: r.description,
+                    });
+                }
+            }
+            Err(e) => {
+                tracing::warn!(
+                    installation_id = installation.id,
+                    "Failed to list repos for installation: {e}"
+                );
+            }
+        }
+    }
+
+    Ok(Json(MyRepositoriesResponse {
+        repositories: all_repos,
+    }))
+}
+
+/// POST /api/v1/plugins/from-github
+/// Creates a new plugin pre-populated with metadata fetched from a GitHub repository,
+/// then links the GitHub installation in a single operation.
+///
+/// - Plugin name defaults to the repository name.
+/// - Short description defaults to the GitHub repository description.
+/// - Description is pre-filled with the README.md content (if present).
+/// - Repository URL is set to `https://github.com/{owner}/{repo}`.
+pub async fn publish_plugin_from_github(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(payload): Json<PublishFromGithubRequest>,
+) -> Result<(StatusCode, Json<PublishFromGithubResponse>), AppError> {
+    payload.validate()?;
+    auth.require_permission("publish")?;
+
+    let github_app_config = state.config.github_app.as_ref().ok_or_else(|| {
+        AppError::internal(std::io::Error::other(
+            "GitHub App is not configured on this server",
+        ))
+    })?;
+
+    let client = GitHubAppClient::new(github_app_config);
+
+    // Verify access and fetch repository metadata
+    let repo = client
+        .get_repository(
+            payload.installation_id,
+            &payload.repository_owner,
+            &payload.repository_name,
+        )
+        .await
+        .map_err(|e| {
+            AppError::UnprocessableEntity(format!(
+                "Cannot access repository {}/{}: {e}",
+                payload.repository_owner, payload.repository_name
+            ))
+        })?;
+
+    // Check the repository is not already linked to another plugin
+    let pool = &state.db;
+    let existing_link: Option<Uuid> = sqlx::query_scalar(
+        "SELECT plugin_id FROM github_installations
+         WHERE repository_owner = $1 AND repository_name = $2",
+    )
+    .bind(&payload.repository_owner)
+    .bind(&payload.repository_name)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    if existing_link.is_some() {
+        return Err(AppError::Conflict(
+            "This repository is already linked to a plugin on Pumpkin Hub".to_string(),
+        ));
+    }
+
+    // Resolve plugin name and short description
+    let plugin_name = payload
+        .plugin_name
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(&repo.name)
+        .to_string();
+
+    let short_description = payload
+        .short_description
+        .clone()
+        .or_else(|| repo.description.clone());
+
+    // Fetch README for the long description (best-effort)
+    let readme_content = client
+        .get_file_content(
+            payload.installation_id,
+            &payload.repository_owner,
+            &payload.repository_name,
+            "README.md",
+        )
+        .await
+        .unwrap_or(None);
+
+    let repository_url = format!(
+        "https://github.com/{}/{}",
+        payload.repository_owner, payload.repository_name
+    );
+
+    // Generate a unique slug from the plugin name
+    let slug = generate_unique_slug(pool, &plugin_name).await?;
+
+    let category_ids = payload.category_ids.clone().unwrap_or_default();
+    validate_categories_exist(pool, &category_ids).await?;
+
+    // Atomic create: plugin + categories + github link
+    let mut tx = pool.begin().await.map_err(AppError::internal)?;
+
+    let plugin_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO plugins (author_id, name, slug, short_description, description, repository_url)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id",
+    )
+    .bind(auth.user_id)
+    .bind(&plugin_name)
+    .bind(&slug)
+    .bind(&short_description)
+    .bind(&readme_content)
+    .bind(&repository_url)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(AppError::internal)?;
+
+    if !category_ids.is_empty() {
+        sqlx::query(
+            "INSERT INTO plugin_categories (plugin_id, category_id)
+             SELECT $1, unnest($2::uuid[])",
+        )
+        .bind(plugin_id)
+        .bind(&category_ids)
+        .execute(&mut *tx)
+        .await
+        .map_err(AppError::internal)?;
+    }
+
+    let github_row: GitHubInstallationRow = sqlx::query_as(
+        "INSERT INTO github_installations
+            (plugin_id, user_id, installation_id, repository_owner, repository_name,
+             default_branch, sync_readme, sync_changelog, auto_publish)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, plugin_id, installation_id, repository_owner, repository_name,
+                   default_branch, sync_readme, sync_changelog, auto_publish,
+                   last_webhook_at, created_at",
+    )
+    .bind(plugin_id)
+    .bind(auth.user_id)
+    .bind(payload.installation_id)
+    .bind(&payload.repository_owner)
+    .bind(&payload.repository_name)
+    .bind(&repo.default_branch)
+    .bind(payload.sync_readme.unwrap_or(true))
+    .bind(payload.sync_changelog.unwrap_or(true))
+    .bind(payload.auto_publish.unwrap_or(true))
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(AppError::internal)?;
+
+    tx.commit().await.map_err(AppError::internal)?;
+
+    tracing::info!(
+        plugin_slug = %slug,
+        repo = %format!("{}/{}", payload.repository_owner, payload.repository_name),
+        "Plugin published from GitHub repository"
+    );
+
+    // Fire-and-forget Meilisearch indexing
+    let search = state.search.clone();
+    let db = pool.clone();
+    tokio::spawn(async move {
+        if let Ok(Some(doc)) =
+            crate::search::indexer::build_single_plugin_document(&db, plugin_id).await
+        {
+            if let Err(e) = search.index_plugin(&doc).await {
+                tracing::warn!("Failed to index new plugin from GitHub in Meilisearch: {e}");
+            }
+        }
+    });
+
+    Ok((
+        StatusCode::CREATED,
+        Json(PublishFromGithubResponse {
+            plugin_slug: slug,
+            github_link: build_link_response(github_row),
+        }),
+    ))
 }
 
 /// GET /api/v1/plugins/{slug}/badge.svg — Dynamic SVG badge showing the latest version.
