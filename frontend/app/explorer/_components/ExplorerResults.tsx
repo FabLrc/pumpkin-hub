@@ -2,6 +2,7 @@
 
 import { List, LayoutGrid } from "lucide-react";
 import type { SearchHit, SearchSortOption } from "@/lib/types";
+import type { ViewMode } from "@/lib/useViewPreference";
 import { SearchHitCard } from "./SearchHitCard";
 
 interface ExplorerResultsProps {
@@ -14,6 +15,8 @@ interface ExplorerResultsProps {
   onPageChange: (page: number) => void;
   searchQuery: string;
   sortBy: SearchSortOption;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
 export function ExplorerResults({
@@ -24,6 +27,8 @@ export function ExplorerResults({
   currentPage,
   perPage,
   onPageChange,
+  viewMode,
+  onViewModeChange,
 }: ExplorerResultsProps) {
   const totalHits = estimatedTotal ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalHits / perPage));
@@ -49,26 +54,43 @@ export function ExplorerResults({
         <div className="flex items-center gap-2">
           <span className="font-mono text-[10px] text-text-dim">View:</span>
           <button
-            className="border border-accent bg-accent/10 text-accent p-1.5"
+            onClick={() => onViewModeChange("list")}
+            className={`p-1.5 border transition-colors cursor-pointer ${
+              viewMode === "list"
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-border-default text-text-dim hover:border-border-hover"
+            }`}
             title="List view"
+            aria-label={viewMode === "list" ? "List view (active)" : "Switch to list view"}
           >
             <List className="w-[14px] h-[14px]" />
           </button>
           <button
-            className="border border-border-default text-text-dim hover:border-border-hover p-1.5 transition-colors"
+            onClick={() => onViewModeChange("grid")}
+            className={`p-1.5 border transition-colors cursor-pointer ${
+              viewMode === "grid"
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-border-default text-text-dim hover:border-border-hover"
+            }`}
             title="Grid view"
+            aria-label={viewMode === "grid" ? "Grid view (active)" : "Switch to grid view"}
           >
             <LayoutGrid className="w-[14px] h-[14px]" />
           </button>
         </div>
       </div>
 
-      {/* Plugin list */}
-      <div className="p-6 space-y-3">
+      {/* Plugin list / grid */}
+      <div className={viewMode === "grid"
+        ? "p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+        : "p-6 space-y-3"
+      }>
         {isLoading ? (
-          <LoadingSkeleton />
+          <LoadingSkeleton viewMode={viewMode} />
         ) : hits.length === 0 ? (
-          <EmptyState />
+          <div className={viewMode === "grid" ? "col-span-full" : ""}>
+            <EmptyState />
+          </div>
         ) : (
           <>
             {hits.map((hit, index) => (
@@ -76,6 +98,7 @@ export function ExplorerResults({
                 key={hit.id}
                 hit={hit}
                 featured={index === 0 && currentPage === 1}
+                viewMode={viewMode}
               />
             ))}
           </>
@@ -175,7 +198,34 @@ function Pagination({
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────
 
-function LoadingSkeleton() {
+function LoadingSkeleton({ viewMode }: { viewMode: ViewMode }) {
+  if (viewMode === "grid") {
+    return (
+      <>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={index}
+            className="border border-border-default bg-bg-elevated/30 p-5 animate-pulse"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-bg-surface flex-shrink-0" />
+              <div className="space-y-2 flex-1">
+                <div className="h-4 bg-bg-surface w-32" />
+                <div className="h-3 bg-bg-surface w-20" />
+              </div>
+            </div>
+            <div className="h-3 bg-bg-surface w-full mb-2" />
+            <div className="h-3 bg-bg-surface w-2/3 mb-4" />
+            <div className="flex gap-2">
+              <div className="h-4 bg-bg-surface w-14" />
+              <div className="h-4 bg-bg-surface w-14" />
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, index) => (

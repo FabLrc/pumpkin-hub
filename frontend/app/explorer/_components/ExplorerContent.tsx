@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSearch } from "@/lib/hooks";
 import type { SearchSortOption } from "@/lib/types";
+import { useViewPreference } from "@/lib/useViewPreference";
 import { ExplorerSidebar } from "./ExplorerSidebar";
 import { ExplorerResults } from "./ExplorerResults";
 
@@ -22,6 +23,8 @@ export function ExplorerContent() {
   const category = searchParams.get("category") ?? undefined;
   const platform = searchParams.get("platform") ?? undefined;
   const pumpkinVersion = searchParams.get("pumpkin_version") ?? undefined;
+
+  const { viewMode, setViewMode } = useViewPreference();
 
   const { data, isLoading } = useSearch({
     q: searchQuery || undefined,
@@ -108,6 +111,8 @@ export function ExplorerContent() {
         onPageChange={handlePageChange}
         searchQuery={searchQuery}
         sortBy={sortBy}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
     </div>
   );
