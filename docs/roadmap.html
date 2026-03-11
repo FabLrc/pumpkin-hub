@@ -540,32 +540,35 @@
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
-            <span class="timeline-title">Enhanced Plugin Detail & Media Gallery</span>
+            <span class="timeline-title">Enhanced Plugin Detail &amp; Media Gallery</span>
           </div>
           <ul class="timeline-features">
-            <li>New <strong>Gallery</strong> tab on plugin detail page for images and videos</li>
-            <li>Media upload with validation (JPEG, PNG, WebP images; MP4, WebM videos)</li>
-            <li>Thumbnail generation and lazy-loading for performance</li>
-            <li>New <strong>Changelog</strong> tab with automatic sync from GitHub (<code>changelog.md</code>, <code>CHANGELOG.md</code>)</li>
-            <li>Fallback to manually edited changelog from the web UI when GitHub repo is not connected</li>
-            <li>Markdown rendering with syntax highlighting in both tabs</li>
-            <li>Carousel/lightbox experience for gallery navigation</li>
+            <li>New <strong>Gallery</strong> tab on plugin detail page for images and videos (JPEG, PNG, WebP ≤ 10 MB; MP4, WebM ≤ 100 MB, max 20 items per plugin)</li>
+            <li>Drag-and-drop <code>MediaUpload</code> component with client-side validation, preview, and XHR progress bar</li>
+            <li>Reorder and caption editing for each media item; soft-delete with fire-and-forget S3 cleanup</li>
+            <li>Lightbox carousel — fullscreen overlay with prev/next, thumbnail strip, caption, keyboard navigation (← → Esc), video autoplay support</li>
+            <li>New <strong>Changelog</strong> tab with Keep-a-Changelog markdown rendering (headings, lists, code blocks, links); source badge (GitHub synced vs manual)</li>
+            <li>Inline markdown editor for owners with live char count (max 200 K chars); UPSERT via <code>ON CONFLICT</code></li>
+            <li>XSS protection in markdown renderer via <code>escapeHtml()</code> before all output</li>
+            <li>New API routes: <code>GET/POST /plugins/{slug}/media</code>, <code>PATCH/DELETE /media/{id}</code>, <code>PUT /media/reorder</code>, <code>GET/PUT/DELETE /plugins/{slug}/changelog</code></li>
           </ul>
         </div>
 
         <div class="timeline-item">
-          <div class="timeline-dot planned"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
             <span class="timeline-title">Plugin Categories Refinement</span>
           </div>
           <ul class="timeline-features">
-            <li>Audit and reorganize existing plugin categories for better semantic grouping</li>
-            <li>Addition of new categories aligned with common Minecraft plugin use cases (e.g., World, Gameplay, Economy, Moderation, Chat, etc.)</li>
-            <li>Soft-deletion of unused categories to preserve historical data</li>
-            <li>Frontend filters updated to reflect new hierarchy</li>
-            <li>Category suggestions on plugin creation form</li>
+            <li>17 server-plugin categories inspired by Modrinth/CurseForge, aligned with server-side-only plugin use cases</li>
+            <li>4 renamed: Gameplay → Game Mechanics, Administration → Management, API/Library → Library, Performance → Optimization</li>
+            <li>9 new categories: Adventure, Decoration, Equipment, Minigame, Mobs, Social, Storage, Transportation, Utility</li>
+            <li>Soft-deletion via <code>is_active</code> column — deactivated categories preserved in historical data, filtered from all API responses</li>
+            <li><code>display_order</code> column for deterministic alphabetical ordering independent of insertion order</li>
+            <li>Shared <code>lib/category-icons.ts</code> module — single <code>CATEGORY_ICON_MAP</code> + <code>getCategoryIcon()</code> used across ExplorerSidebar, PluginForm, and PublishFromGithubForm</li>
+            <li>CategoryPicker updated with Lucide icons and <code>title</code> tooltip showing category descriptions</li>
           </ul>
         </div>
 

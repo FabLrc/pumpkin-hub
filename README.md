@@ -27,11 +27,14 @@
 
 - **Multi-provider Authentication** — GitHub, Google, Discord OAuth + email/password, email verification, password recovery
 - **Plugin Registry** — Full CRUD with categories, full-text search (Meilisearch), and author management
+- **Plugin Categories** — 17 server-plugin categories (Adventure, Chat, Decoration, Economy, Equipment, Game Mechanics, Library, Management, Minigame, Mobs, Optimization, Security, Social, Storage, Transportation, Utility, World Generation) with soft-deletion (`is_active`) and display ordering
 - **Version Management** — Publish versions with semver validation, Pumpkin compatibility ranges, changelogs, and yank/restore
 - **Binary Storage & Distribution** — Multi-platform binary uploads, secure presigned download URLs, S3-compatible storage (MinIO / Cloudflare R2)
 - **GitHub Integration** — Publish plugins directly from a GitHub repository (one-click repo picker, no Installation ID required), auto-publish on releases, sync README/changelogs, and embed install badges
 - **Dependency Graph** — Inter-plugin dependency declaration, semver compatibility resolution, conflict detection, and reverse lookup
 - **Review System** — Star ratings (1–5), reviews with moderation, abuse reporting, rating display on explorer and plugin pages, automatic Meilisearch reindex on review mutations
+- **Media Gallery** — Per-plugin image/video gallery with drag-and-drop upload (JPEG, PNG, WebP ≤ 10 MB; MP4, WebM ≤ 100 MB), caption editing, reordering, lightbox carousel with keyboard navigation (← → Esc), and presigned S3 delivery
+- **Changelog Tab** — Per-plugin changelog with Keep-a-Changelog markdown rendering, inline editor for owners, and GitHub-sync source badge
 - **Author Dashboard** — Download analytics with charts, API key management for CI/CD, audit trails, notification center with milestones
 - **Admin Moderation** — Role-based moderation with plugin/user management, audit logs, review report management
 - **Brutalist UI** — Industrial design system with responsive layouts, custom error pages, toast notifications
