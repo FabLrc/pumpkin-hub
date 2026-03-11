@@ -58,6 +58,7 @@
         <a href="#phase-2" class="sidebar-sublink">Phase 2 — Distribution</a>
         <a href="#phase-2-5" class="sidebar-sublink">Phase 2.5 — Hardening</a>
         <a href="#phase-3" class="sidebar-sublink">Phase 3 — Community</a>
+        <a href="#test-coverage" class="sidebar-sublink">↳ Test Coverage 80%+</a>
         <a href="#phase-3-5" class="sidebar-sublink">Phase 3.5 — Server Config</a>
         <a href="#phase-4" class="sidebar-sublink">Phase 4 — Ecosystem</a>
         <a href="#backlog" class="sidebar-sublink">Backlog</a>
@@ -584,6 +585,38 @@
             <li><strong>Search Bar on Landing Page</strong> — unified search experience linking to Explorer with pre-filled query</li>
             <li>Auto-focus and <kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd> global keyboard shortcut on Landing &amp; Explorer pages</li>
             <li>Hero section updated with prominent search CTA, OS-aware shortcut hints, and Escape-to-clear</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item" id="test-coverage">
+          <div class="timeline-dot next-up"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Test Coverage &amp; Code Quality — 80%+ Target</span>
+            <span class="badge badge-orange">Next Up</span>
+          </div>
+          <ul class="timeline-features">
+            <li><strong>Context:</strong> current global coverage is ~5% (frontend) and partial (backend). CI thresholds have been temporarily set to <code>autoUpdate</code> to unblock the pipeline; this item brings them back to ambitious targets.</li>
+            <li><strong>Frontend — critical paths first:</strong>
+              <ul>
+                <li><code>lib/validation.ts</code> — already at 93%, maintain and extend edge cases</li>
+                <li><code>lib/api.ts</code> — mock <code>fetch</code> and SWR; test every API helper (auth, plugins, versions, search…)</li>
+                <li><code>lib/hooks.ts</code> — test all custom SWR hooks via <code>renderHook</code> with mocked responses</li>
+                <li><code>components/ui</code> — 100% on Badge, Button, PluginCard; add DownloadChart and index re-exports</li>
+                <li><code>components/plugins</code> — PluginForm submit flow, VersionForm validation, BinaryUpload drag-and-drop</li>
+                <li><code>components/reviews</code> — StarRating interaction, ReviewForm, ReviewSection conditional rendering</li>
+                <li><code>app/</code> pages — smoke tests (render without crash) for all routes; full integration tests for auth, dashboard, explorer flows</li>
+              </ul>
+            </li>
+            <li><strong>Backend (Rust):</strong>
+              <ul>
+                <li>Extend unit tests for auth handlers, plugin CRUD edge cases, version yanking, and dependency graph traversal</li>
+                <li>Integration tests: binary upload/download pipeline, search indexing sync, review moderation workflow, admin endpoints</li>
+                <li>Reach ≥ 80% line coverage via <code>cargo-tarpaulin</code></li>
+              </ul>
+            </li>
+            <li><strong>CI Threshold Progression:</strong> restore strict thresholds in <code>vitest.config.ts</code> — 50% milestone first, then 70%, then 80%+ as a hard gate</li>
+            <li><strong>Quality Tooling:</strong> add <code>@testing-library/user-event</code> interaction scenarios, introduce MSW (Mock Service Worker) for API contract testing in frontend, consider property-based testing (<code>fast-check</code>) for validators</li>
+            <li><strong>Goal:</strong> green pipeline with ≥ 80% coverage on all layers — lines, functions, branches, statements</li>
           </ul>
         </div>
 
