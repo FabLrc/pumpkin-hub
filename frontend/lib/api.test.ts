@@ -60,6 +60,7 @@ class MockXMLHttpRequest {
   }
 
   send(_body: FormData) {
+    void _body;
     this.status = MockXMLHttpRequest.nextStatus;
     this.responseText = MockXMLHttpRequest.nextResponseText;
 
