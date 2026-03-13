@@ -184,12 +184,12 @@ export function BinaryUpload({
       {/* Upload progress */}
       {isUploading && (
         <div>
-          <div className="w-full h-1 bg-bg-surface">
-            <div
-              className="h-full bg-accent transition-all duration-300 ease-out"
-              style={{ width: `${String(uploadProgress)}%` }}
-            />
-          </div>
+          <progress
+            className="w-full h-1"
+            value={uploadProgress}
+            max={100}
+            aria-label="Upload progress"
+          />
           <p className="font-mono text-[10px] text-text-dim mt-1">
             Uploading… {uploadProgress}%
           </p>

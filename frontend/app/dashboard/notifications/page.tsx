@@ -240,6 +240,9 @@ export default function NotificationsPage() {
           </span>
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              aria-label="Previous page"
+              title="Previous page"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
               className="p-1 border border-border-default hover:border-border-hover text-text-dim hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
@@ -247,6 +250,9 @@ export default function NotificationsPage() {
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
+              type="button"
+              aria-label="Next page"
+              title="Next page"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
               className="p-1 border border-border-default hover:border-border-hover text-text-dim hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"

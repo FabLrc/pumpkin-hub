@@ -191,9 +191,7 @@ export default function AuthPage() {
                 required
                 minLength={8}
                 maxLength={128}
-                autoComplete={
-                  mode === "register" ? "new-password" : "current-password"
-                }
+                name={mode === "register" ? "new-password" : "current-password"}
                 className="w-full px-3 py-2 bg-bg-surface border border-border-default focus:border-accent outline-none font-mono text-sm text-text-primary placeholder:text-text-dim transition-colors"
                 placeholder="Min. 8 characters"
               />

@@ -102,6 +102,7 @@ export function VersionForm({
           <div className="relative">
             <select
               id="pumpkinVersionMin"
+              aria-label="Pumpkin Version Min"
               value={form.pumpkinVersionMin}
               onChange={(e) => updateField("pumpkinVersionMin", e.target.value)}
               disabled={versionsLoading}
@@ -127,6 +128,7 @@ export function VersionForm({
           <div className="relative">
             <select
               id="pumpkinVersionMax"
+              aria-label="Pumpkin Version Max"
               value={form.pumpkinVersionMax}
               onChange={(e) => updateField("pumpkinVersionMax", e.target.value)}
               disabled={versionsLoading}

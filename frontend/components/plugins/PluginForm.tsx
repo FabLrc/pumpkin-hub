@@ -313,7 +313,6 @@ function CategoryPicker({
                     : "border-border-default text-text-muted hover:border-border-hover hover:text-text-primary"
               }
             `}
-            aria-pressed={isSelected ? "true" : "false"}
           >
             <Icon className="w-3 h-3" />
             {cat.name}

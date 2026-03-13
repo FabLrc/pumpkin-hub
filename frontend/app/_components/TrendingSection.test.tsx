@@ -11,15 +11,15 @@ vi.mock("next/link", () => ({
 
 const makePlugin = (overrides: Partial<PluginSummary> = {}): PluginSummary => ({
   id: "p1",
+  author: { id: "u1", username: "alice", avatar_url: null },
   name: "TestPlugin",
   slug: "test-plugin",
   short_description: "A test plugin",
+  license: "MIT",
   downloads_total: 1500,
+  categories: [{ id: "c1", name: "Security", slug: "security" }],
   average_rating: 4.0,
   review_count: 10,
-  categories: [{ id: "c1", name: "Security", slug: "security", description: null, icon: null }],
-  author: { id: "u1", username: "alice", avatar_url: null, email: "a@b.com", role: "user", is_active: true, created_at: "2024-01-01T00:00:00Z" },
-  latest_version: "1.0.0",
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
   ...overrides,

@@ -127,7 +127,7 @@ describe("lib/api", () => {
     await api.fetchCategories();
     await api.logout();
     await api.fetchCurrentUser();
-    await api.updateProfile({ username: "newname" });
+    await api.updateProfile({ display_name: "New Name" });
 
     await api.registerWithEmail({ username: "u", email: "u@example.com", password: "secret123" });
     await api.loginWithEmail({ email: "u@example.com", password: "secret123" });
@@ -144,8 +144,8 @@ describe("lib/api", () => {
     await api.fetchPumpkinVersions();
 
     await api.fetchDependencies("slug", "1.0.0");
-    await api.declareDependency("slug", "1.0.0", { dependency_plugin_slug: "dep", version_constraint: "^1.0.0", optional: false });
-    await api.updateDependency("slug", "1.0.0", "dep-id", { version_constraint: "~1.2.0", optional: true });
+    await api.declareDependency("slug", "1.0.0", { dependency_plugin_id: "dep-id", version_req: "^1.0.0", is_optional: false });
+    await api.updateDependency("slug", "1.0.0", "dep-id", { version_req: "~1.2.0", is_optional: true });
     await api.removeDependency("slug", "1.0.0", "dep-id");
     await api.fetchDependencyGraph("slug", "1.0.0");
     await api.fetchDependants("slug");
@@ -163,16 +163,16 @@ describe("lib/api", () => {
     await api.reactivateUser("uid");
     await api.fetchAuditLogs(1, 20);
 
-    await api.createApiKey({ name: "ci" });
+    await api.createApiKey({ name: "ci", permissions: ["plugins:publish"] });
     await api.revokeApiKey("k-1");
 
     await api.markNotificationRead("n-1");
     await api.markAllNotificationsRead();
 
-    await api.linkGithub("slug", { repository_id: 1, repository_full_name: "org/repo", installation_id: 12 });
+    await api.linkGithub("slug", { installation_id: 12, repository_owner: "org", repository_name: "repo" });
     await api.unlinkGithub("slug");
     await api.listInstallationRepos(22);
-    await api.publishPluginFromGithub({ repository_id: 1, repository_full_name: "org/repo" });
+    await api.publishPluginFromGithub({ installation_id: 12, repository_owner: "org", repository_name: "repo" });
     await api.listMyGithubRepos();
 
     await api.fetchReviews("slug", 1, 10);

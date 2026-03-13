@@ -8,6 +8,13 @@ interface DownloadChartProps {
   height?: number;
 }
 
+function getChartHeightClass(height: number): string {
+  if (height <= 128) return "h-32";
+  if (height <= 160) return "h-40";
+  if (height <= 192) return "h-48";
+  return "h-56";
+}
+
 function formatPeriodLabel(period: string, granularity: DownloadGranularity): string {
   if (granularity === "daily") {
     // "2026-03-10" → "Mar 10"
@@ -36,19 +43,20 @@ export function DownloadChart({
   height = 160,
 }: DownloadChartProps) {
   const maxDownloads = Math.max(...data.map((d) => d.downloads), 1);
+  const chartHeightClass = getChartHeightClass(height);
 
   return (
     <div className="w-full">
       {/* Y-axis labels + bars */}
-      <div className="flex items-end gap-1" style={{ height }}>
+      <div className={`flex items-end gap-1 ${chartHeightClass}`}>
         {data.map((point) => {
           const barHeight =
             maxDownloads > 0 ? (point.downloads / maxDownloads) * 100 : 0;
+          const normalizedHeight = Math.max(barHeight, 1);
           return (
             <div
               key={point.period}
               className="flex-1 flex flex-col items-center justify-end group relative"
-              style={{ height: "100%" }}
             >
               {/* Tooltip on hover */}
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
@@ -59,10 +67,20 @@ export function DownloadChart({
                 </div>
               </div>
               {/* Bar */}
-              <div
-                className="w-full bg-accent/80 hover:bg-accent transition-colors min-h-[2px]"
-                style={{ height: `${Math.max(barHeight, 1)}%` }}
-              />
+              <svg
+                className="w-full h-full"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="0"
+                  y={100 - normalizedHeight}
+                  width="100"
+                  height={normalizedHeight}
+                  className="fill-accent/80 group-hover:fill-accent transition-colors"
+                />
+              </svg>
             </div>
           );
         })}

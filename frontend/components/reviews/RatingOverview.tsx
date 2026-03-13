@@ -48,14 +48,12 @@ export function RatingOverview({
             <span className="font-mono text-[10px] text-text-dim w-3 text-right">
               {bar.label}
             </span>
-            <div className="flex-1 h-2 bg-bg-surface border border-border-default">
-              <div
-                className="h-full bg-accent transition-all"
-                style={{
-                  width: `${(bar.count / maxCount) * 100}%`,
-                }}
-              />
-            </div>
+            <progress
+              className="flex-1 h-2"
+              value={bar.count}
+              max={maxCount}
+              aria-label={`${bar.label} star reviews`}
+            />
             <span className="font-mono text-[10px] text-text-dim w-6 text-right">
               {bar.count}
             </span>

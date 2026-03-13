@@ -42,7 +42,7 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
         </div>
 
         {/* Bento Grid — featured (5 cols × 2 rows) + 2×2 small cards (7 cols × 2 rows) */}
-        <div className="grid grid-cols-12 gap-4" style={{ gridTemplateRows: "1fr 1fr", minHeight: "520px" }}>
+        <div className="grid grid-cols-12 grid-rows-2 gap-4 min-h-[520px]">
           {/* Featured card */}
           {featured ? (
             <Link
@@ -67,11 +67,7 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
                 {featured.name}
               </h3>
               <p className="font-mono text-xs text-text-dim mb-1">
-                by <Link
-                  href={`/users/${featured.author.username}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-text-subtle hover:text-accent transition-colors"
-                >{featured.author.username}</Link>
+                by <span className="text-text-subtle">{featured.author.username}</span>
               </p>
               {featured.short_description && (
                 <p className="font-raleway text-sm text-text-subtle leading-relaxed mt-4 mb-auto">
@@ -137,11 +133,7 @@ function SmallBentoCard({ plugin }: { plugin: PluginSummary }) {
         {plugin.name}
       </h3>
       <p className="font-mono text-[10px] text-text-dim mb-3 truncate">
-        by <Link
-          href={`/users/${plugin.author.username}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-text-subtle hover:text-accent transition-colors"
-        >{plugin.author.username}</Link>
+        by <span className="text-text-subtle">{plugin.author.username}</span>
       </p>
       {plugin.short_description && (
         <p className="font-raleway text-xs text-text-dim leading-relaxed mb-auto line-clamp-3">
