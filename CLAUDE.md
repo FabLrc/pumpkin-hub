@@ -90,7 +90,7 @@ Les instructions détaillées sont dans `.github/instructions/` :
 cd frontend && npm run dev          # Dev local (hors Docker)
 cd frontend && npm run lint         # Lint strict (0 warnings)
 cd frontend && npm run test         # Tests Vitest
-cd frontend && npm run test:coverage # Couverture (seuils : lines 53%, functions 54%)
+cd frontend && npm run test:coverage # Couverture (seuils : lines 80%, functions 80%, branches 75%)
 
 # API
 cd api && cargo run                 # Dev local (nécessite .env + services)

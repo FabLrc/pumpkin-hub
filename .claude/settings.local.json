@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/Users/hiroc/Documents/ProjetsWeb/pumpkin-hub/frontend && npm run test:coverage 2>&1 | tail -80)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)"
+    ]
+  }
+}

@@ -111,7 +111,7 @@ frontend/
 ### Configuration
 - Vitest + jsdom + @testing-library/react
 - MSW pour mocker les appels API
-- Seuils de couverture : lines 53%, functions 54%, branches 43%, statements 52%
+- Seuils de couverture : lines 80%, functions 80%, branches 75%, statements 80%
 
 ### Patterns de test
 - `vi.mock()` pour les hooks/modules
