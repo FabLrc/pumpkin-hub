@@ -98,13 +98,6 @@ pub struct GitHubLinkResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize)]
-#[allow(dead_code)]
-pub struct BadgeMarkdownResponse {
-    pub markdown: String,
-    pub url: String,
-}
-
 /// Serializable summary of a GitHub repository (used in the repo picker).
 #[derive(Debug, Serialize)]
 pub struct GitHubRepositoryDto {

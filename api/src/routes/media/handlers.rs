@@ -19,8 +19,6 @@ use super::dto::{
 #[derive(Debug, FromRow)]
 struct MediaRow {
     id: Uuid,
-    #[allow(dead_code)]
-    plugin_id: Uuid,
     media_type: String,
     file_name: String,
     file_size: i64,
@@ -111,7 +109,7 @@ pub async fn list_media(
     let (plugin_id, _, _) = fetch_plugin_info(pool, &slug).await?;
 
     let rows: Vec<MediaRow> = sqlx::query_as(
-        "SELECT id, plugin_id, media_type, file_name, file_size, content_type,
+        "SELECT id, media_type, file_name, file_size, content_type,
                 storage_key, thumbnail_key, caption, sort_order, uploaded_at
          FROM plugin_media
          WHERE plugin_id = $1
@@ -254,7 +252,7 @@ pub async fn upload_media(
         "INSERT INTO plugin_media (id, plugin_id, uploaded_by, media_type, file_name, file_size,
                                     content_type, storage_key, caption, sort_order)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id, plugin_id, media_type, file_name, file_size, content_type,
+         RETURNING id, media_type, file_name, file_size, content_type,
                    storage_key, thumbnail_key, caption, sort_order, uploaded_at",
     )
     .bind(media_id)
@@ -297,7 +295,7 @@ pub async fn update_media(
          SET caption = COALESCE($1, caption),
              sort_order = COALESCE($2, sort_order)
          WHERE id = $3
-         RETURNING id, plugin_id, media_type, file_name, file_size, content_type,
+         RETURNING id, media_type, file_name, file_size, content_type,
                    storage_key, thumbnail_key, caption, sort_order, uploaded_at",
     )
     .bind(&body.caption)

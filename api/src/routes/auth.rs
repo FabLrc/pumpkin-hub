@@ -799,7 +799,7 @@ async fn reset_password(
     // Find valid (non-expired) token
     let record = sqlx::query_as::<_, TokenRecord>(
         r#"
-        SELECT id, user_id FROM password_reset_tokens
+        SELECT user_id FROM password_reset_tokens
         WHERE token_hash = $1 AND expires_at > now()
         "#,
     )
@@ -850,7 +850,7 @@ async fn verify_email(
 
     let record = sqlx::query_as::<_, TokenRecord>(
         r#"
-        SELECT id, user_id FROM email_verification_tokens
+        SELECT user_id FROM email_verification_tokens
         WHERE token_hash = $1 AND expires_at > now()
         "#,
     )
@@ -1225,8 +1225,6 @@ async fn store_email_verification_token(
 /// Row returned when looking up a token.
 #[derive(sqlx::FromRow)]
 struct TokenRecord {
-    #[allow(dead_code)]
-    id: Uuid,
     user_id: Uuid,
 }
 
