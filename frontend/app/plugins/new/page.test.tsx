@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentPropsWithoutRef } from "react";
 import NewPluginPage from "./page";
 
 const pushMock = vi.fn();
@@ -11,7 +12,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: any) => (
+  default: ({ children, href, ...props }: ComponentPropsWithoutRef<"a">) => (
     <a href={href} {...props}>
       {children}
     </a>
@@ -29,7 +30,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 vi.mock("@/components/plugins/PluginForm", () => ({
-  PluginForm: (props: any) => (
+  PluginForm: (props: { submitLabel?: string }) => (
     <div data-testid="plugin-form" data-label={props.submitLabel}>
       PluginForm
     </div>

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentPropsWithoutRef } from "react";
 import { PluginContent } from "./PluginContent";
 import type { PluginResponse } from "@/lib/types";
 
@@ -55,13 +56,17 @@ vi.mock("swr", async () => {
 });
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: any) => (
+  default: ({ children, href, ...props }: ComponentPropsWithoutRef<"a">) => (
     <a href={href} {...props}>{children}</a>
   ),
 }));
 
 vi.mock("@/components/plugins/VersionForm", () => ({
-  VersionForm: ({ onSubmit, onCancel, isSubmitting }: any) => (
+  VersionForm: ({ onSubmit, onCancel, isSubmitting }: {
+    onSubmit: (data: { version: string; changelog: string; pumpkinVersionMin: string; pumpkinVersionMax: string }) => void;
+    onCancel: () => void;
+    isSubmitting: boolean;
+  }) => (
     <div data-testid="version-form">
       <button onClick={() => onSubmit({ version: "2.0.0", changelog: "New", pumpkinVersionMin: "", pumpkinVersionMax: "" })}>
         submit-version
@@ -85,15 +90,15 @@ vi.mock("@/components/plugins/BinaryList", () => ({
 }));
 
 vi.mock("@/components/reviews", () => ({
-  ReviewSection: ({ plugin }: any) => <div data-testid="review-section">{plugin.slug}</div>,
+  ReviewSection: ({ plugin }: { plugin: PluginResponse }) => <div data-testid="review-section">{plugin.slug}</div>,
 }));
 
 vi.mock("@/components/plugins/GalleryTab", () => ({
-  GalleryTab: ({ plugin }: any) => <div data-testid="gallery-tab">{plugin.slug}</div>,
+  GalleryTab: ({ plugin }: { plugin: PluginResponse }) => <div data-testid="gallery-tab">{plugin.slug}</div>,
 }));
 
 vi.mock("@/components/plugins/ChangelogTab", () => ({
-  ChangelogTab: ({ plugin }: any) => <div data-testid="changelog-tab">{plugin.slug}</div>,
+  ChangelogTab: ({ plugin }: { plugin: PluginResponse }) => <div data-testid="changelog-tab">{plugin.slug}</div>,
 }));
 
 /* ── Fixtures ──────────────────────────────────────────────────────────── */

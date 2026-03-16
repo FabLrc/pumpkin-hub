@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import type { ComponentPropsWithoutRef } from "react";
 import VerifyEmailPage from "./page";
 
 const mockPush = vi.fn();
 let mockSearchParams = new URLSearchParams();
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: any) => (
+  default: ({ children, href, ...props }: ComponentPropsWithoutRef<"a">) => (
     <a href={href} {...props}>
       {children}
     </a>

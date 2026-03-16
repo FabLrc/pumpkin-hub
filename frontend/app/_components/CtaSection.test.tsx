@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import type { ComponentPropsWithoutRef } from "react";
 import { CtaSection } from "./CtaSection";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: any) => (
+  default: ({ children, href, ...props }: ComponentPropsWithoutRef<"a">) => (
     <a href={href} {...props}>
       {children}
     </a>

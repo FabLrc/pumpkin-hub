@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import type { ComponentPropsWithoutRef } from "react";
 import { PluginSidebar } from "./PluginSidebar";
 import type { PluginResponse } from "@/lib/types";
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: any) => (
+  default: ({ children, href, ...props }: ComponentPropsWithoutRef<"a">) => (
     <a href={href} {...props}>
       {children}
     </a>
@@ -12,7 +13,9 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: (props: any) => <img {...props} />,
+  default: ({ alt, src }: { alt: string; src: string }) => (
+    <span data-src={src}>{alt}</span>
+  ),
 }));
 
 vi.mock("@/lib/hooks", () => ({

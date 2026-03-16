@@ -19,23 +19,43 @@ vi.mock("@/lib/useViewPreference", () => ({
 }));
 
 vi.mock("./ExplorerSidebar", () => ({
-  ExplorerSidebar: (props: any) => (
+  ExplorerSidebar: ({
+    onSearchChange,
+    onSortChange,
+    onCategoryChange,
+    onPlatformChange,
+    onPumpkinVersionChange,
+    onClearFilters,
+  }: {
+    onSearchChange: (q: string) => void;
+    onSortChange: (s: string) => void;
+    onCategoryChange: (c: string) => void;
+    onPlatformChange: (p: string) => void;
+    onPumpkinVersionChange: (v: string) => void;
+    onClearFilters: () => void;
+  }) => (
     <div data-testid="explorer-sidebar">
-      <button onClick={() => props.onSearchChange("test")}>search</button>
-      <button onClick={() => props.onSortChange("name")}>sort</button>
-      <button onClick={() => props.onCategoryChange("security")}>category</button>
-      <button onClick={() => props.onPlatformChange("windows")}>platform</button>
-      <button onClick={() => props.onPumpkinVersionChange("1.0")}>version</button>
-      <button onClick={() => props.onClearFilters()}>clear</button>
+      <button onClick={() => onSearchChange("test")}>search</button>
+      <button onClick={() => onSortChange("name")}>sort</button>
+      <button onClick={() => onCategoryChange("security")}>category</button>
+      <button onClick={() => onPlatformChange("windows")}>platform</button>
+      <button onClick={() => onPumpkinVersionChange("1.0")}>version</button>
+      <button onClick={() => onClearFilters()}>clear</button>
     </div>
   ),
 }));
 
 vi.mock("./ExplorerResults", () => ({
-  ExplorerResults: (props: any) => (
+  ExplorerResults: ({
+    isLoading,
+    onPageChange,
+  }: {
+    isLoading: boolean;
+    onPageChange: (page: number) => void;
+  }) => (
     <div data-testid="explorer-results">
-      <span data-testid="loading">{String(props.isLoading)}</span>
-      <button onClick={() => props.onPageChange(2)}>page2</button>
+      <span data-testid="loading">{String(isLoading)}</span>
+      <button onClick={() => onPageChange(2)}>page2</button>
     </div>
   ),
 }));

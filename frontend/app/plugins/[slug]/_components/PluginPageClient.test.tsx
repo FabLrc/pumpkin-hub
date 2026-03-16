@@ -28,19 +28,19 @@ vi.mock("@/lib/hooks", () => ({
 }));
 
 vi.mock("./PluginHeader", () => ({
-  PluginHeader: ({ plugin }: any) => (
+  PluginHeader: ({ plugin }: { plugin: PluginResponse }) => (
     <div data-testid="plugin-header">{plugin.name}</div>
   ),
 }));
 
 vi.mock("./PluginContent", () => ({
-  PluginContent: ({ plugin }: any) => (
+  PluginContent: ({ plugin }: { plugin: PluginResponse }) => (
     <div data-testid="plugin-content">{plugin.name}</div>
   ),
 }));
 
 vi.mock("./PluginSidebar", () => ({
-  PluginSidebar: ({ plugin }: any) => (
+  PluginSidebar: ({ plugin }: { plugin: PluginResponse }) => (
     <div data-testid="plugin-sidebar">{plugin.name}</div>
   ),
 }));

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { Suspense } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import EditPluginPage from "./page";
 import type { PluginResponse } from "@/lib/types";
 
@@ -12,7 +13,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }: any) => (
+  default: ({ children, href, ...props }: ComponentPropsWithoutRef<"a">) => (
     <a href={href} {...props}>
       {children}
     </a>
@@ -37,7 +38,7 @@ vi.mock("swr", () => ({
 }));
 
 vi.mock("@/components/plugins/PluginForm", () => ({
-  PluginForm: (props: any) => (
+  PluginForm: (props: { submitLabel?: string; initialData?: { name: string } }) => (
     <div data-testid="plugin-form" data-label={props.submitLabel}>
       PluginForm
       {props.initialData && (
@@ -48,7 +49,7 @@ vi.mock("@/components/plugins/PluginForm", () => ({
 }));
 
 vi.mock("@/components/plugins/GitHubIntegration", () => ({
-  GitHubIntegration: ({ slug }: any) => (
+  GitHubIntegration: ({ slug }: { slug: string }) => (
     <div data-testid="github-integration">{slug}</div>
   ),
 }));
