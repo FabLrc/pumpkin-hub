@@ -3,9 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MediaUpload } from "./MediaUpload";
 
-const uploadMediaMock = vi.fn();
-const getMediaPathMock = vi.fn(() => "/plugins/my-plugin/media");
-const swrMutateMock = vi.fn();
+const { uploadMediaMock, getMediaPathMock, swrMutateMock } = vi.hoisted(() => ({
+  uploadMediaMock: vi.fn(),
+  getMediaPathMock: vi.fn(() => "/plugins/my-plugin/media"),
+  swrMutateMock: vi.fn(),
+}));
 
 vi.mock("@/lib/api", () => ({
   uploadMedia: uploadMediaMock,
