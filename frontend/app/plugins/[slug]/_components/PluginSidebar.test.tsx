@@ -74,7 +74,7 @@ describe("PluginSidebar", () => {
     expect(screen.getByText((_content, element) => {
       return element?.tagName === "SPAN" &&
         element.className.includes("text-3xl") &&
-        (element.textContent?.replace(/\D/g, "") === "5000" ?? false);
+        element.textContent?.replace(/\D/g, "") === "5000";
     })).toBeInTheDocument();
   });
 

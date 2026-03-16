@@ -8,8 +8,8 @@ const getMediaPathMock = vi.fn(() => "/plugins/my-plugin/media");
 const swrMutateMock = vi.fn();
 
 vi.mock("@/lib/api", () => ({
-  uploadMedia: (...args: unknown[]) => uploadMediaMock(...args),
-  getMediaPath: (...args: unknown[]) => getMediaPathMock(...args),
+  uploadMedia: uploadMediaMock,
+  getMediaPath: getMediaPathMock,
 }));
 
 vi.mock("swr", async () => {

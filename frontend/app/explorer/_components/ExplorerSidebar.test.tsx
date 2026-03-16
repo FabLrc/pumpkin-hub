@@ -155,7 +155,7 @@ describe("ExplorerSidebar", () => {
   it("does not render pumpkin version section when no versions", () => {
     mockUsePumpkinVersions.mockReturnValue({
       data: [],
-    } as ReturnType<typeof usePumpkinVersions>);
+    } as unknown as ReturnType<typeof usePumpkinVersions>);
     render(<ExplorerSidebar {...defaultProps} />);
     expect(screen.queryByText("Pumpkin Version")).not.toBeInTheDocument();
   });

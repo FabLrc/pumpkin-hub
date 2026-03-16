@@ -38,12 +38,15 @@ const makeHit = (overrides: Partial<SearchHit> = {}): SearchHit => ({
   downloads_total: 12500,
   average_rating: 4.3,
   review_count: 17,
+  categories: [],
   category_slugs: ["performance", "security"],
+  pumpkin_versions: [],
   platforms: ["windows", "linux"],
   license: "MIT",
+  created_at_timestamp: Math.floor(new Date("2024-01-01T00:00:00Z").getTime() / 1000),
   updated_at_timestamp: Math.floor(new Date("2025-06-30T12:00:00Z").getTime() / 1000),
   ...overrides,
-});
+} as SearchHit);
 
 describe("SearchHitCard", () => {
   beforeEach(() => {

@@ -43,9 +43,12 @@ const makeHit = (id: string, name: string): SearchHit => ({
   downloads_total: 100,
   average_rating: 4.0,
   review_count: 5,
+  categories: [],
   category_slugs: ["performance"],
   platforms: ["linux"],
+  pumpkin_versions: [],
   license: "MIT",
+  created_at_timestamp: Math.floor(Date.now() / 1000),
   updated_at_timestamp: Math.floor(Date.now() / 1000),
 });
 
