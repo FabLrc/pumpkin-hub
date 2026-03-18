@@ -3,6 +3,9 @@
 # Specifics for api/ and frontend/ are handled by their own .gitignore files
 # ============================================================
 
+# Claude Code
+.claude/
+
 # IDE
 .vscode/
 !.vscode/extensions.json
