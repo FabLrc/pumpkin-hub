@@ -34,6 +34,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  output: "standalone",
   turbopack: {},
   webpack: (config, { dev }) => {
     if (dev) {

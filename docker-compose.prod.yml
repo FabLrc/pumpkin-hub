@@ -1,0 +1,143 @@
+# PRODUCTION — Stack Pumpkin Hub
+# Déployer via Coolify (Docker Compose Stack) ou `docker compose -f docker-compose.prod.yml up -d`
+# Copier .env.production.example → .env et renseigner toutes les valeurs avant de lancer.
+
+services:
+
+  # ── Frontend Next.js ──────────────────────────────────────────────────────
+  frontend:
+    container_name: pumpkin-hub-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.pumpkinhub.org
+    image: pumpkin-hub-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Utilisé par le proxy upload côté serveur (réseau Docker interne)
+      - NEXT_INTERNAL_API_URL=http://api:8080
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # ── API Rust / Axum ───────────────────────────────────────────────────────
+  api:
+    container_name: pumpkin-hub-api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: pumpkin-hub-api:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Serveur
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - API_PUBLIC_URL=https://api.pumpkinhub.org
+      - ALLOWED_ORIGINS=https://pumpkinhub.org
+      - COOKIE_SECURE=true
+
+      # Base de données
+      - DATABASE_URL=postgres://${POSTGRES_USER:-pumpkin}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pumpkin_hub}
+
+      # Meilisearch
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_KEY=${MEILISEARCH_KEY}
+
+      # JWT
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_TTL_SECONDS=86400
+
+      # OAuth — GitHub (obligatoire)
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_REDIRECT_URI=https://api.pumpkinhub.org/api/v1/auth/github/callback
+
+      # OAuth — Discord (optionnel)
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
+      - DISCORD_REDIRECT_URI=https://api.pumpkinhub.org/api/v1/auth/discord/callback
+
+      # OAuth — Google (optionnel, décommenter quand prêt)
+      # - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      # - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      # - GOOGLE_REDIRECT_URI=https://api.pumpkinhub.org/api/v1/auth/google/callback
+
+      # Cloudflare R2 (S3-compatible)
+      - S3_ENDPOINT_URL=https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+      - S3_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - S3_BUCKET=${R2_BUCKET:-pumpkin-hub-binaries}
+      - S3_REGION=auto
+      - S3_FORCE_PATH_STYLE=false
+      - S3_PUBLIC_URL=${R2_PUBLIC_URL}
+
+      # Email — Resend (SMTP)
+      - SMTP_HOST=smtp.resend.com
+      - SMTP_PORT=465
+      - SMTP_USERNAME=resend
+      - SMTP_PASSWORD=${RESEND_API_KEY}
+      - SMTP_FROM_ADDRESS=${SMTP_FROM_ADDRESS:-noreply@pumpkinhub.org}
+
+      # Limites
+      - BINARY_MAX_SIZE_BYTES=104857600
+
+      # Logs
+      - RUST_LOG=pumpkin_hub_api=info,tower_http=info
+
+      # GitHub App (optionnel)
+      - GITHUB_APP_ID=${GITHUB_APP_ID:-}
+      - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY:-}
+      - GITHUB_APP_WEBHOOK_SECRET=${GITHUB_APP_WEBHOOK_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── PostgreSQL 16 ─────────────────────────────────────────────────────────
+  db:
+    container_name: pumpkin-hub-db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-pumpkin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-pumpkin_hub}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pumpkin} -d ${POSTGRES_DB:-pumpkin_hub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Meilisearch 1.7 ───────────────────────────────────────────────────────
+  meilisearch:
+    container_name: pumpkin-hub-meilisearch
+    image: getmeili/meilisearch:v1.7
+    restart: unless-stopped
+    environment:
+      - MEILI_ENV=production
+      - MEILI_MASTER_KEY=${MEILISEARCH_KEY}
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+  meili-data:
