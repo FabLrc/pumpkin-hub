@@ -7,11 +7,7 @@ services:
   # ── Frontend Next.js ──────────────────────────────────────────────────────
   frontend:
     container_name: pumpkin-hub-frontend
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: https://api.pumpkinhub.org
+    image: ghcr.io/fablrc/pumpkin-hub-frontend:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -25,9 +21,7 @@ services:
   # ── API Rust / Axum ───────────────────────────────────────────────────────
   api:
     container_name: pumpkin-hub-api
-    build:
-      context: ./api
-      dockerfile: Dockerfile
+    image: ghcr.io/fablrc/pumpkin-hub-api:latest
     restart: unless-stopped
     ports:
       - "8080:8080"
