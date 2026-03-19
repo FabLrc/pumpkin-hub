@@ -12,8 +12,6 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: https://api.pumpkinhub.org
-    image: pumpkin-hub-frontend:latest
-    pull_policy: build
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -30,8 +28,6 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    image: pumpkin-hub-api:latest
-    pull_policy: build
     restart: unless-stopped
     ports:
       - "8080:8080"
