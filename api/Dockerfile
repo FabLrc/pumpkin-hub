@@ -1,11 +1,11 @@
-# PRODUCTION — build multi-stage Rust (release)
+# PRODUCTION — build multi-stage Rust (release, musl statique)
+# Utilise rustls → pas de dépendance OpenSSL → binaire 100% statique sur Alpine
 
 # ---- Stage 1 : builder ----
-FROM rust:slim AS builder
+FROM rust:alpine AS builder
 
-RUN apt-get update \
-    && apt-get install -y pkg-config libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Dépendances système pour musl + compilation
+RUN apk add --no-cache musl-dev pkgconfig
 
 WORKDIR /app
 
@@ -26,13 +26,11 @@ ENV SQLX_OFFLINE=true
 RUN cargo build --release --locked
 
 # ---- Stage 2 : runner ----
-FROM debian:bookworm-slim AS runner
+FROM alpine:3
 
-RUN apt-get update \
-    && apt-get install -y ca-certificates libssl3 curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates curl
 
-RUN useradd -r -s /bin/false -u 1001 pumpkin
+RUN adduser -D -u 1001 pumpkin
 
 WORKDIR /app
 
