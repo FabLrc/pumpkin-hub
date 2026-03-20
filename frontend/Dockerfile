@@ -41,5 +41,8 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD wget -qO- http://localhost:3000/ > /dev/null || exit 1
+
 # server.js est généré par Next.js en mode standalone
 CMD ["node", "server.js"]
