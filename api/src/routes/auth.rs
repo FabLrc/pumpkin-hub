@@ -62,6 +62,7 @@ pub fn routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
     // Non-rate-limited auth routes (callbacks, session, avatar, verification)
     let open = Router::new()
         .route("/auth/github/callback", get(github_callback))
+        .route("/auth/github/app-callback", get(github_app_callback))
         .route("/auth/google/callback", get(google_callback))
         .route("/auth/discord/callback", get(discord_callback))
         .route("/auth/me", get(me).put(update_profile))
@@ -279,6 +280,44 @@ async fn github_callback(
     .await?;
 
     issue_jwt_redirect(&state, &user)
+}
+
+/// Query parameters sent by GitHub after a GitHub App installation.
+#[derive(Debug, Deserialize)]
+pub struct AppCallbackParams {
+    /// The GitHub App installation ID.
+    pub installation_id: i64,
+    /// The action that triggered the callback (`install`, `update`, `delete`).
+    pub setup_action: String,
+}
+
+/// `GET /api/v1/auth/github/app-callback` — handles the redirect GitHub sends
+/// after a user installs (or updates) the Pumpkin Hub GitHub App.
+///
+/// GitHub sends `installation_id` + `setup_action` (and sometimes a short-lived
+/// `code`) but **no** `state` CSRF token, so this is a dedicated endpoint
+/// separate from the regular OAuth callback.
+///
+/// The handler simply redirects the browser back to the frontend, forwarding
+/// `installation_id` so the UI can confirm the installation.
+async fn github_app_callback(
+    State(state): State<AppState>,
+    Query(params): Query<AppCallbackParams>,
+) -> Response {
+    let frontend_url = state
+        .config
+        .server
+        .allowed_origins
+        .first()
+        .cloned()
+        .unwrap_or_else(|| "http://localhost:3000".to_string());
+
+    let redirect_url = format!(
+        "{}/publish?installation_id={}&setup_action={}",
+        frontend_url, params.installation_id, params.setup_action
+    );
+
+    Redirect::to(&redirect_url).into_response()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
