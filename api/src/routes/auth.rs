@@ -272,11 +272,9 @@ async fn github_callback(
             .cloned()
             .unwrap_or_else(|| "http://localhost:3000".to_string());
 
-        let setup_action = params.setup_action.as_deref().unwrap_or("install");
-
         let redirect_url = format!(
-            "{}/publish?installation_id={}&setup_action={}",
-            frontend_url, installation_id, setup_action
+            "{}/plugins/new?mode=github&installation_id={}",
+            frontend_url, installation_id
         );
 
         return Ok(Redirect::to(&redirect_url).into_response());
