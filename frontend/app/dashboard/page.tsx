@@ -99,7 +99,7 @@ export default function DashboardPage() {
   );
   const { data: stats, isLoading: isLoadingStats } = useAuthorDashboardStats(
     granularity,
-    granularity === "daily" ? 30 : granularity === "monthly" ? 12 : 12,
+    granularity === "daily" ? 30 : 12,
   );
   const { data: unreadData } = useUnreadCount();
 

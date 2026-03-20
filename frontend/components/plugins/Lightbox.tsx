@@ -57,6 +57,7 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-label="Media lightbox"
@@ -93,6 +94,7 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
       <div
         className="max-w-[90vw] max-h-[85vh] flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         {item.media_type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element -- lightbox media from external storage
