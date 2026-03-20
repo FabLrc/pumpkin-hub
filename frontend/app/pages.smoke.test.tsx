@@ -71,6 +71,7 @@ vi.mock("@/lib/hooks", () => ({
   useAuthorPlugins: (...args: unknown[]) => useAuthorPluginsMock(...args),
   useAuthorDashboardStats: (...args: unknown[]) => useAuthorDashboardStatsMock(...args),
   useUnreadCount: () => useUnreadCountMock(),
+  usePublicStats: () => ({ data: undefined }),
 }));
 
 vi.mock("@/lib/api", async () => {

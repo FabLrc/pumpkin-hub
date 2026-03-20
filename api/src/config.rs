@@ -136,7 +136,9 @@ impl Config {
             Err(_) => allowed_origins.iter().any(|o| o.starts_with("https://")),
         };
 
-        let cookie_domain = std::env::var("COOKIE_DOMAIN").ok().filter(|s| !s.is_empty());
+        let cookie_domain = std::env::var("COOKIE_DOMAIN")
+            .ok()
+            .filter(|s| !s.is_empty());
 
         let database_url = require_env("DATABASE_URL")?;
         let meilisearch_url = require_env("MEILISEARCH_URL")?;

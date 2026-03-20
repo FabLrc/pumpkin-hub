@@ -463,6 +463,14 @@ export interface PluginDownloadStats {
 
 export type DownloadGranularity = "daily" | "weekly" | "monthly";
 
+// ── Public Stats ──────────────────────────────────────────────────────────
+
+export interface PublicStats {
+  total_plugins: number;
+  total_authors: number;
+  total_downloads: number;
+}
+
 // ── API Keys ──────────────────────────────────────────────────────────────
 
 export interface ApiKeySummary {

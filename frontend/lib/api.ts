@@ -95,6 +95,10 @@ function buildPluginQueryString(params: ListPluginsParams): string {
   return queryString ? `?${queryString}` : "";
 }
 
+export function getPublicStatsPath(): string {
+  return "/stats";
+}
+
 export function getPluginsPath(params: ListPluginsParams = {}): string {
   return `/plugins${buildPluginQueryString(params)}`;
 }

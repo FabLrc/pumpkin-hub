@@ -12,6 +12,7 @@ pub mod notifications;
 pub(crate) mod plugins;
 mod reviews;
 mod search;
+mod stats;
 mod users;
 
 use std::sync::Arc;
@@ -37,6 +38,7 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(plugins::routes())
         .merge(dependencies::routes())
         .merge(search::routes())
+        .merge(stats::routes())
         .merge(users::routes())
         .merge(dashboard::routes())
         .merge(api_keys::routes())
