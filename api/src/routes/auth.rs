@@ -508,11 +508,14 @@ async fn me(State(state): State<AppState>, auth: AuthUser) -> Result<Json<UserPr
 
 /// `POST /api/v1/auth/logout` — clears the auth cookie.
 async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
-    let remove_cookie = Cookie::build(AUTH_COOKIE_NAME)
+    let mut builder = Cookie::build(AUTH_COOKIE_NAME)
         .path("/")
         .secure(state.config.server.secure_cookies)
-        .max_age(time::Duration::ZERO)
-        .build();
+        .max_age(time::Duration::ZERO);
+    if let Some(ref domain) = state.config.server.cookie_domain {
+        builder = builder.domain(domain.clone());
+    }
+    let remove_cookie = builder.build();
 
     let jar = jar.add(remove_cookie);
 
@@ -1279,13 +1282,16 @@ fn issue_jwt_cookie(
     let token = jwt::encode_token(&state.config.jwt, user.id, &user.username, &user.role)
         .map_err(AppError::internal)?;
 
-    let auth_cookie = Cookie::build((AUTH_COOKIE_NAME, token))
+    let mut builder = Cookie::build((AUTH_COOKIE_NAME, token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .secure(state.config.server.secure_cookies)
-        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64))
-        .build();
+        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64));
+    if let Some(ref domain) = state.config.server.cookie_domain {
+        builder = builder.domain(domain.clone());
+    }
+    let auth_cookie = builder.build();
 
     let jar = CookieJar::new().add(auth_cookie);
 
@@ -1300,13 +1306,16 @@ fn issue_jwt_redirect(
     let token = jwt::encode_token(&state.config.jwt, user.id, &user.username, &user.role)
         .map_err(AppError::internal)?;
 
-    let auth_cookie = Cookie::build((AUTH_COOKIE_NAME, token))
+    let mut builder = Cookie::build((AUTH_COOKIE_NAME, token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .secure(state.config.server.secure_cookies)
-        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64))
-        .build();
+        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64));
+    if let Some(ref domain) = state.config.server.cookie_domain {
+        builder = builder.domain(domain.clone());
+    }
+    let auth_cookie = builder.build();
 
     let remove_csrf = Cookie::build(CSRF_COOKIE_NAME)
         .path("/")

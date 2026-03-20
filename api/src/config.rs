@@ -28,6 +28,10 @@ pub struct ServerConfig {
     /// Whether cookies should be marked `Secure` (HTTPS-only).
     /// Auto-detected from `COOKIE_SECURE` env or inferred from `ALLOWED_ORIGINS`.
     pub secure_cookies: bool,
+    /// Optional cookie domain (e.g. `.pumpkinhub.org`).
+    /// Set this when the frontend and API are on different subdomains so the
+    /// auth cookie is accessible to the Next.js upload proxy.
+    pub cookie_domain: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -132,6 +136,8 @@ impl Config {
             Err(_) => allowed_origins.iter().any(|o| o.starts_with("https://")),
         };
 
+        let cookie_domain = std::env::var("COOKIE_DOMAIN").ok().filter(|s| !s.is_empty());
+
         let database_url = require_env("DATABASE_URL")?;
         let meilisearch_url = require_env("MEILISEARCH_URL")?;
         let meilisearch_key = require_env("MEILISEARCH_KEY")?;
@@ -182,6 +188,7 @@ impl Config {
                 allowed_origins,
                 api_public_url,
                 secure_cookies,
+                cookie_domain,
             },
             database_url,
             meilisearch: MeilisearchConfig {
@@ -224,6 +231,7 @@ impl Default for Config {
                 allowed_origins: vec!["http://localhost:3000".to_string()],
                 api_public_url: "http://localhost:8080".to_string(),
                 secure_cookies: false,
+                cookie_domain: None,
             },
             database_url: String::new(),
             meilisearch: MeilisearchConfig {

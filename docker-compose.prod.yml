@@ -75,6 +75,9 @@ services:
       - SMTP_PASSWORD=${RESEND_API_KEY}
       - SMTP_FROM_ADDRESS=${SMTP_FROM_ADDRESS:-noreply@pumpkinhub.org}
 
+      # Cookies — domaine partagé entre frontend (pumpkinhub.org) et API (api.pumpkinhub.org)
+      - COOKIE_DOMAIN=.pumpkinhub.org
+
       # Limites
       - BINARY_MAX_SIZE_BYTES=104857600
 
