@@ -20,7 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 const SITE_NAME = "Pumpkin Hub";
 const SITE_DESCRIPTION =
   "The community registry for plugins and resources for the Pumpkin MC Minecraft server, powered by Rust.";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pumpkinhub.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pumpkinhub.org";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -1,0 +1,1 @@
+-- Irreversible: re-run seeds/dev_data.sql manually if needed for local dev.
