@@ -54,7 +54,8 @@ describe("HeroSection", () => {
     render(<HeroSection {...defaultProps} />);
     const input = screen.getByLabelText("Search plugins");
     fireEvent.change(input, { target: { value: "protection" } });
-    fireEvent.submit(input.closest("form")!);
+    const form = input.closest("form");
+    if (form) fireEvent.submit(form);
     expect(pushMock).toHaveBeenCalledWith("/explorer?q=protection");
   });
 
@@ -62,7 +63,8 @@ describe("HeroSection", () => {
     render(<HeroSection {...defaultProps} />);
     const input = screen.getByLabelText("Search plugins");
     fireEvent.change(input, { target: { value: "   " } });
-    fireEvent.submit(input.closest("form")!);
+    const form = input.closest("form");
+    if (form) fireEvent.submit(form);
     expect(pushMock).toHaveBeenCalledWith("/explorer");
   });
 
@@ -71,7 +73,7 @@ describe("HeroSection", () => {
     const input = screen.getByLabelText("Search plugins");
     fireEvent.change(input, { target: { value: "hello" } });
     fireEvent.keyDown(input, { key: "Escape" });
-    expect((input as HTMLInputElement).value).toBe("");
+    expect(input).toHaveValue("");
   });
 
   it("navigates to explorer when a popular tag is clicked", () => {
