@@ -134,7 +134,7 @@ export function PublishFromGithubForm({ onSuccess }: PublishFromGithubFormProps)
             <p className="font-mono text-[10px] text-text-dim mt-1.5">
               Make sure the{" "}
               <a
-                href="https://github.com/apps/pumpkin-hub"
+                href="https://github.com/apps/pumpkin-hub-app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline inline-flex items-center gap-0.5"
@@ -153,7 +153,7 @@ export function PublishFromGithubForm({ onSuccess }: PublishFromGithubFormProps)
             <p className="font-mono text-[10px] text-text-dim/70">
               Install the{" "}
               <a
-                href="https://github.com/apps/pumpkin-hub"
+                href="https://github.com/apps/pumpkin-hub-app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"
