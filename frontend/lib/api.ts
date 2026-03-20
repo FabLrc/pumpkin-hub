@@ -354,6 +354,7 @@ export async function uploadBinary(
     const xhr = new XMLHttpRequest();
     // Same-origin proxy path — avoids Chrome + Docker Desktop cross-origin large body abort
     xhr.open("POST", getBinariesProxyPath(slug, version));
+    xhr.withCredentials = true;
 
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable && onProgress) {
