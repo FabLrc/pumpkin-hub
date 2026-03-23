@@ -236,19 +236,55 @@ async fn github_login(State(state): State<AppState>) -> Result<Response, AppErro
     )
 }
 
+/// Query parameters for `GET /auth/github/callback`.
+///
+/// This endpoint serves **two** flows:
+/// 1. **OAuth login** — GitHub sends `code` + `state` (CSRF token).
+/// 2. **App installation** — GitHub sends `code` + `installation_id` +
+///    `setup_action` but **no** `state`.
+///
+/// All fields except `code` are optional so Axum can deserialize both shapes.
 #[derive(Debug, Deserialize)]
 pub struct CallbackParams {
     pub code: String,
-    pub state: String,
+    /// Present only during the OAuth login flow.
+    pub state: Option<String>,
+    /// Present only after a GitHub App installation/update.
+    pub installation_id: Option<i64>,
+    /// Present only after a GitHub App installation/update (`install` | `update`).
+    pub setup_action: Option<String>,
 }
 
-/// `GET /api/v1/auth/github/callback` — handles the GitHub OAuth callback.
+/// `GET /api/v1/auth/github/callback` — handles **both** the GitHub OAuth
+/// login callback and the GitHub App post-installation redirect.
 async fn github_callback(
     State(state): State<AppState>,
     Query(params): Query<CallbackParams>,
     jar: CookieJar,
 ) -> Result<Response, AppError> {
-    verify_csrf(&jar, &params.state)?;
+    // ── App installation flow (no `state`, has `installation_id`) ────────
+    if let (None, Some(installation_id)) = (&params.state, &params.installation_id) {
+        let frontend_url = state
+            .config
+            .server
+            .allowed_origins
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "http://localhost:3000".to_string());
+
+        let redirect_url = format!(
+            "{}/plugins/new?mode=github&installation_id={}",
+            frontend_url, installation_id
+        );
+
+        return Ok(Redirect::to(&redirect_url).into_response());
+    }
+
+    // ── Normal OAuth login flow (`state` required) ──────────────────────
+    let csrf_state = params.state.ok_or_else(|| {
+        AppError::UnprocessableEntity("Missing required query parameter: state".to_string())
+    })?;
+    verify_csrf(&jar, &csrf_state)?;
 
     let github = &state.config.github;
 
@@ -279,6 +315,13 @@ async fn github_callback(
     .await?;
 
     issue_jwt_redirect(&state, &user)
+}
+
+/// Query parameters for OAuth callbacks that always include `state` (Google, Discord).
+#[derive(Debug, Deserialize)]
+pub struct OAuthCallbackParams {
+    pub code: String,
+    pub state: String,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -319,7 +362,7 @@ async fn google_login(State(state): State<AppState>) -> Result<Response, AppErro
 /// `GET /api/v1/auth/google/callback` — handles the Google OAuth callback.
 async fn google_callback(
     State(state): State<AppState>,
-    Query(params): Query<CallbackParams>,
+    Query(params): Query<OAuthCallbackParams>,
     jar: CookieJar,
 ) -> Result<Response, AppError> {
     verify_csrf(&jar, &params.state)?;
@@ -405,7 +448,7 @@ async fn discord_login(State(state): State<AppState>) -> Result<Response, AppErr
 /// `GET /api/v1/auth/discord/callback` — handles the Discord OAuth callback.
 async fn discord_callback(
     State(state): State<AppState>,
-    Query(params): Query<CallbackParams>,
+    Query(params): Query<OAuthCallbackParams>,
     jar: CookieJar,
 ) -> Result<Response, AppError> {
     verify_csrf(&jar, &params.state)?;
@@ -465,11 +508,14 @@ async fn me(State(state): State<AppState>, auth: AuthUser) -> Result<Json<UserPr
 
 /// `POST /api/v1/auth/logout` — clears the auth cookie.
 async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
-    let remove_cookie = Cookie::build(AUTH_COOKIE_NAME)
+    let mut builder = Cookie::build(AUTH_COOKIE_NAME)
         .path("/")
         .secure(state.config.server.secure_cookies)
-        .max_age(time::Duration::ZERO)
-        .build();
+        .max_age(time::Duration::ZERO);
+    if let Some(ref domain) = state.config.server.cookie_domain {
+        builder = builder.domain(domain.clone());
+    }
+    let remove_cookie = builder.build();
 
     let jar = jar.add(remove_cookie);
 
@@ -799,7 +845,7 @@ async fn reset_password(
     // Find valid (non-expired) token
     let record = sqlx::query_as::<_, TokenRecord>(
         r#"
-        SELECT id, user_id FROM password_reset_tokens
+        SELECT user_id FROM password_reset_tokens
         WHERE token_hash = $1 AND expires_at > now()
         "#,
     )
@@ -850,7 +896,7 @@ async fn verify_email(
 
     let record = sqlx::query_as::<_, TokenRecord>(
         r#"
-        SELECT id, user_id FROM email_verification_tokens
+        SELECT user_id FROM email_verification_tokens
         WHERE token_hash = $1 AND expires_at > now()
         "#,
     )
@@ -1225,8 +1271,6 @@ async fn store_email_verification_token(
 /// Row returned when looking up a token.
 #[derive(sqlx::FromRow)]
 struct TokenRecord {
-    #[allow(dead_code)]
-    id: Uuid,
     user_id: Uuid,
 }
 
@@ -1238,13 +1282,16 @@ fn issue_jwt_cookie(
     let token = jwt::encode_token(&state.config.jwt, user.id, &user.username, &user.role)
         .map_err(AppError::internal)?;
 
-    let auth_cookie = Cookie::build((AUTH_COOKIE_NAME, token))
+    let mut builder = Cookie::build((AUTH_COOKIE_NAME, token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .secure(state.config.server.secure_cookies)
-        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64))
-        .build();
+        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64));
+    if let Some(ref domain) = state.config.server.cookie_domain {
+        builder = builder.domain(domain.clone());
+    }
+    let auth_cookie = builder.build();
 
     let jar = CookieJar::new().add(auth_cookie);
 
@@ -1259,13 +1306,16 @@ fn issue_jwt_redirect(
     let token = jwt::encode_token(&state.config.jwt, user.id, &user.username, &user.role)
         .map_err(AppError::internal)?;
 
-    let auth_cookie = Cookie::build((AUTH_COOKIE_NAME, token))
+    let mut builder = Cookie::build((AUTH_COOKIE_NAME, token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .secure(state.config.server.secure_cookies)
-        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64))
-        .build();
+        .max_age(time::Duration::seconds(state.config.jwt.ttl_seconds as i64));
+    if let Some(ref domain) = state.config.server.cookie_domain {
+        builder = builder.domain(domain.clone());
+    }
+    let auth_cookie = builder.build();
 
     let remove_csrf = Cookie::build(CSRF_COOKIE_NAME)
         .path("/")

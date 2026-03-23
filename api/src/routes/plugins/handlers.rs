@@ -34,8 +34,6 @@ struct PluginWithAuthorRow {
     documentation_url: Option<String>,
     license: Option<String>,
     downloads_total: i64,
-    #[allow(dead_code)]
-    is_active: bool,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     author_username: String,
@@ -155,7 +153,7 @@ async fn fetch_plugin_by_slug(pool: &PgPool, slug: &str) -> Result<PluginWithAut
     sqlx::query_as(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
                 p.description, p.repository_url, p.documentation_url, p.license,
-                p.downloads_total, p.is_active, p.created_at, p.updated_at,
+                p.downloads_total, p.created_at, p.updated_at,
                 u.username AS author_username, u.avatar_url AS author_avatar_url
          FROM plugins p
          JOIN users u ON p.author_id = u.id

@@ -7,6 +7,8 @@ import Image from "next/image";
 
 interface HeroSectionProps {
   totalPlugins: number;
+  totalAuthors: number;
+  totalDownloads: number;
 }
 
 const noopSubscribe = () => () => {};
@@ -17,7 +19,7 @@ function getIsMacServerSnapshot() {
   return true;
 }
 
-export function HeroSection({ totalPlugins }: HeroSectionProps) {
+export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: HeroSectionProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -172,7 +174,7 @@ export function HeroSection({ totalPlugins }: HeroSectionProps) {
           </div>
           <div className="border-l border-border-default pl-8">
             <div className="font-mono text-2xl font-bold text-text-primary">
-              —
+              {totalAuthors > 0 ? totalAuthors.toLocaleString() : "—"}
             </div>
             <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
               Authors
@@ -180,7 +182,7 @@ export function HeroSection({ totalPlugins }: HeroSectionProps) {
           </div>
           <div className="border-l border-border-default pl-8">
             <div className="font-mono text-2xl font-bold text-text-primary">
-              —
+              {totalDownloads > 0 ? totalDownloads.toLocaleString() : "—"}
             </div>
             <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
               Downloads

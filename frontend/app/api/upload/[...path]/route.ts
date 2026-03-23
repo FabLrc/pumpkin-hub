@@ -11,6 +11,24 @@ const BACKEND_PARSED = new URL(BACKEND);
 type Params = { path: string[] };
 
 /**
+ * Validates that every path segment is safe to forward to the upstream API.
+ * Rejects empty segments, directory traversal (".."), and segments containing
+ * path separators, preventing SSRF path-traversal attacks.
+ */
+function isValidProxyPath(segments: string[]): boolean {
+  return (
+    segments.length > 0 &&
+    segments.every(
+      (segment) =>
+        segment.length > 0 &&
+        segment !== ".." &&
+        segment !== "." &&
+        !/[/\\]/.test(segment),
+    )
+  );
+}
+
+/**
  * Low-level HTTP POST proxy.
  *
  * Node.js native `fetch()` throws EPIPE when the upstream server (Axum) closes
@@ -75,6 +93,14 @@ export async function POST(
   { params }: { params: Promise<Params> }
 ): Promise<NextResponse> {
   const { path } = await params;
+
+  if (!isValidProxyPath(path)) {
+    return new NextResponse(JSON.stringify({ error: "Invalid path" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const cookie = req.headers.get("cookie") ?? "";
   const contentType = req.headers.get("content-type") ?? "";
 
@@ -95,6 +121,14 @@ export async function GET(
   { params }: { params: Promise<Params> }
 ): Promise<NextResponse> {
   const { path } = await params;
+
+  if (!isValidProxyPath(path)) {
+    return new NextResponse(JSON.stringify({ error: "Invalid path" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const { search } = new URL(req.url);
   const cookie = req.headers.get("cookie") ?? "";
 

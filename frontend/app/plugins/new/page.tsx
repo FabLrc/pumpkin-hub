@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, Package, Github } from "lucide-react";
@@ -15,9 +15,17 @@ type PublishMode = "manual" | "github";
 
 export default function NewPluginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: user, isLoading: isLoadingUser } = useCurrentUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mode, setMode] = useState<PublishMode>("manual");
+
+  // Pre-select GitHub mode when redirected from the GitHub App installation
+  const initialMode: PublishMode =
+    searchParams.get("mode") === "github" ? "github" : "manual";
+  const [mode, setMode] = useState<PublishMode>(initialMode);
+
+  // Auto-load repos when coming back from GitHub App installation
+  const autoLoad = searchParams.get("installation_id") !== null;
 
   // Redirect unauthenticated users
   if (!isLoadingUser && !user) {
@@ -105,7 +113,7 @@ export default function NewPluginPage() {
             ))}
           </div>
         ) : mode === "github" ? (
-          <PublishFromGithubForm onSuccess={handleGithubSuccess} />
+          <PublishFromGithubForm onSuccess={handleGithubSuccess} autoLoad={autoLoad} />
         ) : (
           <PluginForm
             onSubmit={handleCreate}

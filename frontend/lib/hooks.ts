@@ -4,7 +4,7 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath, getReviewsPath, getMediaPath, getChangelogPath } from "./api";
+import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath, getReviewsPath, getMediaPath, getChangelogPath, getPublicStatsPath } from "./api";
 import type {
   ApiKeySummary,
   AuthorDashboardStats,
@@ -23,6 +23,7 @@ import type {
   PluginDownloadStats,
   PluginResponse,
   PluginSummary,
+  PublicStats,
   PumpkinVersion,
   ReverseDependencyResponse,
   ReviewListResponse,
@@ -32,6 +33,13 @@ import type {
   UserProfile,
   VersionsListResponse,
 } from "./types";
+
+export function usePublicStats() {
+  return useSWR<PublicStats>(getPublicStatsPath(), swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
+  });
+}
 
 export function usePlugins(params: ListPluginsParams = {}) {
   const path = getPluginsPath(params);

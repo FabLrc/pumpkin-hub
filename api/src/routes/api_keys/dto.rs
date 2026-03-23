@@ -87,15 +87,7 @@ impl CreateApiKeyRequest {
         }
 
         if let Some(burst) = self.rate_limit_burst_size {
-            if burst < 1 {
-                return Err("rate_limit_burst_size must be at least 1".into());
-            }
-            if burst > MAX_RATE_LIMIT_BURST_SIZE {
-                return Err(format!(
-                    "rate_limit_burst_size must be at most {}",
-                    MAX_RATE_LIMIT_BURST_SIZE
-                ));
-            }
+            validate_burst_size(burst)?;
         }
 
         Ok(())
@@ -110,6 +102,19 @@ impl CreateApiKeyRequest {
         self.rate_limit_burst_size
             .unwrap_or(DEFAULT_RATE_LIMIT_BURST_SIZE)
     }
+}
+
+fn validate_burst_size(burst: i32) -> Result<(), String> {
+    if burst < 1 {
+        return Err("rate_limit_burst_size must be at least 1".into());
+    }
+    if burst > MAX_RATE_LIMIT_BURST_SIZE {
+        return Err(format!(
+            "rate_limit_burst_size must be at most {}",
+            MAX_RATE_LIMIT_BURST_SIZE
+        ));
+    }
+    Ok(())
 }
 
 pub const fn max_keys_per_user() -> i64 {

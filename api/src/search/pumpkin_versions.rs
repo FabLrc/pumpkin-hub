@@ -27,8 +27,6 @@ struct GitHubRelease {
     tag_name: String,
     published_at: Option<String>,
     draft: bool,
-    #[allow(dead_code)]
-    prerelease: bool,
 }
 
 const GITHUB_API_URL: &str = "https://api.github.com/repos/Snowiiii/Pumpkin/releases";

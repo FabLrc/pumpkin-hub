@@ -340,12 +340,8 @@ impl SearchService {
         let docs = build_plugin_documents(pool).await?;
         let count = docs.len();
 
-        if docs.is_empty() {
-            tracing::info!("No plugins to index");
-            return Ok(0);
-        }
-
-        // Delete all documents first to clean stale entries
+        // Always clear stale entries first, even when there are no plugins to index
+        // (e.g. after dev-seed cleanup migrations run before any real plugin is published).
         self.client
             .index(INDEX_NAME)
             .delete_all_documents()
@@ -355,6 +351,11 @@ impl SearchService {
                     "Failed to clear Meilisearch index: {e}"
                 )))
             })?;
+
+        if docs.is_empty() {
+            tracing::info!("No plugins to index");
+            return Ok(0);
+        }
 
         // Index in batches of 500
         for chunk in docs.chunks(500) {
@@ -645,7 +646,6 @@ struct PluginRow {
 
 #[derive(Debug, sqlx::FromRow)]
 struct PluginCategoryRow {
-    #[allow(dead_code)]
     plugin_id: Uuid,
     category_name: String,
     category_slug: String,
@@ -653,7 +653,6 @@ struct PluginCategoryRow {
 
 #[derive(Debug, sqlx::FromRow)]
 struct ReviewStatRow {
-    #[allow(dead_code)]
     plugin_id: Uuid,
     review_count: i64,
     average_rating: f64,
@@ -661,14 +660,12 @@ struct ReviewStatRow {
 
 #[derive(Debug, sqlx::FromRow)]
 struct PlatformRow {
-    #[allow(dead_code)]
     plugin_id: Uuid,
     platform: String,
 }
 
 #[derive(Debug, sqlx::FromRow)]
 struct PumpkinVersionRow {
-    #[allow(dead_code)]
     plugin_id: Uuid,
     pumpkin_version_min: Option<String>,
     pumpkin_version_max: Option<String>,

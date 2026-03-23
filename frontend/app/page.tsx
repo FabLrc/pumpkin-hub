@@ -1,6 +1,6 @@
 "use client";
 
-import { usePlugins } from "@/lib/hooks";
+import { usePlugins, usePublicStats } from "@/lib/hooks";
 import { Navbar, Footer } from "@/components/layout";
 import { HeroSection } from "./_components/HeroSection";
 import { TrendingSection } from "./_components/TrendingSection";
@@ -14,15 +14,19 @@ export default function HomePage() {
     order: "desc",
     per_page: 5,
   });
+  const { data: statsData } = usePublicStats();
 
   const plugins = pluginsData?.data ?? [];
-  const totalPlugins = pluginsData?.pagination.total ?? 0;
 
   return (
     <>
       <Navbar />
       <Ticker />
-      <HeroSection totalPlugins={totalPlugins} />
+      <HeroSection
+        totalPlugins={statsData?.total_plugins ?? 0}
+        totalAuthors={statsData?.total_authors ?? 0}
+        totalDownloads={statsData?.total_downloads ?? 0}
+      />
       <TrendingSection plugins={plugins} />
       <FeaturesSection />
       <CtaSection />

@@ -15,8 +15,6 @@ use super::dto::{ChangelogResponse, UpdateChangelogRequest};
 
 #[derive(Debug, FromRow)]
 struct ChangelogRow {
-    #[allow(dead_code)]
-    id: Uuid,
     content: String,
     source: String,
     updated_at: chrono::DateTime<chrono::Utc>,
@@ -53,7 +51,7 @@ pub async fn get_changelog(
     let (plugin_id, _) = fetch_plugin_info(pool, &slug).await?;
 
     let row: Option<ChangelogRow> = sqlx::query_as(
-        "SELECT id, content, source, updated_at
+        "SELECT content, source, updated_at
          FROM plugin_changelogs
          WHERE plugin_id = $1",
     )

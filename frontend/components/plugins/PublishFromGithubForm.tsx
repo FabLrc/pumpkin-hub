@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Github,
   RefreshCw,
@@ -16,9 +16,11 @@ import type { MyGithubRepository } from "@/lib/types";
 
 interface PublishFromGithubFormProps {
   onSuccess: (pluginSlug: string) => void;
+  /** Auto-trigger repository loading on mount (e.g. after GitHub App installation redirect). */
+  autoLoad?: boolean;
 }
 
-export function PublishFromGithubForm({ onSuccess }: PublishFromGithubFormProps) {
+export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithubFormProps) {
   const { data: categories } = useCategories();
 
   // Step 1 — repo picker
@@ -39,6 +41,11 @@ export function PublishFromGithubForm({ onSuccess }: PublishFromGithubFormProps)
   const [autoPublish, setAutoPublish] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (autoLoad) handleLoadRepos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredRepos = repos.filter((r) =>
     r.full_name.toLowerCase().includes(repoSearch.toLowerCase()),
@@ -134,7 +141,7 @@ export function PublishFromGithubForm({ onSuccess }: PublishFromGithubFormProps)
             <p className="font-mono text-[10px] text-text-dim mt-1.5">
               Make sure the{" "}
               <a
-                href="https://github.com/apps/pumpkin-hub"
+                href="https://github.com/apps/pumpkin-hub-app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline inline-flex items-center gap-0.5"
@@ -153,7 +160,7 @@ export function PublishFromGithubForm({ onSuccess }: PublishFromGithubFormProps)
             <p className="font-mono text-[10px] text-text-dim/70">
               Install the{" "}
               <a
-                href="https://github.com/apps/pumpkin-hub"
+                href="https://github.com/apps/pumpkin-hub-app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"

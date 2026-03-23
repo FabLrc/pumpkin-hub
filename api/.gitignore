@@ -1,6 +1,6 @@
 # Rust / Cargo
 /target/
-Cargo.lock
+# Cargo.lock doit être commité pour les applications binaires (builds reproductibles)
 **/*.rs.bk
 *.pdb
 

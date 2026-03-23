@@ -24,8 +24,6 @@ struct WebhookPayload {
     #[serde(rename = "ref")]
     git_ref: Option<String>,
     repository: Option<RepositoryPayload>,
-    #[allow(dead_code)]
-    installation: Option<InstallationRef>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -39,8 +37,6 @@ struct ReleasePayload {
 #[derive(Debug, Deserialize)]
 struct ReleaseAssetPayload {
     name: String,
-    #[allow(dead_code)]
-    size: i64,
     content_type: String,
     browser_download_url: String,
 }
@@ -48,12 +44,6 @@ struct ReleaseAssetPayload {
 #[derive(Debug, Deserialize)]
 struct RepositoryPayload {
     full_name: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct InstallationRef {
-    id: i64,
 }
 
 // ── Webhook Row Types ───────────────────────────────────────────────────────
