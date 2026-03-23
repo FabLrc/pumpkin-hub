@@ -25,6 +25,9 @@ pub enum AppError {
     #[error("Conflict: {0}")]
     Conflict(String),
 
+    #[error("Service unavailable: {0}")]
+    ServiceUnavailable(String),
+
     /// Wraps any internal error as a boxed trait object.
     /// The root cause is logged server-side but never sent to the client.
     #[error("Internal server error")]
@@ -39,6 +42,7 @@ impl IntoResponse for AppError {
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             AppError::Forbidden => (StatusCode::FORBIDDEN, self.to_string()),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
+            AppError::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg.clone()),
             AppError::Internal(err) => {
                 // Log the root cause server-side, never expose it to the client.
                 tracing::error!(%err, "Internal server error");

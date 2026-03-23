@@ -889,6 +889,21 @@ struct BinaryRow {
     uploaded_at: DateTime<Utc>,
 }
 
+fn build_download_fallback_url(
+    state: &AppState,
+    slug: &str,
+    version: &str,
+    platform: &str,
+) -> String {
+    format!(
+        "{}/api/v1/plugins/{}/versions/{}/download?platform={}",
+        state.config.server.api_public_url.trim_end_matches('/'),
+        slug,
+        version,
+        platform
+    )
+}
+
 // ── Binary Handlers ─────────────────────────────────────────────────────
 
 /// POST /api/v1/plugins/:slug/versions/:version/binaries — upload a binary artifact.
@@ -1015,7 +1030,19 @@ pub async fn upload_binary(
         .storage
         .put_object(&storage_key, file_data, &content_type)
         .await
-        .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?;
+        .map_err(|e| {
+            tracing::error!(
+                error = %e,
+                plugin_slug = %slug,
+                plugin_version = %version,
+                platform = %platform,
+                %storage_key,
+                "Binary upload to object storage failed"
+            );
+            AppError::ServiceUnavailable(
+                "Object storage is temporarily unavailable. Please retry in a moment.".to_string(),
+            )
+        })?;
 
     // Insert metadata into database
     let row: BinaryRow = sqlx::query_as(
@@ -1035,11 +1062,20 @@ pub async fn upload_binary(
     .map_err(AppError::internal)?;
 
     // Generate pre-signed download URL
-    let presigned = state
-        .storage
-        .presigned_download_url(&storage_key)
-        .await
-        .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?;
+    let download_url = match state.storage.presigned_download_url(&storage_key).await {
+        Ok(presigned) => presigned.url,
+        Err(e) => {
+            tracing::warn!(
+                error = %e,
+                plugin_slug = %slug,
+                plugin_version = %version,
+                platform = %platform,
+                %storage_key,
+                "Failed to generate presigned URL after upload, using API fallback URL"
+            );
+            build_download_fallback_url(&state, &slug, &version, &platform)
+        }
+    };
 
     // Re-index plugin in Meilisearch (platforms may have changed)
     let search = state.search.clone();
@@ -1066,7 +1102,7 @@ pub async fn upload_binary(
                 content_type: row.content_type,
                 uploaded_at: row.uploaded_at,
             },
-            download_url: presigned.url,
+            download_url,
         }),
     ))
 }
@@ -1208,7 +1244,19 @@ pub async fn download_binary(
         .storage
         .presigned_download_url(&binary_row.storage_key)
         .await
-        .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?;
+        .map_err(|e| {
+            tracing::error!(
+                error = %e,
+                plugin_slug = %slug,
+                plugin_version = %version,
+                platform = %params.platform,
+                storage_key = %binary_row.storage_key,
+                "Failed to generate presigned download URL"
+            );
+            AppError::ServiceUnavailable(
+                "Download storage is temporarily unavailable. Please retry shortly.".to_string(),
+            )
+        })?;
 
     Ok(Json(BinaryDownloadResponse {
         download_url: presigned.url,
