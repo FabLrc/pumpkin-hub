@@ -16,6 +16,7 @@ pub struct ObjectStorage {
     /// SigV4 includes the Host in the signature, so the presigning client
     /// **must** use the same host the browser will hit.
     presign_client: Client,
+    has_public_presign_override: bool,
     bucket: String,
 }
 
@@ -69,11 +70,38 @@ impl ObjectStorage {
 
         let presign_client = Client::from_conf(presign_s3_config);
 
+        let has_public_presign_override = config
+            .public_url
+            .as_ref()
+            .is_some_and(|public_url| public_url.trim() != config.endpoint_url.trim());
+
         Self {
             client,
             presign_client,
+            has_public_presign_override,
             bucket: config.bucket.clone(),
         }
+    }
+
+    async fn presign_download_with_client(
+        client: &Client,
+        bucket: &str,
+        key: &str,
+    ) -> Result<PresignedDownload, Box<dyn std::error::Error + Send + Sync>> {
+        let presigning =
+            PresigningConfig::expires_in(Duration::from_secs(PRESIGNED_URL_TTL_SECONDS))?;
+
+        let presigned_request = client
+            .get_object()
+            .bucket(bucket)
+            .key(key)
+            .presigned(presigning)
+            .await?;
+
+        Ok(PresignedDownload {
+            url: presigned_request.uri().to_string(),
+            expires_in_seconds: PRESIGNED_URL_TTL_SECONDS,
+        })
     }
 
     /// Uploads raw bytes to the configured bucket.
@@ -103,23 +131,20 @@ impl ObjectStorage {
         &self,
         key: &str,
     ) -> Result<PresignedDownload, Box<dyn std::error::Error + Send + Sync>> {
-        let presigning =
-            PresigningConfig::expires_in(Duration::from_secs(PRESIGNED_URL_TTL_SECONDS))?;
+        match Self::presign_download_with_client(&self.presign_client, &self.bucket, key).await {
+            Ok(presigned) => Ok(presigned),
+            Err(public_err) if self.has_public_presign_override => {
+                tracing::warn!(
+                    error = %public_err,
+                    bucket = %self.bucket,
+                    %key,
+                    "Presigning with public endpoint failed, retrying with internal endpoint"
+                );
 
-        let presigned_request = self
-            .presign_client
-            .get_object()
-            .bucket(&self.bucket)
-            .key(key)
-            .presigned(presigning)
-            .await?;
-
-        let url = presigned_request.uri().to_string();
-
-        Ok(PresignedDownload {
-            url,
-            expires_in_seconds: PRESIGNED_URL_TTL_SECONDS,
-        })
+                Self::presign_download_with_client(&self.client, &self.bucket, key).await
+            }
+            Err(err) => Err(err),
+        }
     }
 
     /// Deletes an object from the bucket.
