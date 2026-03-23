@@ -56,6 +56,29 @@ const API_BASE_URL =
 
 const API_PREFIX = `${API_BASE_URL}/api/v1`;
 
+function isLocalApiBaseUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.hostname === "localhost"
+      || parsed.hostname === "127.0.0.1"
+      || parsed.hostname === "::1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isUploadProxyEnabled(): boolean {
+  const forced = process.env.NEXT_PUBLIC_USE_UPLOAD_PROXY;
+  if (forced != null) {
+    return forced.toLowerCase() === "true";
+  }
+
+  // Keep proxy-by-default for local Docker Desktop/WSL2 dev networking.
+  return isLocalApiBaseUrl(API_BASE_URL);
+}
+
 // ── Generic Fetcher ───────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -323,6 +346,14 @@ function getBinariesProxyPath(slug: string, version: string): string {
   return `/api/upload/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/binaries`;
 }
 
+function getBinariesUploadUrl(slug: string, version: string): string {
+  if (isUploadProxyEnabled()) {
+    return getBinariesProxyPath(slug, version);
+  }
+
+  return `${API_PREFIX}${getBinariesPath(slug, version)}`;
+}
+
 export async function fetchBinaries(
   slug: string,
   version: string,
@@ -348,8 +379,8 @@ export async function uploadBinary(
   // Use XMLHttpRequest for upload progress tracking
   return new Promise<BinaryUploadResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    // Same-origin proxy path — avoids Chrome + Docker Desktop cross-origin large body abort
-    xhr.open("POST", getBinariesProxyPath(slug, version));
+    xhr.open("POST", getBinariesUploadUrl(slug, version));
+    xhr.withCredentials = true;
 
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable && onProgress) {

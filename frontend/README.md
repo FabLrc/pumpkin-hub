@@ -71,6 +71,14 @@ Create a `.env.local` file:
 ```env
 # Optional — defaults to http://localhost:8080
 NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# Optional upload behavior override:
+# - true  => force Next.js /api/upload proxy
+# - false => upload directly to API URL
+# Default behavior:
+# - local API URL (localhost/127.0.0.1): proxy enabled
+# - remote API URL: direct upload
+# NEXT_PUBLIC_USE_UPLOAD_PROXY=true
 ```
 
 ## Deployment
