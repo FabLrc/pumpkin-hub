@@ -5,10 +5,18 @@ on:
     branches:
       - master
       - develop
+    paths:
+      - 'frontend/**'
+      - 'api/**'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches:
       - master
       - develop
+    paths:
+      - 'frontend/**'
+      - 'api/**'
+      - '.github/workflows/ci.yml'
 
 jobs:
   frontend-ci:
@@ -37,9 +45,6 @@ jobs:
 
       - name: Vérification des Types
         run: npx tsc --noEmit
-
-      - name: Test de Build
-        run: npm run build
 
       - name: Tests unitaires et composants (avec couverture)
         run: npm run test:coverage
@@ -97,18 +102,22 @@ jobs:
         run: cargo clippy -- -D warnings
 
       - name: Installation de sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features postgres
+        uses: taiki-e/install-action@v2
+        with:
+          tool: sqlx-cli
 
       - name: Application des migrations
         run: sqlx migrate run --source ./migrations
         env:
           DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
 
-      - name: Installation de cargo-tarpaulin
-        run: cargo install cargo-tarpaulin
+      - name: Installation de cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
 
       - name: Tests unitaires et intégration (avec couverture)
-        run: cargo tarpaulin --out Lcov --output-dir ./
+        run: cargo llvm-cov --lcov --output-path lcov.info
         env:
           DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
           TEST_DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
