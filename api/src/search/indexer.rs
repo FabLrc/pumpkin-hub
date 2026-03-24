@@ -18,6 +18,7 @@ pub struct PluginDocument {
     pub name: String,
     pub slug: String,
     pub short_description: Option<String>,
+    pub icon_url: Option<String>,
     pub description: Option<String>,
     pub author_username: String,
     pub author_id: String,
@@ -52,6 +53,7 @@ pub struct SearchHit {
     pub name: String,
     pub slug: String,
     pub short_description: Option<String>,
+    pub icon_url: Option<String>,
     pub author_username: String,
     pub license: Option<String>,
     pub downloads_total: i64,
@@ -134,6 +136,7 @@ impl SearchService {
                 "name",
                 "slug",
                 "short_description",
+                "icon_url",
                 "author_username",
                 "license",
                 "downloads_total",
@@ -372,6 +375,7 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
     // Fetch all active plugins with author info
     let rows: Vec<PluginRow> = sqlx::query_as(
         "SELECT p.id, p.name, p.slug, p.short_description, p.description,
+                p.icon_url,
                 p.author_id, u.username AS author_username,
                 p.license, p.downloads_total,
                 p.created_at, p.updated_at
@@ -493,6 +497,7 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
                 name: row.name,
                 slug: row.slug,
                 short_description: row.short_description,
+                icon_url: row.icon_url,
                 description: row.description,
                 author_username: row.author_username,
                 author_id: row.author_id.to_string(),
@@ -520,6 +525,7 @@ pub async fn build_single_plugin_document(
 ) -> Result<Option<PluginDocument>, AppError> {
     let row: Option<PluginRow> = sqlx::query_as(
         "SELECT p.id, p.name, p.slug, p.short_description, p.description,
+                p.icon_url,
                 p.author_id, u.username AS author_username,
                 p.license, p.downloads_total,
                 p.created_at, p.updated_at
@@ -611,6 +617,7 @@ pub async fn build_single_plugin_document(
         name: row.name,
         slug: row.slug,
         short_description: row.short_description,
+        icon_url: row.icon_url,
         description: row.description,
         author_username: row.author_username,
         author_id: row.author_id.to_string(),
@@ -635,6 +642,7 @@ struct PluginRow {
     name: String,
     slug: String,
     short_description: Option<String>,
+    icon_url: Option<String>,
     description: Option<String>,
     author_id: Uuid,
     author_username: String,

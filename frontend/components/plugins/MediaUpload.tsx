@@ -93,6 +93,7 @@ export function MediaUpload({ pluginSlug }: MediaUploadProps) {
       handleClear();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
+      mutate(getMediaPath(pluginSlug));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -191,10 +192,7 @@ export function MediaUpload({ pluginSlug }: MediaUploadProps) {
           {/* Progress bar */}
           {isUploading && (
             <div className="w-full h-1 bg-bg-surface">
-              <div
-                className="h-full bg-accent transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
+              <div className="h-full w-full bg-accent animate-pulse" />
             </div>
           )}
         </div>

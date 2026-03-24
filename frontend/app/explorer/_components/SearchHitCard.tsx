@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Star, Download } from "lucide-react";
-import { Badge } from "@/components/ui";
+import { Badge, PluginIcon } from "@/components/ui";
 import type { SearchHit } from "@/lib/types";
 import type { ViewMode } from "@/lib/useViewPreference";
 import { formatDownloads, formatTimeAgo } from "@/components/ui/PluginCard";
@@ -32,21 +32,13 @@ function ListCard({ hit, featured }: { hit: SearchHit; featured: boolean }) {
       <div
         className={`${cardClasses} p-5 flex items-start gap-5 cursor-pointer`}
       >
-        {/* Icon placeholder */}
-        <div
-          className={`w-11 h-11 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-            featured
-              ? "bg-accent/10 border border-accent/30"
-              : "bg-bg-surface border border-border-hover"
-          }`}
-        >
-          <span
-            className={`font-mono font-bold text-xs ${
-              featured ? "text-accent" : "text-text-subtle"
-            }`}
-          >
-            {hit.name.slice(0, 2).toUpperCase()}
-          </span>
+        <div className="mt-0.5">
+          <PluginIcon
+            pluginName={hit.name}
+            iconUrl={hit.icon_url}
+            featured={featured}
+            sizeClassName="w-11 h-11"
+          />
         </div>
 
         {/* Main info */}
@@ -132,21 +124,12 @@ function GridCard({ hit, featured }: { hit: SearchHit; featured: boolean }) {
       <div className={`${cardClasses} p-5 flex flex-col h-full cursor-pointer`}>
         {/* Header: icon + name */}
         <div className="flex items-center gap-3 mb-3">
-          <div
-            className={`w-10 h-10 flex items-center justify-center flex-shrink-0 ${
-              featured
-                ? "bg-accent/10 border border-accent/30"
-                : "bg-bg-surface border border-border-hover"
-            }`}
-          >
-            <span
-              className={`font-mono font-bold text-xs ${
-                featured ? "text-accent" : "text-text-subtle"
-              }`}
-            >
-              {hit.name.slice(0, 2).toUpperCase()}
-            </span>
-          </div>
+          <PluginIcon
+            pluginName={hit.name}
+            iconUrl={hit.icon_url}
+            featured={featured}
+            sizeClassName="w-10 h-10"
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-raleway font-bold text-sm text-text-primary truncate">

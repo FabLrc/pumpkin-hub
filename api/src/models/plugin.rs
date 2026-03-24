@@ -15,6 +15,8 @@ pub struct Plugin {
     pub repository_url: Option<String>,
     pub documentation_url: Option<String>,
     pub license: Option<String>,
+    pub icon_url: Option<String>,
+    pub icon_storage_key: Option<String>,
     pub downloads_total: i64,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,

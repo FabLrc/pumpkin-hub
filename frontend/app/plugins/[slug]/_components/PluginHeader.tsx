@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  ShieldCheck,
   Github,
   Terminal,
   CheckCircle,
@@ -14,7 +13,7 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { Badge } from "@/components/ui";
+import { Badge, PluginIcon } from "@/components/ui";
 import { PluginActions } from "@/components/plugins/PluginActions";
 import type { PluginResponse } from "@/lib/types";
 
@@ -80,9 +79,12 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
       <div className="flex items-start justify-between gap-6">
         <div className="flex items-start gap-5">
           {/* Icon */}
-          <div className="w-14 h-14 bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="text-accent w-[26px] h-[26px]" />
-          </div>
+          <PluginIcon
+            pluginName={plugin.name}
+            iconUrl={plugin.icon_url}
+            featured
+            sizeClassName="w-14 h-14"
+          />
 
           <div>
             <div className="flex items-center gap-3 mb-1.5 flex-wrap">
@@ -178,6 +180,8 @@ function InstallPanel({
         </span>
         <button
           onClick={onClose}
+          aria-label="Close install panel"
+          title="Close install panel"
           className="font-mono text-xs text-text-dim hover:text-text-primary transition-colors cursor-pointer"
         >
           <X className="w-[14px] h-[14px]" />

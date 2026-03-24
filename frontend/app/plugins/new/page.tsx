@@ -2,13 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowLeft, Package, Github } from "lucide-react";
+import { useState, type ChangeEvent } from "react";
+import { ArrowLeft, Package, Github, ImagePlus, X } from "lucide-react";
 import { Navbar, Footer } from "@/components/layout";
 import { PluginForm } from "@/components/plugins/PluginForm";
 import { PublishFromGithubForm } from "@/components/plugins/PublishFromGithubForm";
 import { useCurrentUser } from "@/lib/hooks";
-import { createPlugin } from "@/lib/api";
+import { createPlugin, uploadPluginIcon } from "@/lib/api";
 import type { PluginFormData } from "@/lib/validation";
 
 type PublishMode = "manual" | "github";
@@ -18,6 +18,8 @@ export default function NewPluginPage() {
   const searchParams = useSearchParams();
   const { data: user, isLoading: isLoadingUser } = useCurrentUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconError, setIconError] = useState<string | null>(null);
 
   // Pre-select GitHub mode when redirected from the GitHub App installation
   const initialMode: PublishMode =
@@ -35,6 +37,7 @@ export default function NewPluginPage() {
 
   async function handleCreate(data: PluginFormData) {
     setIsSubmitting(true);
+    setIconError(null);
     try {
       const plugin = await createPlugin({
         name: data.name.trim(),
@@ -46,10 +49,42 @@ export default function NewPluginPage() {
         category_ids:
           data.categoryIds.length > 0 ? data.categoryIds : undefined,
       });
+
+      if (iconFile) {
+        await uploadPluginIcon(plugin.slug, iconFile);
+      }
+
       router.push(`/plugins/${plugin.slug}`);
+    } catch (error) {
+      setIconError(error instanceof Error ? error.message : "Failed to publish plugin");
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleIconSelection(event: ChangeEvent<HTMLInputElement>) {
+    setIconError(null);
+    const file = event.target.files?.[0] ?? null;
+    if (!file) {
+      setIconFile(null);
+      return;
+    }
+
+    const acceptedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!acceptedTypes.includes(file.type)) {
+      setIconError("Unsupported icon type. Allowed: JPEG, PNG, WebP");
+      setIconFile(null);
+      return;
+    }
+
+    const maxSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setIconError("Icon file is too large. Maximum size is 5 MB");
+      setIconFile(null);
+      return;
+    }
+
+    setIconFile(file);
   }
 
   function handleGithubSuccess(pluginSlug: string) {
@@ -115,11 +150,47 @@ export default function NewPluginPage() {
         ) : mode === "github" ? (
           <PublishFromGithubForm onSuccess={handleGithubSuccess} autoLoad={autoLoad} />
         ) : (
-          <PluginForm
-            onSubmit={handleCreate}
-            submitLabel="Publish Plugin"
-            isSubmitting={isSubmitting}
-          />
+          <div className="space-y-6">
+            <PluginForm
+              onSubmit={handleCreate}
+              submitLabel="Publish Plugin"
+              isSubmitting={isSubmitting}
+            />
+
+            <section className="border border-border-default bg-bg-elevated p-4 space-y-3">
+              <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted flex items-center gap-2">
+                <ImagePlus className="w-3.5 h-3.5" />
+                Plugin Icon (optional)
+              </h2>
+              <label htmlFor="plugin-icon" className="font-mono text-[10px] text-text-dim">
+                Upload an image shown in explorer, home and plugin detail pages
+              </label>
+              <input
+                id="plugin-icon"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleIconSelection}
+                title="Select plugin icon image"
+                className="w-full font-mono text-xs text-text-subtle file:mr-3 file:px-3 file:py-2 file:border file:border-border-default file:bg-bg-surface file:text-text-subtle"
+              />
+              {iconFile && (
+                <div className="flex items-center justify-between font-mono text-xs text-text-dim border border-border-default px-3 py-2">
+                  <span className="truncate pr-3">{iconFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setIconFile(null)}
+                    className="text-text-dim hover:text-error transition-colors cursor-pointer"
+                    aria-label="Remove selected icon"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              {iconError && (
+                <p className="font-mono text-xs text-error">{iconError}</p>
+              )}
+            </section>
+          </div>
         )}
       </main>
       <Footer />

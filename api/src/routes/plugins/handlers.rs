@@ -33,6 +33,8 @@ struct PluginWithAuthorRow {
     repository_url: Option<String>,
     documentation_url: Option<String>,
     license: Option<String>,
+    icon_url: Option<String>,
+    icon_storage_key: Option<String>,
     downloads_total: i64,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -153,6 +155,7 @@ async fn fetch_plugin_by_slug(pool: &PgPool, slug: &str) -> Result<PluginWithAut
     sqlx::query_as(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
                 p.description, p.repository_url, p.documentation_url, p.license,
+                p.icon_url, p.icon_storage_key,
                 p.downloads_total, p.created_at, p.updated_at,
                 u.username AS author_username, u.avatar_url AS author_avatar_url
          FROM plugins p
@@ -220,6 +223,10 @@ pub(crate) fn require_ownership(auth: &AuthUser, plugin_author_id: Uuid) -> Resu
         return Ok(());
     }
     Err(AppError::Forbidden)
+}
+
+fn build_icon_storage_key(plugin_slug: &str, file_name: &str) -> String {
+    format!("plugins/{plugin_slug}/icon/{file_name}")
 }
 
 // ── Review Stats Loading ────────────────────────────────────────────────────
@@ -301,6 +308,7 @@ fn build_plugin_response(
         repository_url: row.repository_url,
         documentation_url: row.documentation_url,
         license: row.license,
+        icon_url: row.icon_url,
         downloads_total: row.downloads_total,
         categories,
         average_rating: stats.average_rating,
@@ -325,6 +333,7 @@ fn build_plugin_summary(
         name: row.name,
         slug: row.slug,
         short_description: row.short_description,
+        icon_url: row.icon_url,
         license: row.license,
         downloads_total: row.downloads_total,
         categories,
@@ -377,7 +386,8 @@ pub async fn list_plugins(
     let query = format!(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
                 p.description, p.repository_url, p.documentation_url, p.license,
-                p.downloads_total, p.is_active, p.created_at, p.updated_at,
+                p.icon_url, p.icon_storage_key,
+                p.downloads_total, p.created_at, p.updated_at,
                 u.username AS author_username, u.avatar_url AS author_avatar_url
          FROM plugins p
          JOIN users u ON p.author_id = u.id
@@ -591,6 +601,154 @@ pub async fn update_plugin(
     });
 
     Ok(Json(build_plugin_response(updated_row, categories, stats)))
+}
+
+/// POST /api/v1/plugins/:slug/icon — upload/replace plugin icon (owner or admin only).
+pub async fn upload_plugin_icon(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(slug): Path<String>,
+    mut multipart: Multipart,
+) -> Result<Json<PluginResponse>, AppError> {
+    auth.require_permission("publish")?;
+
+    let pool = &state.db;
+    let row = fetch_plugin_by_slug(pool, &slug).await?;
+    require_ownership(&auth, row.author_id)?;
+
+    let mut file_data: Option<Vec<u8>> = None;
+    let mut file_name: Option<String> = None;
+    let mut content_type = String::new();
+
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        AppError::UnprocessableEntity(format!("Failed to read multipart field: {e}"))
+    })? {
+        let field_name = field.name().unwrap_or_default().to_string();
+        if field_name != "file" {
+            continue;
+        }
+
+        file_name = field.file_name().map(|n| n.to_string());
+        if let Some(ct) = field.content_type() {
+            content_type = ct.to_string();
+        }
+
+        let bytes = field.bytes().await.map_err(|e| {
+            AppError::UnprocessableEntity(format!("Failed to read icon file data: {e}"))
+        })?;
+
+        if bytes.is_empty() {
+            return Err(AppError::UnprocessableEntity(
+                "Icon file must not be empty".to_string(),
+            ));
+        }
+
+        file_data = Some(bytes.to_vec());
+    }
+
+    let file_data = file_data
+        .ok_or_else(|| AppError::UnprocessableEntity("Missing required field: file".into()))?;
+    let incoming_name = file_name.unwrap_or_else(|| "plugin-icon.png".to_string());
+
+    super::dto::validate_file_name(&incoming_name)?;
+    super::dto::validate_icon_content_type(&content_type)?;
+    super::dto::validate_icon_size(file_data.len() as u64)?;
+
+    let file_ext = incoming_name
+        .rsplit('.')
+        .next()
+        .filter(|ext| !ext.is_empty())
+        .unwrap_or("png");
+    let generated_name = format!("{}.{}", Uuid::new_v4(), file_ext);
+    let storage_key = build_icon_storage_key(&row.slug, &generated_name);
+
+    state
+        .storage
+        .put_object(&storage_key, file_data, &content_type)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                error = %e,
+                plugin_slug = %row.slug,
+                %storage_key,
+                "Plugin icon upload to object storage failed"
+            );
+            AppError::ServiceUnavailable(
+                "Object storage is temporarily unavailable. Please retry shortly.".to_string(),
+            )
+        })?;
+
+    let icon_url = if let Some(public_url) = state.storage.public_object_url(&storage_key) {
+        public_url
+    } else {
+        state
+            .storage
+            .presigned_download_url(&storage_key)
+            .await
+            .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?
+            .url
+    };
+
+    sqlx::query(
+        "UPDATE plugins
+         SET icon_url = $1,
+             icon_storage_key = $2,
+             updated_at = now()
+         WHERE id = $3",
+    )
+    .bind(&icon_url)
+    .bind(&storage_key)
+    .bind(row.id)
+    .execute(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    if let Some(previous_storage_key) = row.icon_storage_key {
+        if previous_storage_key != storage_key {
+            let _ = state.storage.delete_object(&previous_storage_key).await;
+        }
+    }
+
+    let refreshed_row = fetch_plugin_by_slug(pool, &slug).await?;
+    let categories = load_categories_for_plugin(pool, refreshed_row.id).await?;
+    let stats = load_review_stats_for_plugin(pool, refreshed_row.id).await?;
+
+    Ok(Json(build_plugin_response(
+        refreshed_row,
+        categories,
+        stats,
+    )))
+}
+
+/// DELETE /api/v1/plugins/:slug/icon — remove plugin icon (owner or admin only).
+pub async fn delete_plugin_icon(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(slug): Path<String>,
+) -> Result<StatusCode, AppError> {
+    auth.require_permission("publish")?;
+
+    let pool = &state.db;
+    let row = fetch_plugin_by_slug(pool, &slug).await?;
+    require_ownership(&auth, row.author_id)?;
+
+    sqlx::query(
+        "UPDATE plugins
+         SET icon_url = NULL,
+             icon_storage_key = NULL,
+             updated_at = now()
+         WHERE id = $1",
+    )
+    .bind(row.id)
+    .execute(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    if let Some(storage_key) = row.icon_storage_key {
+        let _ = state.storage.delete_object(&storage_key).await;
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// DELETE /api/v1/plugins/:slug — soft-delete (owner, admin or moderator).

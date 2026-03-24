@@ -21,6 +21,10 @@ pub fn routes() -> Router<AppState> {
                 .delete(handlers::delete_plugin),
         )
         .route(
+            "/plugins/{slug}/icon",
+            axum::routing::post(handlers::upload_plugin_icon).delete(handlers::delete_plugin_icon),
+        )
+        .route(
             "/plugins/{slug}/versions",
             get(handlers::list_versions).post(handlers::create_version),
         )

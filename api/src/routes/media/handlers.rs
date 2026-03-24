@@ -39,22 +39,30 @@ fn build_media_storage_key(plugin_slug: &str, media_id: &Uuid, file_name: &str) 
 
 /// Converts a DB row to a response DTO with presigned URLs.
 async fn row_to_response(row: &MediaRow, state: &AppState) -> Result<MediaResponse, AppError> {
-    let url = state
-        .storage
-        .presigned_download_url(&row.storage_key)
-        .await
-        .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?
-        .url;
+    let url = if let Some(public_url) = state.storage.public_object_url(&row.storage_key) {
+        public_url
+    } else {
+        state
+            .storage
+            .presigned_download_url(&row.storage_key)
+            .await
+            .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?
+            .url
+    };
 
     let thumbnail_url = if let Some(ref tk) = row.thumbnail_key {
-        Some(
-            state
-                .storage
-                .presigned_download_url(tk)
-                .await
-                .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?
-                .url,
-        )
+        if let Some(public_url) = state.storage.public_object_url(tk) {
+            Some(public_url)
+        } else {
+            Some(
+                state
+                    .storage
+                    .presigned_download_url(tk)
+                    .await
+                    .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?
+                    .url,
+            )
+        }
     } else {
         None
     };

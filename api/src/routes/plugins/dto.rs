@@ -22,6 +22,8 @@ const MAX_PER_PAGE: u32 = 100;
 
 const VERSION_MAX_LENGTH: usize = 50;
 const CHANGELOG_MAX_LENGTH: usize = 50_000;
+const ICON_MAX_SIZE_BYTES: u64 = 5 * 1024 * 1024;
+const ALLOWED_ICON_CONTENT_TYPES: &[&str] = &["image/jpeg", "image/png", "image/webp"];
 
 // ── Request DTOs ────────────────────────────────────────────────────────────
 
@@ -183,6 +185,7 @@ pub struct PluginResponse {
     pub repository_url: Option<String>,
     pub documentation_url: Option<String>,
     pub license: Option<String>,
+    pub icon_url: Option<String>,
     pub downloads_total: i64,
     pub categories: Vec<CategorySummary>,
     pub average_rating: f64,
@@ -199,6 +202,7 @@ pub struct PluginSummary {
     pub name: String,
     pub slug: String,
     pub short_description: Option<String>,
+    pub icon_url: Option<String>,
     pub license: Option<String>,
     pub downloads_total: i64,
     pub categories: Vec<CategorySummary>,
@@ -358,6 +362,24 @@ pub struct BinaryDownloadResponse {
     pub checksum_sha256: String,
     pub platform: String,
     pub expires_in_seconds: u64,
+}
+
+pub fn validate_icon_content_type(content_type: &str) -> Result<(), AppError> {
+    if !ALLOWED_ICON_CONTENT_TYPES.contains(&content_type) {
+        return Err(AppError::UnprocessableEntity(format!(
+            "Unsupported icon media type '{content_type}'. Allowed: JPEG, PNG, WebP"
+        )));
+    }
+    Ok(())
+}
+
+pub fn validate_icon_size(size: u64) -> Result<(), AppError> {
+    if size > ICON_MAX_SIZE_BYTES {
+        return Err(AppError::UnprocessableEntity(format!(
+            "Icon file size ({size} bytes) exceeds maximum ({ICON_MAX_SIZE_BYTES} bytes)"
+        )));
+    }
+    Ok(())
 }
 
 pub fn validate_platform(platform: &str) -> Result<(), AppError> {

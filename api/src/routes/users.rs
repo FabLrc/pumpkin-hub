@@ -81,6 +81,7 @@ struct PluginWithAuthorRow {
     name: String,
     slug: String,
     short_description: Option<String>,
+    icon_url: Option<String>,
     license: Option<String>,
     downloads_total: i64,
     created_at: DateTime<Utc>,
@@ -177,7 +178,7 @@ async fn get_author_plugins(
 
     let rows: Vec<PluginWithAuthorRow> = sqlx::query_as(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
-                p.license, p.downloads_total, p.created_at, p.updated_at,
+                p.icon_url, p.license, p.downloads_total, p.created_at, p.updated_at,
                 u.username AS author_username, u.avatar_url AS author_avatar_url
          FROM plugins p
          JOIN users u ON p.author_id = u.id
@@ -212,6 +213,7 @@ async fn get_author_plugins(
                 name: row.name,
                 slug: row.slug,
                 short_description: row.short_description,
+                icon_url: row.icon_url,
                 license: row.license,
                 downloads_total: row.downloads_total,
                 categories,

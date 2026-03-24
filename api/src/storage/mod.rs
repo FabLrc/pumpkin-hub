@@ -17,6 +17,9 @@ pub struct ObjectStorage {
     /// **must** use the same host the browser will hit.
     presign_client: Client,
     has_public_presign_override: bool,
+    public_base_url: Option<String>,
+    force_path_style: bool,
+    use_direct_public_urls: bool,
     bucket: String,
 }
 
@@ -75,10 +78,23 @@ impl ObjectStorage {
             .as_ref()
             .is_some_and(|public_url| public_url.trim() != config.endpoint_url.trim());
 
+        let normalized_public_url = config
+            .public_url
+            .as_ref()
+            .map(|url| url.trim_end_matches('/').to_string())
+            .filter(|url| !url.is_empty());
+
+        let use_direct_public_urls = normalized_public_url
+            .as_ref()
+            .is_some_and(|url| url.contains(".r2.dev"));
+
         Self {
             client,
             presign_client,
             has_public_presign_override,
+            public_base_url: normalized_public_url,
+            force_path_style: config.force_path_style,
+            use_direct_public_urls,
             bucket: config.bucket.clone(),
         }
     }
@@ -145,6 +161,24 @@ impl ObjectStorage {
             }
             Err(err) => Err(err),
         }
+    }
+
+    /// Builds a direct browser URL from the configured public base URL.
+    /// Useful for public buckets (gallery images, plugin icons) where presigning
+    /// may be unnecessary or incompatible with custom/public endpoints.
+    pub fn public_object_url(&self, key: &str) -> Option<String> {
+        if !self.use_direct_public_urls {
+            return None;
+        }
+
+        self.public_base_url.as_ref().map(|base| {
+            let trimmed_key = key.trim_start_matches('/');
+            if self.force_path_style {
+                format!("{base}/{}/{trimmed_key}", self.bucket)
+            } else {
+                format!("{base}/{trimmed_key}")
+            }
+        })
     }
 
     /// Deletes an object from the bucket.

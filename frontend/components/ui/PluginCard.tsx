@@ -2,6 +2,7 @@ import type { PluginSummary } from "@/lib/types";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { Badge } from "./Badge";
+import { PluginIcon } from "./PluginIcon";
 
 interface PluginCardProps {
   plugin: PluginSummary;
@@ -33,21 +34,13 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
 
   return (
     <div className={`${cardClasses} p-5 flex items-start gap-5 cursor-pointer relative`}>
-        {/* Icon placeholder */}
-        <div
-          className={`w-11 h-11 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-            featured
-              ? "bg-accent/10 border border-accent/30"
-              : "bg-bg-surface border border-border-hover"
-          }`}
-        >
-          <span
-            className={`font-mono font-bold text-xs ${
-              featured ? "text-accent" : "text-text-subtle"
-            }`}
-          >
-            {plugin.name.slice(0, 2).toUpperCase()}
-          </span>
+        <div className="mt-0.5">
+          <PluginIcon
+            pluginName={plugin.name}
+            iconUrl={plugin.icon_url}
+            featured={featured}
+            sizeClassName="w-11 h-11"
+          />
         </div>
 
         {/* Main info */}

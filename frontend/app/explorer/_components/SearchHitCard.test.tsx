@@ -34,6 +34,7 @@ const makeHit = (overrides: Partial<SearchHit> = {}): SearchHit => ({
   slug: "my-plugin",
   name: "MyPlugin",
   short_description: "A great plugin for Pumpkin",
+  icon_url: null,
   author_username: "rustdev",
   downloads_total: 12500,
   average_rating: 4.3,

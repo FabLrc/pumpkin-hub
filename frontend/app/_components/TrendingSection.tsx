@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { PluginSummary } from "@/lib/types";
+import { PluginIcon } from "@/components/ui";
 
 interface TrendingSectionProps {
   plugins: PluginSummary[];
@@ -53,11 +54,12 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/5 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
               <div className="flex items-start justify-between mb-6">
-                <div className="w-12 h-12 bg-accent/10 border border-accent/30 flex items-center justify-center flex-shrink-0">
-                  <span className="font-mono font-bold text-sm text-accent">
-                    {featured.name.slice(0, 2).toUpperCase()}
-                  </span>
-                </div>
+                <PluginIcon
+                  pluginName={featured.name}
+                  iconUrl={featured.icon_url}
+                  featured
+                  sizeClassName="w-12 h-12"
+                />
                 <span className="font-mono text-[10px] bg-accent/10 text-accent border border-accent/30 px-2 py-0.5 uppercase tracking-widest">
                   #1 Trending
                 </span>
@@ -124,10 +126,12 @@ function SmallBentoCard({ plugin }: { plugin: PluginSummary }) {
       href={`/plugins/${plugin.slug}`}
       className="bento-card border border-border-default bg-bg-elevated p-5 flex flex-col min-w-0 cursor-pointer"
     >
-      <div className="w-9 h-9 bg-bg-surface border border-border-hover flex items-center justify-center flex-shrink-0 mb-4">
-        <span className="font-mono font-bold text-xs text-text-subtle">
-          {plugin.name.slice(0, 2).toUpperCase()}
-        </span>
+      <div className="mb-4">
+        <PluginIcon
+          pluginName={plugin.name}
+          iconUrl={plugin.icon_url}
+          sizeClassName="w-9 h-9"
+        />
       </div>
       <h3 className="font-raleway font-bold text-lg text-text-primary mb-1 truncate">
         {plugin.name}

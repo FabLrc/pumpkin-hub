@@ -70,6 +70,7 @@ export interface PluginSummary {
   name: string;
   slug: string;
   short_description: string | null;
+  icon_url: string | null;
   license: string | null;
   downloads_total: number;
   categories: CategorySummary[];
@@ -85,6 +86,7 @@ export interface PluginResponse {
   name: string;
   slug: string;
   short_description: string | null;
+  icon_url: string | null;
   description: string | null;
   repository_url: string | null;
   documentation_url: string | null;
@@ -320,6 +322,7 @@ export interface SearchHit {
   name: string;
   slug: string;
   short_description: string | null;
+  icon_url: string | null;
   author_username: string;
   license: string | null;
   downloads_total: number;

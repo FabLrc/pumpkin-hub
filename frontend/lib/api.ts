@@ -165,6 +165,43 @@ export async function deletePlugin(slug: string): Promise<void> {
   });
 }
 
+export function getPluginIconPath(slug: string): string {
+  return `/plugins/${encodeURIComponent(slug)}/icon`;
+}
+
+export async function uploadPluginIcon(
+  slug: string,
+  file: File,
+): Promise<PluginResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_PREFIX}${getPluginIconPath(slug)}`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "Unknown error");
+    throw new Error(`API ${response.status}: ${errorBody}`);
+  }
+
+  return response.json() as Promise<PluginResponse>;
+}
+
+export async function deletePluginIcon(slug: string): Promise<void> {
+  const response = await fetch(`${API_PREFIX}${getPluginIconPath(slug)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "Unknown error");
+    throw new Error(`API ${response.status}: ${errorBody}`);
+  }
+}
+
 // ── Version Endpoints ─────────────────────────────────────────────────────
 
 export function getPluginVersionsPath(slug: string): string {
@@ -917,13 +954,18 @@ export async function uploadMedia(
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.responseText) as MediaUploadResponse);
+        try {
+          resolve(JSON.parse(xhr.responseText) as MediaUploadResponse);
+        } catch {
+          reject(new Error("Upload failed: invalid server response"));
+        }
       } else {
         reject(new Error(`Upload failed: ${xhr.status} ${xhr.responseText}`));
       }
     };
 
     xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onabort = () => reject(new Error("Upload was cancelled"));
     xhr.send(formData);
   });
 }
