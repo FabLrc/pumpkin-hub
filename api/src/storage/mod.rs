@@ -56,9 +56,16 @@ impl ObjectStorage {
 
         let client = Client::from_conf(s3_config);
 
-        // Build a second client pointing at the public URL (browser-reachable)
-        // so that presigned URLs carry a signature matching the public host.
-        let presign_endpoint = config.public_url.as_deref().unwrap_or(&config.endpoint_url);
+        // Build a second client used exclusively for generating pre-signed download URLs.
+        // When use_direct_public_urls=true, S3_PUBLIC_URL is a CDN/custom-domain URL and is
+        // NOT a valid S3 API endpoint — always fall back to the S3 API endpoint for presigning.
+        // When use_direct_public_urls=false, S3_PUBLIC_URL may point to a browser-reachable S3
+        // endpoint different from the internal one (e.g. virtual-hosted R2 subdomain).
+        let presign_endpoint = if config.use_direct_public_urls {
+            config.endpoint_url.as_str()
+        } else {
+            config.public_url.as_deref().unwrap_or(&config.endpoint_url)
+        };
 
         let presign_sdk_config = aws_config::defaults(BehaviorVersion::latest())
             .endpoint_url(presign_endpoint)
@@ -73,10 +80,11 @@ impl ObjectStorage {
 
         let presign_client = Client::from_conf(presign_s3_config);
 
-        let has_public_presign_override = config
-            .public_url
-            .as_ref()
-            .is_some_and(|public_url| public_url.trim() != config.endpoint_url.trim());
+        let has_public_presign_override = !config.use_direct_public_urls
+            && config
+                .public_url
+                .as_ref()
+                .is_some_and(|public_url| public_url.trim() != config.endpoint_url.trim());
 
         let normalized_public_url = config
             .public_url

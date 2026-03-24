@@ -71,8 +71,11 @@ services:
       - S3_BUCKET=${R2_BUCKET:-pumpkin-hub-binaries}
       - S3_REGION=auto
       - S3_FORCE_PATH_STYLE=false
+      # URL du domaine custom Cloudflare connecté au bucket R2 (ex: https://assets.pumpkinhub.org)
       - S3_PUBLIC_URL=${R2_PUBLIC_URL}
-      - S3_USE_DIRECT_URLS=${S3_USE_DIRECT_URLS:-false}
+      # true = URLs directes via domaine custom (recommandé, CDN Cloudflare activé)
+      # false = URLs présignées via l'API S3 R2 (si pas de domaine custom)
+      - S3_USE_DIRECT_URLS=${S3_USE_DIRECT_URLS:-true}
 
       # Email — Resend (SMTP)
       - SMTP_HOST=smtp.resend.com
