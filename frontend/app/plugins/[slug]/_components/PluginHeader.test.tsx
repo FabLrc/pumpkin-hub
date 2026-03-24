@@ -25,6 +25,9 @@ vi.mock("@/components/ui", () => ({
       {children}
     </span>
   ),
+  PluginIcon: ({ pluginName }: { pluginName: string; iconUrl?: string | null }) => (
+    <div data-testid="plugin-icon">{pluginName}</div>
+  ),
 }));
 
 const mockPlugin: PluginResponse = {
