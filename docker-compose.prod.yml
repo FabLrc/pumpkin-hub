@@ -14,8 +14,11 @@ services:
     environment:
       # Utilisé par le proxy upload côté serveur (réseau Docker interne)
       - NEXT_INTERNAL_API_URL=http://api:8080
-      # URL publique du stockage objet — injectée dans la CSP img-src côté serveur
+      # URL publique directe (pub-xxx.r2.dev ou domaine custom) — utilisée si S3_USE_DIRECT_URLS=true
       - NEXT_PUBLIC_S3_PUBLIC_URL=${R2_PUBLIC_URL}
+      # Origine des URLs présignées R2 (format virtual-hosted : bucket.account.r2.cloudflarestorage.com)
+      # Doit correspondre à l'origine des URLs retournées par l'API quand S3_USE_DIRECT_URLS=false
+      - NEXT_PUBLIC_S3_PRESIGNED_ORIGIN=https://${R2_BUCKET:-pumpkin-hub-binaries}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
     depends_on:
       api:
         condition: service_healthy
