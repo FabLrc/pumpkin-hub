@@ -337,8 +337,8 @@
 │ avatar_url     │       │ description       │       │ pumpkin_max    │
 │ bio            │       │ license           │       │ downloads      │
 │ password_hash  │       │ downloads_total   │       │ is_yanked      │
-│ email_verified │       │ icon_url          │       │ published_at   │
-│ is_active      │       │ icon_storage_key  │
+│ email_verified │       │ icon_storage_key  │       │ published_at   │
+│ is_active      │       │ is_active         │
 │ is_active      │       └────────────────────┘       └────────────────┘
 │ role       CHK │        │                    │
 │ created_at     │       ┌─────┴──────────────────┤
@@ -663,6 +663,32 @@
         to reach <code>localhost:9000</code>. MinIO will return a
         <strong>SignatureDoesNotMatch</strong> error because the <code>Host</code> header was
         included in the signature for a different hostname.
+      </div>
+
+      <h3>Dynamic URL Resolution (Icons &amp; Gallery)</h3>
+      <p>
+        Plugin icons and gallery media are stored in S3 with their <strong>storage key</strong>
+        persisted in the database (e.g. <code>icon_storage_key</code>, <code>storage_key</code>).
+        URLs are <strong>never stored</strong> in the database — they are generated dynamically
+        at query time via <code>ObjectStorage::resolve_url()</code>:
+      </p>
+      <ol>
+        <li>If <code>S3_USE_DIRECT_URLS=true</code> and <code>S3_PUBLIC_URL</code> is set,
+            a stable direct URL is built from the storage key (no expiry).</li>
+        <li>Otherwise, a presigned URL (1-hour TTL) is generated on-the-fly.</li>
+      </ol>
+      <p>
+        This design avoids broken images caused by expired presigned URLs that were previously
+        stored in the database at upload time. The Meilisearch index also stores
+        <code>icon_storage_key</code> and the search handler resolves URLs before
+        returning results to the frontend.
+      </p>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">R2 Production Tip</div>
+        For Cloudflare R2 with a public bucket, set <code>S3_USE_DIRECT_URLS=true</code>
+        and <code>S3_FORCE_PATH_STYLE=false</code>. This produces stable, non-expiring URLs
+        via the R2 public endpoint and is the recommended configuration for serving images.
       </div>
 
       <h3>Dev vs Production Configuration</h3>

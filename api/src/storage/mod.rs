@@ -180,6 +180,23 @@ impl ObjectStorage {
         })
     }
 
+    /// Resolves an optional storage key to a browser-reachable URL.
+    /// Prefers direct public URLs (no expiry), falls back to presigned URLs.
+    /// Returns `None` when the key itself is `None`.
+    pub async fn resolve_url(&self, key: Option<&str>) -> Option<String> {
+        let key = key?;
+        if let Some(url) = self.public_object_url(key) {
+            return Some(url);
+        }
+        match self.presigned_download_url(key).await {
+            Ok(presigned) => Some(presigned.url),
+            Err(e) => {
+                tracing::warn!(error = %e, %key, "Failed to generate presigned URL for storage key");
+                None
+            }
+        }
+    }
+
     /// Deletes an object from the bucket.
     pub async fn delete_object(
         &self,

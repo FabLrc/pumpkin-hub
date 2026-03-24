@@ -81,7 +81,7 @@ struct PluginWithAuthorRow {
     name: String,
     slug: String,
     short_description: Option<String>,
-    icon_url: Option<String>,
+    icon_storage_key: Option<String>,
     license: Option<String>,
     downloads_total: i64,
     created_at: DateTime<Utc>,
@@ -178,7 +178,7 @@ async fn get_author_plugins(
 
     let rows: Vec<PluginWithAuthorRow> = sqlx::query_as(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
-                p.icon_url, p.license, p.downloads_total, p.created_at, p.updated_at,
+                p.icon_storage_key, p.license, p.downloads_total, p.created_at, p.updated_at,
                 u.username AS author_username, u.avatar_url AS author_avatar_url
          FROM plugins p
          JOIN users u ON p.author_id = u.id
@@ -198,32 +198,34 @@ async fn get_author_plugins(
     let mut categories_map = load_categories_batch(pool, &plugin_ids).await?;
     let review_stats_map = load_review_stats_batch(pool, &plugin_ids).await?;
 
-    let plugins: Vec<PluginSummary> = rows
-        .into_iter()
-        .map(|row| {
-            let categories = categories_map.remove(&row.id).unwrap_or_default();
-            let stats = review_stats_map.get(&row.id);
-            PluginSummary {
-                id: row.id,
-                author: AuthorSummary {
-                    id: row.author_id,
-                    username: row.author_username,
-                    avatar_url: row.author_avatar_url,
-                },
-                name: row.name,
-                slug: row.slug,
-                short_description: row.short_description,
-                icon_url: row.icon_url,
-                license: row.license,
-                downloads_total: row.downloads_total,
-                categories,
-                average_rating: stats.map(|s| s.0).unwrap_or(0.0),
-                review_count: stats.map(|s| s.1).unwrap_or(0),
-                created_at: row.created_at,
-                updated_at: row.updated_at,
-            }
-        })
-        .collect();
+    let mut plugins = Vec::with_capacity(rows.len());
+    for row in rows {
+        let categories = categories_map.remove(&row.id).unwrap_or_default();
+        let stats = review_stats_map.get(&row.id);
+        let icon_url = state
+            .storage
+            .resolve_url(row.icon_storage_key.as_deref())
+            .await;
+        plugins.push(PluginSummary {
+            id: row.id,
+            author: AuthorSummary {
+                id: row.author_id,
+                username: row.author_username,
+                avatar_url: row.author_avatar_url,
+            },
+            name: row.name,
+            slug: row.slug,
+            short_description: row.short_description,
+            icon_url,
+            license: row.license,
+            downloads_total: row.downloads_total,
+            categories,
+            average_rating: stats.map(|s| s.0).unwrap_or(0.0),
+            review_count: stats.map(|s| s.1).unwrap_or(0),
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        });
+    }
 
     Ok(Json(PaginatedResponse {
         data: plugins,

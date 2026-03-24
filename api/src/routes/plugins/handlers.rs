@@ -33,7 +33,6 @@ struct PluginWithAuthorRow {
     repository_url: Option<String>,
     documentation_url: Option<String>,
     license: Option<String>,
-    icon_url: Option<String>,
     icon_storage_key: Option<String>,
     downloads_total: i64,
     created_at: DateTime<Utc>,
@@ -155,7 +154,7 @@ async fn fetch_plugin_by_slug(pool: &PgPool, slug: &str) -> Result<PluginWithAut
     sqlx::query_as(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
                 p.description, p.repository_url, p.documentation_url, p.license,
-                p.icon_url, p.icon_storage_key,
+                p.icon_storage_key,
                 p.downloads_total, p.created_at, p.updated_at,
                 u.username AS author_username, u.avatar_url AS author_avatar_url
          FROM plugins p
@@ -289,11 +288,14 @@ async fn load_review_stats_for_plugin(
 
 // ── Response Builders ───────────────────────────────────────────────────────
 
-fn build_plugin_response(
+async fn build_plugin_response(
     row: PluginWithAuthorRow,
     categories: Vec<CategorySummary>,
     stats: ReviewStats,
+    storage: &ObjectStorage,
 ) -> PluginResponse {
+    let icon_url = storage.resolve_url(row.icon_storage_key.as_deref()).await;
+
     PluginResponse {
         id: row.id,
         author: AuthorSummary {
@@ -308,7 +310,7 @@ fn build_plugin_response(
         repository_url: row.repository_url,
         documentation_url: row.documentation_url,
         license: row.license,
-        icon_url: row.icon_url,
+        icon_url,
         downloads_total: row.downloads_total,
         categories,
         average_rating: stats.average_rating,
@@ -318,11 +320,14 @@ fn build_plugin_response(
     }
 }
 
-fn build_plugin_summary(
+async fn build_plugin_summary(
     row: PluginWithAuthorRow,
     categories: Vec<CategorySummary>,
     stats: ReviewStats,
+    storage: &ObjectStorage,
 ) -> PluginSummary {
+    let icon_url = storage.resolve_url(row.icon_storage_key.as_deref()).await;
+
     PluginSummary {
         id: row.id,
         author: AuthorSummary {
@@ -333,7 +338,7 @@ fn build_plugin_summary(
         name: row.name,
         slug: row.slug,
         short_description: row.short_description,
-        icon_url: row.icon_url,
+        icon_url,
         license: row.license,
         downloads_total: row.downloads_total,
         categories,
@@ -386,7 +391,7 @@ pub async fn list_plugins(
     let query = format!(
         "SELECT p.id, p.author_id, p.name, p.slug, p.short_description,
                 p.description, p.repository_url, p.documentation_url, p.license,
-                p.icon_url, p.icon_storage_key,
+                p.icon_storage_key,
                 p.downloads_total, p.created_at, p.updated_at,
                 u.username AS author_username, u.avatar_url AS author_avatar_url
          FROM plugins p
@@ -418,14 +423,12 @@ pub async fn list_plugins(
     let categories_map = load_categories_batch(pool, &plugin_ids).await?;
     let review_stats_map = load_review_stats_batch(pool, &plugin_ids).await?;
 
-    let data = rows
-        .into_iter()
-        .map(|row| {
-            let categories = categories_map.get(&row.id).cloned().unwrap_or_default();
-            let stats = review_stats_map.get(&row.id).cloned().unwrap_or_default();
-            build_plugin_summary(row, categories, stats)
-        })
-        .collect();
+    let mut data = Vec::with_capacity(rows.len());
+    for row in rows {
+        let categories = categories_map.get(&row.id).cloned().unwrap_or_default();
+        let stats = review_stats_map.get(&row.id).cloned().unwrap_or_default();
+        data.push(build_plugin_summary(row, categories, stats, &state.storage).await);
+    }
 
     Ok(Json(PaginatedResponse {
         data,
@@ -494,7 +497,7 @@ pub async fn create_plugin(
     let row = fetch_plugin_by_slug(pool, &slug).await?;
     let categories = load_categories_for_plugin(pool, row.id).await?;
     let stats = load_review_stats_for_plugin(pool, row.id).await?;
-    let response = build_plugin_response(row, categories, stats);
+    let response = build_plugin_response(row, categories, stats, &state.storage).await;
 
     // Index in Meilisearch (fire-and-forget — don't block the response)
     let search = state.search.clone();
@@ -522,7 +525,9 @@ pub async fn get_plugin(
     let categories = load_categories_for_plugin(pool, row.id).await?;
     let stats = load_review_stats_for_plugin(pool, row.id).await?;
 
-    Ok(Json(build_plugin_response(row, categories, stats)))
+    Ok(Json(
+        build_plugin_response(row, categories, stats, &state.storage).await,
+    ))
 }
 
 /// PUT /api/v1/plugins/:slug — update plugin metadata (owner or admin only).
@@ -542,7 +547,9 @@ pub async fn update_plugin(
     if !payload.has_changes() {
         let categories = load_categories_for_plugin(pool, row.id).await?;
         let stats = load_review_stats_for_plugin(pool, row.id).await?;
-        return Ok(Json(build_plugin_response(row, categories, stats)));
+        return Ok(Json(
+            build_plugin_response(row, categories, stats, &state.storage).await,
+        ));
     }
 
     // Validate new category IDs if provided
@@ -600,7 +607,9 @@ pub async fn update_plugin(
         }
     });
 
-    Ok(Json(build_plugin_response(updated_row, categories, stats)))
+    Ok(Json(
+        build_plugin_response(updated_row, categories, stats, &state.storage).await,
+    ))
 }
 
 /// POST /api/v1/plugins/:slug/icon — upload/replace plugin icon (owner or admin only).
@@ -678,25 +687,12 @@ pub async fn upload_plugin_icon(
             )
         })?;
 
-    let icon_url = if let Some(public_url) = state.storage.public_object_url(&storage_key) {
-        public_url
-    } else {
-        state
-            .storage
-            .presigned_download_url(&storage_key)
-            .await
-            .map_err(|e| AppError::internal(std::io::Error::other(e.to_string())))?
-            .url
-    };
-
     sqlx::query(
         "UPDATE plugins
-         SET icon_url = $1,
-             icon_storage_key = $2,
+         SET icon_storage_key = $1,
              updated_at = now()
-         WHERE id = $3",
+         WHERE id = $2",
     )
-    .bind(&icon_url)
     .bind(&storage_key)
     .bind(row.id)
     .execute(pool)
@@ -713,11 +709,9 @@ pub async fn upload_plugin_icon(
     let categories = load_categories_for_plugin(pool, refreshed_row.id).await?;
     let stats = load_review_stats_for_plugin(pool, refreshed_row.id).await?;
 
-    Ok(Json(build_plugin_response(
-        refreshed_row,
-        categories,
-        stats,
-    )))
+    Ok(Json(
+        build_plugin_response(refreshed_row, categories, stats, &state.storage).await,
+    ))
 }
 
 /// DELETE /api/v1/plugins/:slug/icon — remove plugin icon (owner or admin only).

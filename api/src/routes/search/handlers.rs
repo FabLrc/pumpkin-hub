@@ -15,7 +15,15 @@ pub async fn search_plugins(
     State(state): State<AppState>,
     Query(query): Query<SearchQuery>,
 ) -> Result<Json<SearchResponse>, AppError> {
-    let response = state.search.search(&query).await?;
+    let mut response = state.search.search(&query).await?;
+
+    for hit in &mut response.hits {
+        hit.icon_url = state
+            .storage
+            .resolve_url(hit.icon_storage_key.as_deref())
+            .await;
+    }
+
     Ok(Json(response))
 }
 
