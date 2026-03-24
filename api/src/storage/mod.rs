@@ -90,7 +90,19 @@ impl ObjectStorage {
             .public_url
             .as_ref()
             .map(|url| url.trim_end_matches('/').to_string())
-            .filter(|url| !url.is_empty());
+            .filter(|url| !url.is_empty())
+            .and_then(|url| {
+                if url.starts_with("http://") || url.starts_with("https://") {
+                    Some(url)
+                } else {
+                    tracing::error!(
+                        S3_PUBLIC_URL = %url,
+                        "S3_PUBLIC_URL must start with 'https://' — direct public URLs are disabled. \
+                         Add the scheme (e.g. https://{url})"
+                    );
+                    None
+                }
+            });
 
         let use_direct_public_urls =
             config.use_direct_public_urls && normalized_public_url.is_some();
