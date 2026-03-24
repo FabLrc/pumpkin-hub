@@ -84,8 +84,8 @@ impl ObjectStorage {
             .map(|url| url.trim_end_matches('/').to_string())
             .filter(|url| !url.is_empty());
 
-        let use_direct_public_urls = config.use_direct_public_urls
-            && normalized_public_url.is_some();
+        let use_direct_public_urls =
+            config.use_direct_public_urls && normalized_public_url.is_some();
 
         Self {
             client,
