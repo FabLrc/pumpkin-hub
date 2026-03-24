@@ -8,6 +8,7 @@ const mockPlugin: PluginResponse = {
   name: "Test Plugin",
   slug: "test-plugin",
   short_description: "A test",
+  icon_url: null,
   description: null,
   author: { id: "a1", username: "testuser", avatar_url: null },
   repository_url: "https://github.com/test/repo",

@@ -108,6 +108,7 @@ const mockPlugin: PluginResponse = {
   name: "Test Plugin",
   slug: "test-plugin",
   short_description: "Short desc",
+  icon_url: null,
   description: "## Heading\n\nHello `world`\n\n- item one\n* item two\n\n```\ncode block\n```\n\n### Sub heading\n\nParagraph with <b>html</b> & \"quotes\"",
   author: { id: "a1", username: "testuser", avatar_url: null },
   repository_url: "https://github.com/test/repo",

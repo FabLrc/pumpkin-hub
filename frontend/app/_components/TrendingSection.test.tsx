@@ -15,6 +15,7 @@ const makePlugin = (overrides: Partial<PluginSummary> = {}): PluginSummary => ({
   name: "TestPlugin",
   slug: "test-plugin",
   short_description: "A test plugin",
+  icon_url: null,
   license: "MIT",
   downloads_total: 1500,
   categories: [{ id: "c1", name: "Security", slug: "security" }],

@@ -39,6 +39,7 @@ const makeHit = (id: string, name: string): SearchHit => ({
   slug: name.toLowerCase().replace(/\s/g, "-"),
   name,
   short_description: `Description for ${name}`,
+  icon_url: null,
   author_username: "author",
   downloads_total: 100,
   average_rating: 4.0,
