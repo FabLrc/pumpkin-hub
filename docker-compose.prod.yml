@@ -14,6 +14,8 @@ services:
     environment:
       # Utilisé par le proxy upload côté serveur (réseau Docker interne)
       - NEXT_INTERNAL_API_URL=http://api:8080
+      # URL publique du stockage objet — injectée dans la CSP img-src côté serveur
+      - NEXT_PUBLIC_S3_PUBLIC_URL=${R2_PUBLIC_URL}
     depends_on:
       api:
         condition: service_healthy
@@ -67,6 +69,7 @@ services:
       - S3_REGION=auto
       - S3_FORCE_PATH_STYLE=false
       - S3_PUBLIC_URL=${R2_PUBLIC_URL}
+      - S3_USE_DIRECT_URLS=${S3_USE_DIRECT_URLS:-false}
 
       # Email — Resend (SMTP)
       - SMTP_HOST=smtp.resend.com

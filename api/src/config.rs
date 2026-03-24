@@ -74,6 +74,9 @@ pub struct S3Config {
     /// When set, replaces the internal `endpoint_url` in generated URLs.
     /// Example: "http://localhost:9000" in dev, the R2 public URL in prod.
     pub public_url: Option<String>,
+    /// When true, serve objects via direct public URLs instead of presigned URLs.
+    /// Use this when the bucket has anonymous download access (e.g. MinIO dev, R2 public bucket).
+    pub use_direct_public_urls: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -172,6 +175,10 @@ impl Config {
             .parse::<bool>()
             .unwrap_or(false);
         let s3_public_url = std::env::var("S3_PUBLIC_URL").ok();
+        let s3_use_direct_public_urls = std::env::var("S3_USE_DIRECT_URLS")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse::<bool>()
+            .unwrap_or(false);
         let binary_max_size_bytes = parse_env_var::<u64>("BINARY_MAX_SIZE_BYTES", 104_857_600)?;
 
         let rate_limit = RateLimitConfig {
@@ -216,6 +223,7 @@ impl Config {
                 region: s3_region,
                 force_path_style: s3_force_path_style,
                 public_url: s3_public_url,
+                use_direct_public_urls: s3_use_direct_public_urls,
             },
             binary_max_size_bytes,
             rate_limit,
@@ -259,6 +267,7 @@ impl Default for Config {
                 region: "us-east-1".to_string(),
                 force_path_style: true,
                 public_url: None,
+                use_direct_public_urls: false,
             },
             binary_max_size_bytes: 104_857_600,
             rate_limit: RateLimitConfig {

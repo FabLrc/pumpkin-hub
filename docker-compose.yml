@@ -14,6 +14,7 @@ services:
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_S3_PUBLIC_URL=http://localhost:9000
       # Used by the Next.js proxy route (server-side) to reach the API via Docker internal
       # network, bypassing the Chrome + Docker Desktop WSL2 cross-origin upload limitation.
       - NEXT_INTERNAL_API_URL=http://api-dev:8080
@@ -61,6 +62,7 @@ services:
       - S3_SECRET_ACCESS_KEY=minioadmin
       - S3_REGION=us-east-1
       - S3_FORCE_PATH_STYLE=true
+      - S3_USE_DIRECT_URLS=true
       - BINARY_MAX_SIZE_BYTES=104857600
       # GitHub App (optional — set in .env to enable GitHub publishing)
       - GITHUB_APP_ID=${GITHUB_APP_ID:-}

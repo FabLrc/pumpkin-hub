@@ -19,7 +19,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://avatars.githubusercontent.com https://github.com",
+      `img-src 'self' data: blob: https://avatars.githubusercontent.com https://github.com${process.env.NEXT_PUBLIC_S3_PUBLIC_URL ? ` ${process.env.NEXT_PUBLIC_S3_PUBLIC_URL}` : ""}`,
       "font-src 'self' data:",
       "connect-src 'self' https: wss:",
       "media-src 'none'",
