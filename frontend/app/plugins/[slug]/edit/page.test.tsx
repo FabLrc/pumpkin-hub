@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Suspense } from "react";
 import type { ComponentPropsWithoutRef } from "react";
 import EditPluginPage from "./page";
@@ -28,9 +29,17 @@ vi.mock("@/lib/hooks", () => ({
   usePlugin: (...args: unknown[]) => usePluginMock(...args),
 }));
 
+const { updatePluginMock, uploadPluginIconMock, deletePluginIconMock } = vi.hoisted(() => ({
+  updatePluginMock: vi.fn(),
+  uploadPluginIconMock: vi.fn(),
+  deletePluginIconMock: vi.fn(),
+}));
+
 vi.mock("@/lib/api", () => ({
-  updatePlugin: vi.fn(),
-  getPluginPath: vi.fn(),
+  updatePlugin: updatePluginMock,
+  getPluginPath: vi.fn().mockReturnValue("/api/v1/plugins/test-plugin"),
+  uploadPluginIcon: uploadPluginIconMock,
+  deletePluginIcon: deletePluginIconMock,
 }));
 
 vi.mock("swr", () => ({
@@ -38,12 +47,34 @@ vi.mock("swr", () => ({
 }));
 
 vi.mock("@/components/plugins/PluginForm", () => ({
-  PluginForm: (props: { submitLabel?: string; initialData?: { name: string } }) => (
+  PluginForm: (props: {
+    submitLabel?: string;
+    initialData?: { name: string };
+    onSubmit?: (data: Record<string, unknown>) => void;
+    isSubmitting?: boolean;
+  }) => (
     <div data-testid="plugin-form" data-label={props.submitLabel}>
       PluginForm
       {props.initialData && (
         <span data-testid="initial-data">{props.initialData.name}</span>
       )}
+      <button
+        type="button"
+        data-testid="submit-form"
+        onClick={() =>
+          props.onSubmit?.({
+            name: "Updated",
+            shortDescription: "",
+            description: "",
+            repositoryUrl: "",
+            documentationUrl: "",
+            license: "",
+            categoryIds: [],
+          })
+        }
+      >
+        Submit
+      </button>
     </div>
   ),
 }));
@@ -89,6 +120,9 @@ function renderWithSuspense(slug: string) {
 describe("EditPluginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    updatePluginMock.mockResolvedValue({ slug: "test-plugin" });
+    uploadPluginIconMock.mockResolvedValue(undefined);
+    deletePluginIconMock.mockResolvedValue(undefined);
     useCurrentUserMock.mockReturnValue({
       data: { id: "a1", username: "testuser", role: "author" },
       isLoading: false,
@@ -157,5 +191,121 @@ describe("EditPluginPage", () => {
       renderWithSuspense("test-plugin");
     });
     expect(replaceMock).toHaveBeenCalledWith("/auth");
+  });
+
+  it("redirects non-owner to plugin page", async () => {
+    useCurrentUserMock.mockReturnValue({
+      data: { id: "other-user", username: "other", role: "author" },
+      isLoading: false,
+    });
+
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+    expect(replaceMock).toHaveBeenCalledWith("/plugins/test-plugin");
+  });
+
+  it("handleUpdate calls updatePlugin and redirects", async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+
+    await user.click(screen.getByTestId("submit-form"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/plugins/test-plugin"));
+    expect(updatePluginMock).toHaveBeenCalledWith(
+      "test-plugin",
+      expect.objectContaining({ name: "Updated" }),
+    );
+  });
+
+  it("shows icon section with initials fallback when icon_url is null", async () => {
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+    expect(
+      screen.getByRole("img", { name: /Test Plugin icon fallback/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows icon img when plugin has icon_url", async () => {
+    usePluginMock.mockReturnValue({
+      data: { ...mockPlugin, icon_url: "https://example.com/icon.png" },
+      isLoading: false,
+    });
+
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+    const img = screen.getByRole("img", { name: /Test Plugin icon/i });
+    expect(img).toHaveAttribute("src", "https://example.com/icon.png");
+  });
+
+  it("shows Remove button and calls deletePluginIcon when plugin has icon_url", async () => {
+    const user = userEvent.setup();
+    usePluginMock.mockReturnValue({
+      data: { ...mockPlugin, icon_url: "https://example.com/icon.png" },
+      isLoading: false,
+    });
+
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+
+    const removeBtn = screen.getByRole("button", { name: /Remove current plugin icon/i });
+    await user.click(removeBtn);
+    await waitFor(() => expect(deletePluginIconMock).toHaveBeenCalledWith("test-plugin"));
+  });
+
+  it("handleIconChange shows error for unsupported file type", async () => {
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+
+    const input = screen.getByTitle("Select plugin icon image") as HTMLInputElement;
+    const badFile = new File(["data"], "icon.gif", { type: "image/gif" });
+    Object.defineProperty(input, "files", { value: [badFile], configurable: true });
+    await act(async () => { fireEvent.change(input); });
+
+    expect(screen.getByText(/Unsupported icon type/i)).toBeInTheDocument();
+  });
+
+  it("handleIconChange shows error when file exceeds 5 MB", async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+
+    const input = screen.getByTitle("Select plugin icon image");
+    const bigFile = new File([new ArrayBuffer(6 * 1024 * 1024)], "big.png", { type: "image/png" });
+    await user.upload(input, bigFile);
+
+    expect(
+      screen.getByText(/Icon file is too large/i),
+    ).toBeInTheDocument();
+  });
+
+  it("handleIconChange uploads valid file and revalidates", async () => {
+    const user = userEvent.setup();
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+
+    const input = screen.getByTitle("Select plugin icon image");
+    const validFile = new File(["data"], "icon.png", { type: "image/png" });
+    await user.upload(input, validFile);
+
+    await waitFor(() =>
+      expect(uploadPluginIconMock).toHaveBeenCalledWith("test-plugin", validFile),
+    );
+  });
+
+  it("shows plugin not found state when plugin data is null after loading", async () => {
+    usePluginMock.mockReturnValue({ data: null, isLoading: false });
+
+    await act(async () => {
+      renderWithSuspense("test-plugin");
+    });
+    expect(screen.getByText(/Plugin not found/i)).toBeInTheDocument();
   });
 });

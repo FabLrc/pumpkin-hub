@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentPropsWithoutRef } from "react";
 import NewPluginPage from "./page";
@@ -26,14 +26,41 @@ vi.mock("@/lib/hooks", () => ({
   useCurrentUser: (...args: unknown[]) => useCurrentUserMock(...args),
 }));
 
+const { createPluginMock, uploadPluginIconMock } = vi.hoisted(() => ({
+  createPluginMock: vi.fn(),
+  uploadPluginIconMock: vi.fn(),
+}));
+
 vi.mock("@/lib/api", () => ({
-  createPlugin: vi.fn(),
+  createPlugin: createPluginMock,
+  uploadPluginIcon: uploadPluginIconMock,
 }));
 
 vi.mock("@/components/plugins/PluginForm", () => ({
-  PluginForm: (props: { submitLabel?: string }) => (
+  PluginForm: (props: {
+    submitLabel?: string;
+    onSubmit?: (data: Record<string, unknown>) => void;
+    isSubmitting?: boolean;
+  }) => (
     <div data-testid="plugin-form" data-label={props.submitLabel}>
       PluginForm
+      <button
+        type="button"
+        data-testid="submit-form"
+        onClick={() =>
+          props.onSubmit?.({
+            name: "My Plugin",
+            shortDescription: "",
+            description: "",
+            repositoryUrl: "",
+            documentationUrl: "",
+            license: "",
+            categoryIds: [],
+          })
+        }
+      >
+        Submit
+      </button>
     </div>
   ),
 }));
@@ -96,4 +123,76 @@ describe("NewPluginPage", () => {
     render(<NewPluginPage />);
     expect(replaceMock).toHaveBeenCalledWith("/auth");
   });
+
+  it("shows loading skeleton when user is loading", () => {
+    useCurrentUserMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+    const { container } = render(<NewPluginPage />);
+    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
+  });
+
+  it("shows icon section in manual mode", () => {
+    render(<NewPluginPage />);
+    expect(screen.getByText(/Plugin Icon/i)).toBeInTheDocument();
+    expect(screen.getByTitle("Select plugin icon image")).toBeInTheDocument();
+  });
+
+  it("handleCreate calls createPlugin and redirects", async () => {
+    createPluginMock.mockResolvedValue({ slug: "my-plugin" });
+    const user = userEvent.setup();
+    render(<NewPluginPage />);
+
+    await user.click(screen.getByTestId("submit-form"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/plugins/my-plugin"));
+    expect(createPluginMock).toHaveBeenCalled();
+  });
+
+  it("handleIconSelection shows error for unsupported file type", async () => {
+    render(<NewPluginPage />);
+
+    const input = screen.getByTitle("Select plugin icon image") as HTMLInputElement;
+    const badFile = new File(["data"], "icon.gif", { type: "image/gif" });
+    Object.defineProperty(input, "files", { value: [badFile], configurable: true });
+    await act(async () => { fireEvent.change(input); });
+
+    expect(screen.getByText(/Unsupported icon type/i)).toBeInTheDocument();
+  });
+
+  it("handleIconSelection shows error when file exceeds 5 MB", async () => {
+    const user = userEvent.setup();
+    render(<NewPluginPage />);
+
+    const input = screen.getByTitle("Select plugin icon image");
+    const bigFile = new File([new ArrayBuffer(6 * 1024 * 1024)], "big.png", { type: "image/png" });
+    await user.upload(input, bigFile);
+
+    expect(screen.getByText(/Icon file is too large/i)).toBeInTheDocument();
+  });
+
+  it("handleIconSelection accepts valid file and shows its name", async () => {
+    const user = userEvent.setup();
+    render(<NewPluginPage />);
+
+    const input = screen.getByTitle("Select plugin icon image");
+    const validFile = new File(["data"], "icon.png", { type: "image/png" });
+    await user.upload(input, validFile);
+
+    expect(screen.getByText("icon.png")).toBeInTheDocument();
+  });
+
+  it("remove icon button clears selected file", async () => {
+    const user = userEvent.setup();
+    render(<NewPluginPage />);
+
+    const input = screen.getByTitle("Select plugin icon image");
+    const validFile = new File(["data"], "icon.png", { type: "image/png" });
+    await user.upload(input, validFile);
+
+    expect(screen.getByText("icon.png")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Remove selected icon/i }));
+    expect(screen.queryByText("icon.png")).not.toBeInTheDocument();
+  });
+
 });

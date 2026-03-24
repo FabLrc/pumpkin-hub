@@ -144,4 +144,25 @@ describe("PluginHeader", () => {
     const copyButtons = screen.getAllByRole("button", { name: /COPY/i });
     expect(copyButtons.length).toBeGreaterThanOrEqual(2);
   });
+
+  it("closes install panel when X button is clicked", async () => {
+    const user = userEvent.setup();
+    render(<PluginHeader plugin={mockPlugin} />);
+
+    await user.click(screen.getByRole("button", { name: /Quick Install/i }));
+    expect(screen.getByText(/Install via Pumpkin CLI/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Close install panel/i }));
+    // Re-opening works, confirming the state was toggled back
+    await user.click(screen.getByRole("button", { name: /Quick Install/i }));
+    expect(screen.getByText(/Install via Pumpkin CLI/i)).toBeInTheDocument();
+  });
+
+  it("shows formatted date for plugins updated more than 30 days ago", () => {
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 60);
+    const plugin = { ...mockPlugin, updated_at: oldDate.toISOString() };
+    render(<PluginHeader plugin={plugin} />);
+    expect(screen.getByText(/Updated/)).toBeInTheDocument();
+  });
 });
