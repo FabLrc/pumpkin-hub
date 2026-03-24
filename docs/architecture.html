@@ -741,12 +741,25 @@
       </table>
 
       <h3>Object Key Structure</h3>
-      <p>Files are stored with the following canonical key pattern:</p>
-      <pre><code>plugins/{plugin_slug}/{version}/{platform}/{file_name}
+      <p>Files are stored with the following canonical key patterns:</p>
+      <pre><code># Plugin binaries
+plugins/{plugin_slug}/{version}/{platform}/{file_name}
+
+# Plugin icons
+plugins/{plugin_slug}/icon/{uuid}.{ext}
+
+# Gallery media
+plugins/{plugin_slug}/media/{media_id}/{file_name}
 
 # Example
 plugins/pumpkin-voice/0.1.2/windows/pumpkin_voice.dll
-plugins/pumpkin-voice/0.1.2/linux/pumpkin_voice.so</code></pre>
+plugins/pumpkin-voice/icon/550e8400-e29b-41d4-a716-446655440000.png
+plugins/pumpkin-voice/media/a1b2c3d4-e5f6-7890-abcd-ef1234567890/screenshot.png</code></pre>
+      <p>
+        Only the <strong>storage key</strong> is persisted in the database
+        (<code>icon_storage_key</code>, <code>storage_key</code>). Browser-reachable URLs
+        are resolved dynamically at query time — never stored.
+      </p>
 
       <!-- ── CI/CD ─────────────────────────────────────────── -->
       <h2 id="ci-cd">CI/CD — GitHub Actions</h2>
