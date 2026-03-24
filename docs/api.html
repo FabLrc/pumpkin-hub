@@ -55,6 +55,7 @@
         <a href="#headers" class="sidebar-sublink">Common Headers</a>
         <a href="#rate-limiting" class="sidebar-sublink">Rate Limiting</a>
         <a href="#health" class="sidebar-sublink">Health Check</a>
+        <a href="#stats" class="sidebar-sublink">Public Statistics</a>
         <a href="#errors" class="sidebar-sublink">Error Handling</a>
         <a href="#cors" class="sidebar-sublink">CORS Policy</a>
         <a href="#auth" class="sidebar-sublink">Authentication</a>
@@ -259,6 +260,37 @@
           <tr><td><code>service</code></td><td>string</td><td>Service name</td></tr>
           <tr><td><code>version</code></td><td>string</td><td>Crate version (from <code>Cargo.toml</code>)</td></tr>
           <tr><td><code>database</code></td><td>string</td><td>Database connectivity: <code>"connected"</code> or <code>"disconnected"</code></td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── Public Stats ──────────────────────────────────── -->
+      <h2 id="stats">Public Statistics</h2>
+
+      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/stats</code></h3>
+
+      <p>
+        Returns aggregate platform statistics. No authentication required.
+        Used by the homepage hero section to display community metrics.
+      </p>
+
+      <h4>Request</h4>
+      <pre><code>curl -X GET http://localhost:8080/api/v1/stats</code></pre>
+
+      <h4>Response <span class="badge badge-green">200 OK</span></h4>
+      <pre><code>{
+  "total_plugins": 42,
+  "total_authors": 15,
+  "total_downloads": 12870
+}</code></pre>
+
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>total_plugins</code></td><td>integer</td><td>Total number of active plugins on the platform</td></tr>
+          <tr><td><code>total_authors</code></td><td>integer</td><td>Total number of users who have published at least one plugin</td></tr>
+          <tr><td><code>total_downloads</code></td><td>integer</td><td>Cumulative download count across all plugins</td></tr>
         </tbody>
       </table>
 
@@ -521,8 +553,8 @@
         </tbody>
       </table>
 
-      <h3><span class="badge badge-blue">GET</span> &nbsp; <code>/api/v1/auth/logout</code></h3>
-      <p>Clears the JWT cookie (<code>pumpkin_hub_token</code>), effectively logging the user out.</p>
+      <h3><span class="badge badge-green">POST</span> &nbsp; <code>/api/v1/auth/logout</code></h3>
+      <p>Clears the JWT cookie (<code>pumpkin_hub_token</code>), effectively logging the user out. Uses POST method to prevent CSRF-based sign-out attacks via external links.</p>
       <h4>Response <span class="badge badge-green">200 OK</span></h4>
       <pre><code>{ "message": "Logged out" }</code></pre>
 
@@ -722,6 +754,7 @@
       "name": "Fast Chunks",
       "short_description": "Optimized chunk loading for Pumpkin MC",
       "downloads_total": 1250,
+      "icon_url": "https://pub-xxx.r2.dev/plugins/fast-chunks/icon.png",
       "author": {
         "username": "rustdev",
         "avatar_url": "https://avatars.githubusercontent.com/u/1"
@@ -820,6 +853,7 @@
   "repository_url": "https://github.com/rustdev/fast-chunks",
   "website_url": "https://fast-chunks.dev",
   "downloads_total": 1250,
+  "icon_url": "https://pub-xxx.r2.dev/plugins/fast-chunks/icon.png",
   "is_active": true,
   "author": {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",

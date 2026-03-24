@@ -211,22 +211,35 @@ cargo fmt --all -- --check
 cargo clippy -- -D warnings
 
 # Tests
-cargo test</code></pre>
+cargo test
+
+# Coverage (LCOV output for SonarQube)
+cargo tarpaulin --out lcov</code></pre>
 
       <h3>Frontend</h3>
-      <pre><code># Linting
+      <pre><code># Linting (zero warnings enforced)
 npm run lint
 
 # Type-checking
 npx tsc --noEmit
 
 # Build
-npm run build</code></pre>
+npm run build
+
+# Tests with coverage (hard gate: lines 80%, functions 80%, branches 75%)
+npm run test:coverage</code></pre>
 
       <div class="callout callout-warn">
         <div class="callout-label">Important</div>
-        CI blocks the merge if any of these checks fail. Run them locally before pushing
-        to save time.
+        CI blocks the merge if any of these checks fail. Coverage thresholds are enforced as
+        hard gates — PRs that drop below the minimums will not pass CI. Run them locally before
+        pushing to save time.
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-label">SonarQube</div>
+        Both frontend and backend coverage reports are uploaded to SonarQube for unified
+        code quality analysis. The combined report runs automatically after both CI stages complete.
       </div>
 
       <!-- ── Add a feature ─────────────────────────────────── -->

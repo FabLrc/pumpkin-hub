@@ -260,6 +260,18 @@ npm run build</code></pre>
           <tr><td><code>S3_SECRET_ACCESS_KEY</code></td><td>Yes</td><td>—</td><td>S3 secret access key</td></tr>
           <tr><td><code>S3_REGION</code></td><td>No</td><td><code>us-east-1</code></td><td>S3 region. MinIO ignores it; use <code>auto</code> for Cloudflare R2</td></tr>
           <tr><td><code>S3_FORCE_PATH_STYLE</code></td><td>No</td><td><code>false</code></td><td>Set to <code>true</code> for MinIO (path-style addressing). Must be <code>false</code> for Cloudflare R2</td></tr>
+          <tr><td><code>S3_USE_DIRECT_URLS</code></td><td>No</td><td><code>false</code></td><td>Serve files via direct public URLs (no presigning). Use for public R2 buckets.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Security &amp; Cookies</h3>
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>COOKIE_SECURE</code></td><td>No</td><td>Auto-detected</td><td>Force <code>Secure</code> flag on auth cookies. Auto-enabled when any <code>ALLOWED_ORIGINS</code> uses HTTPS.</td></tr>
+          <tr><td><code>COOKIE_DOMAIN</code></td><td>No</td><td>—</td><td>Shared cookie domain for cross-subdomain auth (e.g., <code>.pumpkinhub.org</code> for <code>pumpkinhub.org</code> + <code>api.pumpkinhub.org</code>).</td></tr>
         </tbody>
       </table>
 

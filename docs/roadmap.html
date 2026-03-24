@@ -184,7 +184,7 @@
             <li><code>AuthUser</code> middleware extractor for protecting routes (cookie or Bearer header)</li>
             <li>User profile sync from GitHub API on each login (upsert)</li>
             <li><code>GET /auth/me</code> — protected current-user endpoint</li>
-            <li><code>GET /auth/logout</code> — cookie invalidation</li>
+            <li><code>POST /auth/logout</code> — cookie invalidation (POST-only for CSRF protection)</li>
           </ul>
         </div>
 
@@ -589,34 +589,52 @@
         </div>
 
         <div class="timeline-item" id="test-coverage">
-          <div class="timeline-dot next-up"></div>
+          <div class="timeline-dot completed"></div>
           <div class="timeline-header">
             <span class="timeline-title">Test Coverage &amp; Code Quality — 80%+ Target</span>
-            <span class="badge badge-orange">Next Up</span>
+            <span class="badge badge-green">Completed</span>
           </div>
           <ul class="timeline-features">
-            <li><strong>Context:</strong> current global coverage is ~5% (frontend) and partial (backend). CI thresholds have been temporarily set to <code>autoUpdate</code> to unblock the pipeline; this item brings them back to ambitious targets.</li>
-            <li><strong>Frontend — critical paths first:</strong>
-              <ul>
-                <li><code>lib/validation.ts</code> — already at 93%, maintain and extend edge cases</li>
-                <li><code>lib/api.ts</code> — mock <code>fetch</code> and SWR; test every API helper (auth, plugins, versions, search…)</li>
-                <li><code>lib/hooks.ts</code> — test all custom SWR hooks via <code>renderHook</code> with mocked responses</li>
-                <li><code>components/ui</code> — 100% on Badge, Button, PluginCard; add DownloadChart and index re-exports</li>
-                <li><code>components/plugins</code> — PluginForm submit flow, VersionForm validation, BinaryUpload drag-and-drop</li>
-                <li><code>components/reviews</code> — StarRating interaction, ReviewForm, ReviewSection conditional rendering</li>
-                <li><code>app/</code> pages — smoke tests (render without crash) for all routes; full integration tests for auth, dashboard, explorer flows</li>
-              </ul>
-            </li>
-            <li><strong>Backend (Rust):</strong>
-              <ul>
-                <li>Extend unit tests for auth handlers, plugin CRUD edge cases, version yanking, and dependency graph traversal</li>
-                <li>Integration tests: binary upload/download pipeline, search indexing sync, review moderation workflow, admin endpoints</li>
-                <li>Reach ≥ 80% line coverage via <code>cargo-tarpaulin</code></li>
-              </ul>
-            </li>
-            <li><strong>CI Threshold Progression:</strong> restore strict thresholds in <code>vitest.config.ts</code> — 50% milestone first, then 70%, then 80%+ as a hard gate</li>
-            <li><strong>Quality Tooling:</strong> add <code>@testing-library/user-event</code> interaction scenarios, introduce MSW (Mock Service Worker) for API contract testing in frontend, consider property-based testing (<code>fast-check</code>) for validators</li>
-            <li><strong>Goal:</strong> green pipeline with ≥ 80% coverage on all layers — lines, functions, branches, statements</li>
+            <li><strong>Frontend coverage raised from ~5% to 80%+</strong> through progressive milestones (36% → 40% → 45% → 48% → 50% → 53% → 80%+)</li>
+            <li>Comprehensive test suites added: smoke tests for all pages, MSW API contract mocks, component integration tests</li>
+            <li>Covered modules: <code>lib/validation.ts</code>, <code>lib/api.ts</code>, UI components (Badge, Button, PluginCard, PluginIcon), plugin forms, review system, dashboard, profile, media gallery, lightbox, changelog, notifications</li>
+            <li><strong>CI thresholds enforced:</strong> lines 80%, functions 80%, branches 75% — hard gate on every PR</li>
+            <li><strong>Backend coverage</strong> tracked via <code>cargo-tarpaulin</code> with LCOV output</li>
+            <li><strong>SonarQube integration:</strong> combined frontend + backend coverage analysis on every CI run</li>
+            <li><strong>Quality tooling:</strong> MSW (Mock Service Worker) for API contract testing, <code>@testing-library/user-event</code> for interaction scenarios</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot completed"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Security Hardening</span>
+            <span class="badge badge-green">Completed</span>
+          </div>
+          <ul class="timeline-features">
+            <li><strong>Secure cookies:</strong> <code>Secure</code> flag on all auth cookies, auto-detected from <code>ALLOWED_ORIGINS</code> HTTPS scheme or forced via <code>COOKIE_SECURE</code> env var</li>
+            <li><strong>POST-only logout:</strong> <code>POST /auth/logout</code> replaces GET to prevent CSRF-based sign-out attacks</li>
+            <li><strong>HTTP security headers</strong> via Next.js: <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy: strict-origin-when-cross-origin</code>, <code>Permissions-Policy</code> (camera, mic, geo disabled)</li>
+            <li><strong>Cookie domain configuration:</strong> <code>COOKIE_DOMAIN</code> env var enables shared auth across subdomains (e.g., <code>.pumpkinhub.org</code>)</li>
+            <li>Pre-production security audit performed with P0/P1/P2 findings tracked and resolved</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot completed"></div>
+          <div class="timeline-header">
+            <span class="timeline-title">Production Deployment &amp; CI/CD</span>
+            <span class="badge badge-green">Completed</span>
+          </div>
+          <ul class="timeline-features">
+            <li><strong>Production Docker stack:</strong> multi-stage Dockerfiles for API (Alpine-based, static Rust binary) and Frontend (Next.js standalone)</li>
+            <li><strong>Container registry:</strong> pre-built images on GitHub Container Registry (<code>ghcr.io/fablrc/pumpkin-hub-api</code>, <code>ghcr.io/fablrc/pumpkin-hub-frontend</code>)</li>
+            <li><strong>Docker build workflow:</strong> GitHub Actions builds and pushes images on every successful CI run, with Coolify webhook trigger for auto-deployment</li>
+            <li><strong>Health checks:</strong> Docker <code>HEALTHCHECK</code> instructions on frontend and API containers</li>
+            <li><strong>Deployment target:</strong> Hetzner VPS + Coolify (self-hosted PaaS) + Cloudflare R2 for object storage</li>
+            <li><strong>Upload proxy:</strong> Next.js proxy routes (<code>/api/upload/*</code>) for browser binary uploads via internal Docker network, with R2 presign fallback</li>
+            <li><strong>Public statistics API:</strong> <code>GET /api/v1/stats</code> — unauthenticated endpoint returning total plugins, authors, and downloads for the homepage</li>
+            <li><strong>Plugin icons:</strong> icon upload/display on plugin pages with S3 storage and 2-letter initial fallback component</li>
           </ul>
         </div>
 

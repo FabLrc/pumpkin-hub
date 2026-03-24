@@ -230,6 +230,18 @@
         <li>JetBrains Mono font for technical fields</li>
       </ul>
 
+      <h3>PluginIcon</h3>
+      <p>
+        Displays a plugin's icon image or a <strong>2-letter initial fallback</strong> when no icon
+        is set. Used on plugin cards, detail pages, and explorer results.
+      </p>
+      <ul>
+        <li>Accepts <code>icon_url</code> (nullable), <code>name</code>, and <code>size</code> props</li>
+        <li>Fallback: first two letters of the plugin name, uppercased, on a dark background with orange accent border</li>
+        <li>Square aspect ratio, no border-radius (Brutalist style)</li>
+        <li>Icon images stored on S3/R2 via the plugin edit form</li>
+      </ul>
+
       <!-- ── Effects ───────────────────────────────────────── -->
       <h2 id="effects">Visual Effects</h2>
 

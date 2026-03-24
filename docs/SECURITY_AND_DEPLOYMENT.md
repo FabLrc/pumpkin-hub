@@ -146,6 +146,7 @@ MEILISEARCH_KEY=YOUR_MEILISEARCH_MASTER_KEY
 ALLOWED_ORIGINS=https://yourdomain.com,https://api.yourdomain.com
 API_PUBLIC_URL=https://api.yourdomain.com
 COOKIE_SECURE=true
+COOKIE_DOMAIN=.yourdomain.com  # shared cookies across subdomains
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8080
 
@@ -160,6 +161,7 @@ SMTP_FROM_ADDRESS=noreply@yourdomain.com
 **Frontend (Next.js)**:
 ```env
 NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+NEXT_INTERNAL_API_URL=http://api:8080  # Docker internal network for upload proxy
 NODE_ENV=production
 ```
 
@@ -169,20 +171,25 @@ NODE_ENV=production
    - In Coolify, select **Github** and authorize
    - Select the `pumpkin-hub` repository
 
-2. **Configure Build**:
+2. **Configure Services** (pre-built Docker images from GHCR):
    - Backend service:
-     - Source: GitHub repo, branch `main` (or your branch)
-     - Build Command: `cd api && cargo build --release`
-     - Start Command: `cd api && ./target/release/pumpkin-hub-api`
-     - Exposed Port: `8080`
+     - Image: `ghcr.io/fablrc/pumpkin-hub-api:latest`
+     - Exposed Port: `8082:8080` (mapped externally to 8082)
      - Health Check: `http://localhost:8080/api/v1/health`
-   
+     - Notes: Alpine-based static Rust binary, no OpenSSL dependency
+
    - Frontend service:
-     - Source: GitHub repo
-     - Build Command: `cd frontend && npm install && npm run build`
-     - Start Command: `cd frontend && npm run start`
+     - Image: `ghcr.io/fablrc/pumpkin-hub-frontend:latest`
      - Exposed Port: `3000`
-     - Health Check: `http://localhost:3000` (or specific route)
+     - Health Check: Docker HEALTHCHECK built-in (wget-based)
+     - Notes: Next.js standalone build
+
+   Alternatively, deploy using the production compose file:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+
+   > **Note**: Images are automatically built and pushed to GHCR by the `docker.yml` GitHub Actions workflow after every successful CI run. A Coolify webhook triggers auto-deployment.
 
 3. **Configure Domains** (Traefik routing):
    - API: `api.yourdomain.com` → Backend service port 8080

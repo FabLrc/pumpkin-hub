@@ -103,6 +103,7 @@
       <pre><code>pumpkin-hub/
 ├── api/                    # Rust backend (Axum)
 │   ├── Cargo.toml          # Dependencies and metadata
+│   ├── Dockerfile          # Production multi-stage build (Alpine, static binary)
 │   ├── Dockerfile.dev      # Development container
 │   ├── migrations/         # SQLx SQL migrations (up/down)
 │   └── src/
@@ -183,6 +184,7 @@
 │           │   ├── mod.rs      # Route declarations
 │           │   ├── dto.rs      # ChangelogResponse DTO
 │           │   └── handlers.rs # Get, upsert (PUT), delete
+│           ├── stats.rs   # Public stats endpoint (GET /stats)
 │           └── admin/      # Admin moderation module
 │               ├── mod.rs      # Route declarations (role-protected)
 │               ├── dto.rs      # Admin DTOs
@@ -190,9 +192,10 @@
 │
 ├── frontend/               # Next.js frontend
 │   ├── package.json        # NPM dependencies
+│   ├── Dockerfile          # Production multi-stage build (standalone)
 │   ├── Dockerfile.dev      # Development container
 │   ├── .dockerignore       # Docker build context exclusions
-│   ├── next.config.ts      # Next.js configuration (images, remote patterns)
+│   ├── next.config.ts      # Next.js configuration (images, remote patterns, security headers)
 │   ├── tsconfig.json       # TypeScript configuration
 │   ├── eslint.config.mjs   # ESLint flat config
 │   ├── postcss.config.mjs  # PostCSS with @tailwindcss/postcss
@@ -206,7 +209,7 @@
 │   ├── components/
 │   │   ├── layout/         # Navbar (with NotificationBell), Footer, NotificationProvider (Sonner)
 │   │   ├── notifications/  # NotificationBell (dropdown with unread badge)
-│   │   └── ui/             # Badge, Button, PluginCard, FormField, Pagination, DownloadChart
+│   │   └── ui/             # Badge, Button, PluginCard, PluginIcon, FormField, Pagination, DownloadChart
 │   └── app/
 │       ├── layout.tsx      # Root layout (next/font, metadata, NotificationProvider)
 │       ├── globals.css     # Design tokens (@theme inline) &amp; global styles
@@ -242,8 +245,13 @@
 │   └── mockup/             # Design system HTML mockups
 │
 ├── docker-compose.yml      # Dev orchestration (6 services)
+├── docker-compose.prod.yml # Production stack (GHCR images, health checks)
+├── .env.production.example # Production environment variables template
 └── .github/
-    ├── workflows/ci.yml    # CI GitHub Actions pipeline
+    ├── workflows/
+    │   ├── ci.yml          # CI pipeline (lint, test, coverage, SonarQube)
+    │   ├── docker.yml      # Docker image build &amp; push to GHCR
+    │   └── docs.yml        # Documentation deployment to GitHub Pages
     └── instructions/       # Copilot/AI instructions</code></pre>
 
       <!-- ── Backend ───────────────────────────────────────── -->
@@ -329,7 +337,8 @@
 │ avatar_url     │       │ description       │       │ pumpkin_max    │
 │ bio            │       │ license           │       │ downloads      │
 │ password_hash  │       │ downloads_total   │       │ is_yanked      │
-│ email_verified │       │ is_active         │       │ published_at   │
+│ email_verified │       │ icon_url          │       │ published_at   │
+│ is_active      │       │ icon_storage_key  │
 │ is_active      │       └────────────────────┘       └────────────────┘
 │ role       CHK │        │                    │
 │ created_at     │       ┌─────┴──────────────────┤
@@ -523,6 +532,29 @@
         Passwords and keys are default values that must not be used in production.
       </div>
 
+      <h3>Production Stack</h3>
+      <p>
+        The production environment uses <code>docker-compose.prod.yml</code> with pre-built images
+        from GitHub Container Registry (GHCR). Images are built and pushed automatically by the
+        <code>docker.yml</code> GitHub Actions workflow after every successful CI run.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Service</th><th>Image</th><th>Port</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Frontend</td><td><code>ghcr.io/fablrc/pumpkin-hub-frontend</code></td><td>3000</td><td>Next.js standalone, Docker HEALTHCHECK</td></tr>
+          <tr><td>API</td><td><code>ghcr.io/fablrc/pumpkin-hub-api</code></td><td>8082:8080</td><td>Alpine-based static Rust binary, no OpenSSL</td></tr>
+          <tr><td>PostgreSQL</td><td><code>postgres:16</code></td><td>5432</td><td>Health check via <code>pg_isready</code></td></tr>
+          <tr><td>Meilisearch</td><td><code>getmeili/meilisearch:v1.7</code></td><td>7700</td><td>Health check via <code>/health</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        Deployment target: <strong>Hetzner VPS</strong> + <strong>Coolify</strong> (self-hosted PaaS)
+        with Traefik reverse proxy and Let's Encrypt HTTPS. Object storage uses
+        <strong>Cloudflare R2</strong>.
+      </p>
+
       <h3>Persisted Volumes</h3>
       <table>
         <thead>
@@ -572,7 +604,11 @@
       <p>
         Files are uploaded by the API directly — the browser sends the binary to the API via
         <code>multipart/form-data</code>, and the API streams it to the object store over the
-        internal Docker network.
+        internal Docker network. In production, a <strong>Next.js upload proxy</strong>
+        (<code>/api/upload/*</code>) routes browser uploads through the frontend service to the
+        API via the internal Docker network (<code>NEXT_INTERNAL_API_URL=http://api:8080</code>),
+        avoiding CORS issues. If R2 presigning fails, the API falls back to an internal upload
+        endpoint and returns the proxied URL to the client.
       </p>
 
       <pre><code>   Browser                    API (Axum)                  MinIO / S3
@@ -670,6 +706,11 @@
             <td><code>true</code> (required for MinIO)</td>
             <td><code>false</code> (R2 uses virtual-hosted style)</td>
           </tr>
+          <tr>
+            <td><code>S3_USE_DIRECT_URLS</code></td>
+            <td><code>false</code></td>
+            <td><code>true</code> — serve files via direct public URLs (no presigning) when using public R2 buckets</td>
+          </tr>
         </tbody>
       </table>
 
@@ -685,29 +726,61 @@ plugins/pumpkin-voice/0.1.2/linux/pumpkin_voice.so</code></pre>
       <h2 id="ci-cd">CI/CD — GitHub Actions</h2>
 
       <p>
-        The <code>ci.yml</code> workflow runs on every push and pull request targeting the
-        <code>master</code> and <code>develop</code> branches. Two parallel jobs validate
-        the frontend and backend.
+        Three GitHub Actions workflows automate quality, delivery, and documentation:
       </p>
 
-      <h3>Frontend CI</h3>
+      <h3>CI Pipeline (<code>ci.yml</code>)</h3>
+      <p>
+        Runs on every push and pull request targeting <code>master</code> and <code>develop</code>.
+        Three sequential stages: Frontend → Backend → SonarQube.
+      </p>
+
+      <h4>Frontend CI</h4>
       <ol>
-        <li><strong>Lint</strong> — <code>npm run lint</code> (ESLint)</li>
+        <li><strong>Lint</strong> — <code>npm run lint</code> (ESLint, zero warnings)</li>
         <li><strong>Type-check</strong> — <code>npx tsc --noEmit</code></li>
         <li><strong>Build</strong> — <code>npm run build</code></li>
+        <li><strong>Tests &amp; Coverage</strong> — <code>npm run test:coverage</code> (Vitest) — hard gate: lines 80%, functions 80%, branches 75%</li>
       </ol>
 
-      <h3>Backend CI</h3>
+      <h4>Backend CI</h4>
       <ol>
         <li><strong>Formatting</strong> — <code>cargo fmt --all -- --check</code></li>
         <li><strong>Static Analysis</strong> — <code>cargo clippy -- -D warnings</code></li>
-        <li><strong>Tests</strong> — <code>cargo test</code></li>
+        <li><strong>Migrations</strong> — run against PostgreSQL service container</li>
+        <li><strong>Tests &amp; Coverage</strong> — <code>cargo tarpaulin --out lcov</code></li>
       </ol>
+
+      <h4>SonarQube</h4>
+      <p>
+        Runs after both CI stages. Combines frontend (LCOV) and backend (LCOV) coverage reports
+        for unified code quality analysis.
+      </p>
+
+      <h3>Docker Build &amp; Deploy (<code>docker.yml</code>)</h3>
+      <p>
+        Triggered on successful CI completion on <code>master</code>. Builds multi-platform Docker
+        images via Buildx and pushes to <strong>GitHub Container Registry</strong>:
+      </p>
+      <ul>
+        <li><code>ghcr.io/fablrc/pumpkin-hub-frontend:latest</code> (+ commit SHA tag)</li>
+        <li><code>ghcr.io/fablrc/pumpkin-hub-api:latest</code> (+ commit SHA tag)</li>
+      </ul>
+      <p>
+        After pushing, a <strong>Coolify webhook</strong> is triggered to automatically deploy
+        the new images to the production server.
+      </p>
+
+      <h3>Documentation (<code>docs.yml</code>)</h3>
+      <p>
+        Deploys the <code>docs/</code> directory to GitHub Pages when documentation files
+        change on <code>master</code>.
+      </p>
 
       <div class="callout">
         <div class="callout-label">Optimizations</div>
-        NPM cache (<code>package-lock.json</code>) and Rust cache (<code>Swatinem/rust-cache</code>)
-        are enabled to reduce CI build times.
+        NPM cache (<code>package-lock.json</code>), Rust cache (<code>Swatinem/rust-cache</code>),
+        and Docker layer cache (<code>actions/cache</code>) are enabled to reduce CI build times.
       </div>
 
     </main>

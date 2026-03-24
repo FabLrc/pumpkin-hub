@@ -118,8 +118,9 @@
 
       <ol>
         <li>Go to <strong>Add Plugin</strong> and switch to the <strong>From GitHub</strong> tab.</li>
-        <li>Click <strong>"Load my GitHub repositories"</strong> — the picker populates automatically.</li>
-        <li>Select the target repository, fill in the plugin details (name, categories, description), and submit.</li>
+        <li>Click <strong>"Load my GitHub repositories"</strong> — the picker populates automatically. If returning from GitHub OAuth, repositories are auto-loaded without an extra click.</li>
+        <li>Select the target repository — plugin metadata (name, description) is pre-populated from the GitHub repository data.</li>
+        <li>Refine the details (categories, license, icon), and submit.</li>
         <li>The plugin is created and immediately linked to the selected repository.</li>
       </ol>
 
@@ -127,6 +128,14 @@
         <strong>Note:</strong> If the App is not yet installed on any of your repositories,
         the picker displays an empty state with a direct link to the GitHub App installation page.
       </p>
+
+      <div class="callout callout-info">
+        <div class="callout-label">OAuth Flow</div>
+        GitHub OAuth for authentication and GitHub App for repository access use a
+        <strong>consolidated callback handler</strong> at <code>POST /api/v1/auth/github/callback</code>.
+        After signing in via GitHub, the user is automatically redirected back to the plugin
+        creation page with repository data pre-loaded.
+      </div>
 
       <!-- ── Linking ──────────────────────────────────────── -->
       <h2 id="linking">Linking a Repository</h2>
