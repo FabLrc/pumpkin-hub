@@ -5,6 +5,7 @@ import { AlertCircle, ChevronDown } from "lucide-react";
 import type { VersionFormData, FieldError } from "@/lib/validation";
 import { validateVersionForm, VERSION_RULES } from "@/lib/validation";
 import { usePumpkinVersions } from "@/lib/hooks";
+import { Button } from "@/components/ui/Button";
 
 interface VersionFormProps {
   onSubmit: (data: VersionFormData) => Promise<void>;
@@ -166,21 +167,22 @@ export function VersionForm({
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-2">
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting}
-          className="px-5 py-2 bg-accent hover:bg-accent-dark text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Publishing…" : "Publish Version"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="font-mono text-xs border border-border-default text-text-dim hover:text-text-primary px-4 py-2 transition-colors cursor-pointer"
+          className="disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

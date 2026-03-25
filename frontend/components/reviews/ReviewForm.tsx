@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StarRating } from "./StarRating";
+import { Button } from "@/components/ui/Button";
 
 interface ReviewFormProps {
   onSubmit: (data: { rating: number; title: string; body: string }) => Promise<void>;
@@ -106,21 +107,17 @@ export function ReviewForm({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting || rating === 0}
-          className="font-mono text-xs bg-accent hover:bg-accent-dark text-black font-bold px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Submitting..." : submitLabel}
-        </button>
+        </Button>
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="font-mono text-xs border border-border-default text-text-muted hover:text-text-primary px-4 py-2 transition-colors cursor-pointer"
-          >
+          <Button type="button" variant="ghost" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         )}
       </div>
     </form>

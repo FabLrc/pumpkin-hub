@@ -7,6 +7,7 @@ import { useCategories } from "@/lib/hooks";
 import type { PluginFormData, FieldError } from "@/lib/validation";
 import { validatePluginForm, PLUGIN_RULES } from "@/lib/validation";
 import type { CategoryResponse } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
 
 interface PluginFormProps {
   initialData?: PluginFormData;
@@ -214,13 +215,13 @@ export function PluginForm({
 
       {/* Submit */}
       <div className="pt-2">
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full sm:w-auto px-6 py-2.5 bg-accent hover:bg-accent-dark text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full sm:w-auto uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Processing…" : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
