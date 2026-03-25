@@ -88,6 +88,10 @@ export function Navbar() {
               <div ref={menuRef} className="relative">
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onKeyDown={(e) => { if (e.key === "Escape") setIsMenuOpen(false); }}
+                  aria-expanded={isMenuOpen}
+                  aria-haspopup="menu"
+                  aria-label="User menu"
                   className="flex items-center gap-2 px-2 py-1.5 border border-border-default hover:border-border-hover transition-colors cursor-pointer"
                 >
                   {user.avatar_url ? (
@@ -109,7 +113,7 @@ export function Navbar() {
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-bg-elevated border border-border-default z-50">
+                  <div role="menu" className="absolute right-0 top-full mt-1 w-48 bg-bg-elevated border border-border-default z-50">
                     <div className="px-3 py-2 border-b border-border-default">
                       <div className="font-mono text-xs text-text-primary truncate">
                         {user.display_name ?? user.username}
@@ -120,6 +124,7 @@ export function Navbar() {
                     </div>
                     <Link
                       href="/profile"
+                      role="menuitem"
                       onClick={() => setIsMenuOpen(false)}
                       className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors"
                     >
@@ -128,6 +133,7 @@ export function Navbar() {
                     </Link>
                     <Link
                       href="/dashboard"
+                      role="menuitem"
                       onClick={() => setIsMenuOpen(false)}
                       className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors"
                     >
@@ -137,6 +143,7 @@ export function Navbar() {
                     {(user.role === "admin" || user.role === "moderator") && (
                       <Link
                         href="/admin"
+                        role="menuitem"
                         onClick={() => setIsMenuOpen(false)}
                         className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-accent hover:text-accent hover:bg-bg-surface transition-colors"
                       >
@@ -147,6 +154,7 @@ export function Navbar() {
                     <div className="border-t border-border-default">
                       <button
                         onClick={handleLogout}
+                        role="menuitem"
                         className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors cursor-pointer"
                       >
                         <LogOut className="w-3.5 h-3.5" />
