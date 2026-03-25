@@ -14,6 +14,7 @@ import { BinaryList } from "@/components/plugins/BinaryList";
 import { ReviewSection } from "@/components/reviews";
 import { GalleryTab } from "@/components/plugins/GalleryTab";
 import { ChangelogTab } from "@/components/plugins/ChangelogTab";
+import { formatMarkdown } from "@/lib/markdown";
 
 type TabId = "overview" | "versions" | "dependencies" | "gallery" | "changelog" | "reviews";
 
@@ -78,7 +79,7 @@ function OverviewTab({ plugin }: { plugin: PluginResponse }) {
         {/* Render description as pre-formatted content since we don't have
             a markdown parser yet. The md-content class from globals.css
             will style nested elements appropriately. */}
-        <div dangerouslySetInnerHTML={{ __html: formatDescription(plugin.description) }} />
+        <div dangerouslySetInnerHTML={{ __html: formatMarkdown(plugin.description) }} />
       </div>
     );
   }
@@ -90,88 +91,6 @@ function OverviewTab({ plugin }: { plugin: PluginResponse }) {
         {plugin.short_description ?? "No description provided yet. Check back later for documentation and usage guides."}
       </p>
     </div>
-  );
-}
-
-/**
- * Basic text → HTML transformer for plugin descriptions.
- * Converts line-based formatting to styled HTML without external dependencies.
- *
- * Why here instead of a library: YAGNI — a full markdown parser isn't needed
- * until user-generated content grows. This covers headings, lists, code blocks,
- * inline code, and paragraphs.
- */
-function formatDescription(raw: string): string {
-  const lines = raw.split("\n");
-  const htmlParts: string[] = [];
-  let inCodeBlock = false;
-  let codeBuffer: string[] = [];
-
-  for (const line of lines) {
-    // Code block toggle
-    if (line.trim().startsWith("```")) {
-      if (inCodeBlock) {
-        htmlParts.push(`<pre>${escapeHtml(codeBuffer.join("\n"))}</pre>`);
-        codeBuffer = [];
-        inCodeBlock = false;
-      } else {
-        inCodeBlock = true;
-      }
-      continue;
-    }
-
-    if (inCodeBlock) {
-      codeBuffer.push(line);
-      continue;
-    }
-
-    const trimmed = line.trim();
-
-    // Blank line → break accumulation
-    if (trimmed === "") {
-      continue;
-    }
-
-    // Headings
-    if (trimmed.startsWith("### ")) {
-      htmlParts.push(`<h3>${escapeHtml(trimmed.slice(4))}</h3>`);
-      continue;
-    }
-    if (trimmed.startsWith("## ")) {
-      htmlParts.push(`<h2>${escapeHtml(trimmed.slice(3))}</h2>`);
-      continue;
-    }
-
-    // List items
-    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-      htmlParts.push(`<ul><li>${inlineFormat(trimmed.slice(2))}</li></ul>`);
-      continue;
-    }
-
-    // Paragraph
-    htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
-  }
-
-  // Close unclosed code block
-  if (inCodeBlock && codeBuffer.length > 0) {
-    htmlParts.push(`<pre>${escapeHtml(codeBuffer.join("\n"))}</pre>`);
-  }
-
-  return htmlParts.join("\n");
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function inlineFormat(text: string): string {
-  return escapeHtml(text).replace(
-    /`([^`]+)`/g,
-    "<code>$1</code>",
   );
 }
 
