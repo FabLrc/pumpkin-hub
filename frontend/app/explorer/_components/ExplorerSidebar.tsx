@@ -80,7 +80,7 @@ export function ExplorerSidebar({
 
         {/* Sort */}
         <div>
-          <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+          <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
             Sort By
           </div>
           <div className="space-y-1">
@@ -102,7 +102,7 @@ export function ExplorerSidebar({
 
         {/* Category Filter */}
         <div>
-          <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+          <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
             Category
           </div>
           <div className="space-y-1.5">
@@ -155,7 +155,7 @@ export function ExplorerSidebar({
 
         {/* Platform Filter */}
         <div>
-          <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+          <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
             Platform
           </div>
           <div className="space-y-1.5">
@@ -194,7 +194,7 @@ export function ExplorerSidebar({
         {/* Pumpkin Version Filter */}
         {pumpkinVersions && pumpkinVersions.length > 0 && (
           <div>
-            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+            <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
               Pumpkin Version
             </div>
             <div className="space-y-1.5 max-h-48 overflow-y-auto">

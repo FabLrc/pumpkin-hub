@@ -114,7 +114,7 @@ export function BinaryUpload({
 
       {/* Platform selector */}
       <div>
-        <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-2">
+        <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
           Target Platform
         </label>
         <div className="flex gap-2">
@@ -138,7 +138,7 @@ export function BinaryUpload({
 
       {/* File input */}
       <div>
-        <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-2">
+        <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
           Binary File
         </label>
         <div className="relative">

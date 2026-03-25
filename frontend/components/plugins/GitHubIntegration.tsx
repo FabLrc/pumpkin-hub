@@ -131,7 +131,7 @@ function LinkedState({
 
       {/* Badge preview & copy */}
       <div>
-        <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-2">
+        <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-2">
           Badge
         </div>
         <div className="border border-border-default bg-bg-base p-3 flex items-center justify-between gap-3">
@@ -333,7 +333,7 @@ function UnlinkedState({ slug }: { slug: string }) {
       {/* Repository picker */}
       {hasLoaded && repos.length > 0 && (
         <div>
-          <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
+          <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
             Select Repository
           </label>
 
@@ -398,7 +398,7 @@ function UnlinkedState({ slug }: { slug: string }) {
       {selectedRepo && (
         <>
           <div>
-            <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-2">
+            <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
               Sync Features
             </label>
             <div className="grid grid-cols-3 gap-3">

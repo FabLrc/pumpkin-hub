@@ -60,7 +60,7 @@ export function ReviewForm({
 
       {/* Star rating */}
       <div className="space-y-1">
-        <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+        <label className="font-mono text-xs text-text-muted uppercase tracking-widest">
           Rating *
         </label>
         <StarRating value={rating} onChange={setRating} size="lg" />
@@ -70,7 +70,7 @@ export function ReviewForm({
       <div className="space-y-1">
         <label
           htmlFor="review-title"
-          className="font-mono text-[10px] text-text-dim uppercase tracking-widest"
+          className="font-mono text-xs text-text-muted uppercase tracking-widest"
         >
           Title
         </label>
@@ -89,7 +89,7 @@ export function ReviewForm({
       <div className="space-y-1">
         <label
           htmlFor="review-body"
-          className="font-mono text-[10px] text-text-dim uppercase tracking-widest"
+          className="font-mono text-xs text-text-muted uppercase tracking-widest"
         >
           Comment
         </label>

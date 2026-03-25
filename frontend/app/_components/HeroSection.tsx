@@ -120,7 +120,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
               {/* Search suggestions */}
               <div className="border border-t-0 border-border-default bg-bg-elevated/80">
                 <div className="px-5 py-2 flex items-center gap-6">
-                  <span className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+                  <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
                     Popular:
                   </span>
                   <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
             <div className="font-mono text-2xl font-bold text-text-primary">
               {totalPlugins > 0 ? totalPlugins.toLocaleString() : "—"}
             </div>
-            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Plugins
             </div>
           </div>
@@ -176,7 +176,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
             <div className="font-mono text-2xl font-bold text-text-primary">
               {totalAuthors > 0 ? totalAuthors.toLocaleString() : "—"}
             </div>
-            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Authors
             </div>
           </div>
@@ -184,7 +184,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
             <div className="font-mono text-2xl font-bold text-text-primary">
               {totalDownloads > 0 ? totalDownloads.toLocaleString() : "—"}
             </div>
-            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Downloads
             </div>
           </div>
@@ -192,7 +192,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
             <div className="font-mono text-2xl font-bold text-text-primary">
               0.38s
             </div>
-            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Avg Build
             </div>
           </div>

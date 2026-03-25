@@ -120,7 +120,7 @@ export default function AuthPage() {
           {/* Divider */}
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 border-t border-border-default" />
-            <span className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
               or
             </span>
             <div className="flex-1 border-t border-border-default" />
@@ -139,7 +139,7 @@ export default function AuthPage() {
               <div>
                 <label
                   htmlFor="username"
-                  className="block font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1"
+                  className="block font-mono text-xs text-text-muted uppercase tracking-widest mb-1"
                 >
                   Username
                 </label>
@@ -160,7 +160,7 @@ export default function AuthPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1"
+                className="block font-mono text-xs text-text-muted uppercase tracking-widest mb-1"
               >
                 Email
               </label>
@@ -179,7 +179,7 @@ export default function AuthPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1"
+                className="block font-mono text-xs text-text-muted uppercase tracking-widest mb-1"
               >
                 Password
               </label>

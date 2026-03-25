@@ -208,18 +208,18 @@ function FormField({
       <div className="flex items-baseline justify-between mb-1">
         <label
           htmlFor={htmlFor}
-          className="block font-mono text-[10px] text-text-dim uppercase tracking-widest"
+          className="block font-mono text-xs text-text-muted uppercase tracking-widest"
         >
           {label}
           {required && <span className="text-accent ml-1">*</span>}
         </label>
         {hint && (
-          <span className="font-mono text-[10px] text-text-dim">{hint}</span>
+          <span className="font-mono text-xs text-text-muted">{hint}</span>
         )}
       </div>
       {children}
       {error && (
-        <p className="mt-1 font-mono text-[10px] text-error flex items-center gap-1">
+        <p className="mt-1 font-mono text-xs text-error flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
           {error}
         </p>

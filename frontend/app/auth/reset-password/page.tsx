@@ -84,7 +84,7 @@ function ResetPasswordForm() {
       <div>
         <label
           htmlFor="new-password"
-          className="block font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1"
+          className="block font-mono text-xs text-text-muted uppercase tracking-widest mb-1"
         >
           New Password
         </label>
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
       <div>
         <label
           htmlFor="confirm-password"
-          className="block font-mono text-[10px] text-text-dim uppercase tracking-widest mb-1"
+          className="block font-mono text-xs text-text-muted uppercase tracking-widest mb-1"
         >
           Confirm Password
         </label>

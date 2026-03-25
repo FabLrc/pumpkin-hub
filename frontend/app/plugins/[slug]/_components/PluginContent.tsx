@@ -305,19 +305,19 @@ function VersionsTab({ plugin }: { plugin: PluginResponse }) {
       <div className="border border-border-default">
         {/* Header */}
         <div className="grid grid-cols-12 gap-4 px-4 py-2.5 border-b border-border-default bg-bg-elevated/50">
-          <div className="col-span-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+          <div className="col-span-3 font-mono text-xs text-text-muted uppercase tracking-widest">
             Version
           </div>
-          <div className="col-span-3 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+          <div className="col-span-3 font-mono text-xs text-text-muted uppercase tracking-widest">
             Pumpkin Compat
           </div>
-          <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+          <div className="col-span-2 font-mono text-xs text-text-muted uppercase tracking-widest">
             Published
           </div>
-          <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+          <div className="col-span-2 font-mono text-xs text-text-muted uppercase tracking-widest">
             Downloads
           </div>
-          <div className="col-span-2 font-mono text-[10px] text-text-dim uppercase tracking-widest">
+          <div className="col-span-2 font-mono text-xs text-text-muted uppercase tracking-widest">
             Status
           </div>
         </div>
@@ -450,7 +450,7 @@ function VersionRow({
       {/* Expanded panel — binaries */}
       {isExpanded && (
         <div className="px-4 pb-4 pt-1 bg-bg-elevated/20 border-t border-border-default">
-          <h4 className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
+          <h4 className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
             Binaries
           </h4>
 
@@ -892,7 +892,7 @@ function DependencyTree({
 
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-6 overflow-x-auto">
-      <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
+      <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
         Dependency Tree
       </div>
       <TreeNode node={rootNode} nodeMap={nodeMap} depth={0} visited={new Set()} />
