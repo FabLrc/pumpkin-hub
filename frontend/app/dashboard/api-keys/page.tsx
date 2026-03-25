@@ -20,6 +20,7 @@ import { Navbar, Footer } from "@/components/layout";
 import { useCurrentUser, useApiKeys } from "@/lib/hooks";
 import { createApiKey, revokeApiKey, getApiKeysPath } from "@/lib/api";
 import type { CreateApiKeyResponse, ApiKeySummary } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
 
 const AVAILABLE_PERMISSIONS = [
   { value: "publish", label: "Publish", description: "Create and update plugins" },
@@ -310,20 +311,20 @@ function CreateApiKeyForm({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="submit"
           disabled={submitting}
-          className="px-4 py-2 bg-accent text-black font-mono text-xs font-bold uppercase tracking-wider hover:bg-accent-light transition-colors disabled:opacity-50"
+          className="font-bold uppercase tracking-wider disabled:opacity-50"
         >
           {submitting ? "Creating..." : "Create Key"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={onCancel}
-          className="px-4 py-2 border border-border-default font-mono text-xs text-text-dim hover:text-text-primary hover:border-border-hover transition-colors cursor-pointer"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

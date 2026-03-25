@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, RotateCcw, Undo2 } from "lucide-react";
 import { yankVersion } from "@/lib/api";
 import type { VersionResponse } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
 
 interface VersionManagerProps {
   slug: string;
@@ -93,13 +94,14 @@ export function VersionManager({
             </p>
 
             <div className="flex items-center gap-3 justify-end">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => setShowConfirm(false)}
                 disabled={isLoading}
-                className="font-mono text-xs border border-border-default text-text-dim hover:text-text-primary px-4 py-2 transition-colors cursor-pointer"
               >
                 Cancel
-              </button>
+              </Button>
               <button
                 onClick={handleToggleYank}
                 disabled={isLoading}
