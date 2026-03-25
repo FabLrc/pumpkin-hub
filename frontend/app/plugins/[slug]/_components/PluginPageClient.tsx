@@ -41,7 +41,7 @@ export function PluginPageClient({ slug }: PluginPageClientProps) {
       <div className="max-w-7xl mx-auto px-6">
         <PluginHeader plugin={plugin} />
 
-        <div className="flex gap-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8 py-8">
           <PluginContent
             plugin={plugin}
             activeTab={activeTab}
@@ -70,14 +70,14 @@ function LoadingSkeleton() {
           </div>
         </div>
       </div>
-      <div className="flex gap-8">
+      <div className="flex flex-col lg:flex-row gap-8">
         <div className="flex-1 space-y-4">
           <div className="h-4 bg-bg-surface w-32" />
           <div className="h-3 bg-bg-surface w-full" />
           <div className="h-3 bg-bg-surface w-3/4" />
           <div className="h-3 bg-bg-surface w-5/6" />
         </div>
-        <div className="w-72 space-y-4">
+        <div className="w-full lg:w-72 space-y-4">
           <div className="h-48 bg-bg-surface border border-border-default" />
           <div className="h-32 bg-bg-surface border border-border-default" />
         </div>

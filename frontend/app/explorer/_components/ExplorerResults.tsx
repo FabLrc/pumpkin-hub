@@ -1,6 +1,6 @@
 "use client";
 
-import { List, LayoutGrid } from "lucide-react";
+import { List, LayoutGrid, SlidersHorizontal } from "lucide-react";
 import type { SearchHit, SearchSortOption } from "@/lib/types";
 import type { ViewMode } from "@/lib/useViewPreference";
 import { SearchHitCard } from "./SearchHitCard";
@@ -17,6 +17,8 @@ interface ExplorerResultsProps {
   sortBy: SearchSortOption;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  onMobileFilterOpen?: () => void;
+  activeFilterCount?: number;
 }
 
 export function ExplorerResults({
@@ -29,6 +31,8 @@ export function ExplorerResults({
   onPageChange,
   viewMode,
   onViewModeChange,
+  onMobileFilterOpen,
+  activeFilterCount = 0,
 }: ExplorerResultsProps) {
   const totalHits = estimatedTotal ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalHits / perPage));
@@ -38,6 +42,21 @@ export function ExplorerResults({
       {/* Results header bar */}
       <div className="border-b border-border-default px-6 py-3 flex items-center justify-between sticky top-14 bg-bg-base/95 backdrop-blur-sm z-40">
         <div className="flex items-center gap-4">
+          {/* Mobile filter button */}
+          {onMobileFilterOpen && (
+            <button
+              onClick={onMobileFilterOpen}
+              className="md:hidden flex items-center gap-1.5 font-mono text-xs border border-border-default hover:border-border-hover text-text-dim px-2.5 py-1.5 transition-colors cursor-pointer"
+            >
+              <SlidersHorizontal className="w-[13px] h-[13px]" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="bg-accent text-black font-bold text-[10px] px-1.5 py-0.5 leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          )}
           <span className="font-mono text-xs text-text-dim">
             Showing{" "}
             <span className="text-text-primary">

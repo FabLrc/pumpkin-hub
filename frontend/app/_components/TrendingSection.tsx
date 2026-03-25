@@ -43,12 +43,12 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
         </div>
 
         {/* Bento Grid — featured (5 cols × 2 rows) + 2×2 small cards (7 cols × 2 rows) */}
-        <div className="grid grid-cols-12 grid-rows-2 gap-4 min-h-[520px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-2 gap-4 lg:min-h-[520px]">
           {/* Featured card */}
           {featured ? (
             <Link
               href={`/plugins/${featured.slug}`}
-              className="bento-card col-span-5 row-span-2 border border-border-default bg-bg-elevated p-6 flex flex-col relative overflow-hidden group cursor-pointer"
+              className="bento-card col-span-1 lg:col-span-5 lg:row-span-2 border border-border-default bg-bg-elevated p-6 flex flex-col relative overflow-hidden group cursor-pointer"
             >
               <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/5 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
@@ -102,8 +102,8 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
             <FeaturedPlaceholder />
           )}
 
-          {/* Small cards — nested 2×2 grid in the remaining 7 columns */}
-          <div className="col-span-7 row-span-2 grid grid-cols-2 grid-rows-2 gap-4">
+          {/* Small cards — 2×2 grid */}
+          <div className="col-span-1 lg:col-span-7 lg:row-span-2 grid grid-cols-2 grid-rows-2 gap-4">
             {rest.length > 0
               ? rest.map((plugin) => (
                   <SmallBentoCard key={plugin.id} plugin={plugin} />
@@ -157,7 +157,7 @@ function SmallBentoCard({ plugin }: { plugin: PluginSummary }) {
 
 function FeaturedPlaceholder() {
   return (
-    <div className="bento-card col-span-5 row-span-2 border border-border-default bg-bg-elevated p-6 flex flex-col items-center justify-center">
+    <div className="bento-card col-span-1 lg:col-span-5 lg:row-span-2 border border-border-default bg-bg-elevated p-6 flex flex-col items-center justify-center">
       <span className="font-mono text-xs text-text-dim">
         No plugins yet — be the first to publish!
       </span>

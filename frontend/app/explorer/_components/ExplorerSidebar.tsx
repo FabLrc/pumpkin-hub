@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { getCategoryIcon } from "@/lib/category-icons";
 import type { SearchSortOption, FacetDistribution } from "@/lib/types";
 import { useCategories, usePumpkinVersions } from "@/lib/hooks";
@@ -33,6 +34,8 @@ interface ExplorerSidebarProps {
   onPumpkinVersionChange: (version: string | undefined) => void;
   facets: FacetDistribution | null;
   onClearFilters: () => void;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export function ExplorerSidebar({
@@ -48,6 +51,8 @@ export function ExplorerSidebar({
   onPumpkinVersionChange,
   facets,
   onClearFilters,
+  isMobileOpen = false,
+  onMobileClose,
 }: ExplorerSidebarProps) {
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: pumpkinVersions } = usePumpkinVersions();
@@ -55,9 +60,21 @@ export function ExplorerSidebar({
   const hasActiveFilters =
     activeCategory || activePlatform || activePumpkinVersion;
 
-  return (
-    <aside className="w-64 flex-shrink-0 border-r border-border-default min-h-screen hidden md:block">
-      <div className="sidebar-scroll p-5 space-y-8">
+  const sidebarContent = (
+    <div className="p-5 space-y-8">
+      {/* Mobile close button */}
+      {onMobileClose && (
+        <div className="flex items-center justify-between md:hidden">
+          <span className="font-mono text-xs text-text-dim uppercase tracking-widest">Filters</span>
+          <button
+            onClick={onMobileClose}
+            className="p-1 border border-border-default hover:border-border-hover transition-colors cursor-pointer"
+            aria-label="Close filters"
+          >
+            <X className="w-4 h-4 text-text-dim" />
+          </button>
+        </div>
+      )}
         {/* Search with autocomplete */}
         <SearchBar value={searchQuery} onChange={onSearchChange} />
 
@@ -224,6 +241,32 @@ export function ExplorerSidebar({
           </button>
         )}
       </div>
-    </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="w-64 flex-shrink-0 border-r border-border-default min-h-screen hidden md:block">
+        <div className="sidebar-scroll">
+          {sidebarContent}
+        </div>
+      </aside>
+
+      {/* Mobile filter drawer */}
+      {isMobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 z-40 md:hidden"
+            onClick={onMobileClose}
+            aria-hidden="true"
+          />
+          {/* Drawer */}
+          <aside className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-bg-base border-r border-border-default z-50 md:hidden overflow-y-auto">
+            {sidebarContent}
+          </aside>
+        </>
+      )}
+    </>
   );
 }

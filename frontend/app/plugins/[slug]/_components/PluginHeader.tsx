@@ -76,7 +76,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
       </nav>
 
       {/* Plugin header row */}
-      <div className="flex items-start justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-5">
           {/* Icon */}
           <PluginIcon
@@ -125,7 +125,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-wrap sm:flex-shrink-0">
           <PluginActions plugin={plugin} />
           {plugin.repository_url && (
             <a

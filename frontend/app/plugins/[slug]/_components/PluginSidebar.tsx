@@ -38,8 +38,8 @@ export function PluginSidebar({ plugin }: PluginSidebarProps) {
   const latestVersion = versionsData?.versions.find((v) => !v.is_yanked)?.version ?? null;
 
   return (
-    <aside className="w-72 flex-shrink-0 hidden lg:block">
-      <div className="sidebar-sticky space-y-6">
+    <aside className="w-full lg:w-72 flex-shrink-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 lg:gap-0 lg:space-y-6 lg:sidebar-sticky">
         <StatisticsCard slug={plugin.slug} downloads={plugin.downloads_total} />
         <GitHubBadgeCard slug={plugin.slug} />
         <LinksCard plugin={plugin} />

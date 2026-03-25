@@ -7,6 +7,7 @@ import type { SearchSortOption } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
 import { ExplorerSidebar } from "./ExplorerSidebar";
 import { ExplorerResults } from "./ExplorerResults";
+import { useEffect } from "react";
 
 const DEFAULT_PER_PAGE = 10;
 
@@ -17,6 +18,7 @@ export function ExplorerContent() {
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("q") ?? "",
   );
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const page = Number(searchParams.get("page") ?? "1");
   const sortBy = (searchParams.get("sort") as SearchSortOption) ?? "downloads";
@@ -24,7 +26,15 @@ export function ExplorerContent() {
   const platform = searchParams.get("platform") ?? undefined;
   const pumpkinVersion = searchParams.get("pumpkin_version") ?? undefined;
 
+  const activeFilterCount = [category, platform, pumpkinVersion].filter(Boolean).length;
+
   const { viewMode, setViewMode } = useViewPreference();
+
+  // Prevent body scroll when mobile filter drawer is open
+  useEffect(() => {
+    document.body.style.overflow = isMobileFilterOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobileFilterOpen]);
 
   const { data, isLoading } = useSearch({
     q: searchQuery || undefined,
@@ -100,6 +110,8 @@ export function ExplorerContent() {
         onPumpkinVersionChange={handlePumpkinVersionChange}
         facets={data?.facet_distribution ?? null}
         onClearFilters={handleClearFilters}
+        isMobileOpen={isMobileFilterOpen}
+        onMobileClose={() => setIsMobileFilterOpen(false)}
       />
       <ExplorerResults
         hits={data?.hits ?? []}
@@ -113,6 +125,8 @@ export function ExplorerContent() {
         sortBy={sortBy}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        onMobileFilterOpen={() => setIsMobileFilterOpen(true)}
+        activeFilterCount={activeFilterCount}
       />
     </div>
   );
