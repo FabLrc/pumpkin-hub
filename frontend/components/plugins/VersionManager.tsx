@@ -51,8 +51,17 @@ export function VersionManager({
       </button>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="version-manager-title"
+            className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
+          >
             <div className="flex items-center gap-3 mb-4">
               <div
                 className={`w-10 h-10 border flex items-center justify-center ${
@@ -68,7 +77,7 @@ export function VersionManager({
                 )}
               </div>
               <div>
-                <h2 className="font-raleway font-bold text-lg text-text-primary">
+                <h2 id="version-manager-title" className="font-raleway font-bold text-lg text-text-primary">
                   {nextYanked ? "Yank Version" : "Restore Version"}
                 </h2>
                 <p className="font-mono text-xs text-text-muted">
