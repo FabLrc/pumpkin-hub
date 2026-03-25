@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
-const staticSecurityHeaders = [
+// Les NEXT_PUBLIC_* sont inlinés au moment de `next build`, pas à runtime.
+// Ces valeurs sont fournies via ARG Docker (voir Dockerfile et docker.yml).
+// Le wildcard r2.cloudflarestorage.com couvre les URLs présignées quelle
+// que soit la valeur de NEXT_PUBLIC_S3_PRESIGNED_ORIGIN.
+const imgSrcOrigins = [
+  "https://avatars.githubusercontent.com",
+  "https://github.com",
+  "https://*.r2.cloudflarestorage.com",
+  process.env.NEXT_PUBLIC_S3_PUBLIC_URL,
+  process.env.NEXT_PUBLIC_S3_PRESIGNED_ORIGIN,
+]
+  .filter(Boolean)
+  .join(" ");
+
+const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -13,72 +27,46 @@ const staticSecurityHeaders = [
     key: "Strict-Transport-Security",
     value: "max-age=31536000; includeSubDomains",
   },
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      `img-src 'self' data: blob: ${imgSrcOrigins}`,
+      "font-src 'self' data:",
+      "connect-src 'self' https: wss:",
+      "media-src 'none'",
+      "object-src 'none'",
+      "frame-src 'none'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  },
 ];
 
-function buildSecurityHeaders() {
-  const imgSrcExtra = [
-    process.env.NEXT_PUBLIC_S3_PUBLIC_URL,
-    process.env.NEXT_PUBLIC_S3_PRESIGNED_ORIGIN,
-  ]
-    .filter(Boolean)
-    .map((u) => ` ${u}`)
-    .join("");
+const remotePatterns: NonNullable<
+  NextConfig["images"]
+>["remotePatterns"] = [
+  { protocol: "https", hostname: "avatars.githubusercontent.com" },
+  { protocol: "https", hostname: "github.com" },
+  // Couvre les URLs présignées R2 (bucket.accountid.r2.cloudflarestorage.com)
+  { protocol: "https", hostname: "**.r2.cloudflarestorage.com" },
+];
 
-  return [
-    ...staticSecurityHeaders,
-    {
-      key: "Content-Security-Policy",
-      value: [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-        "style-src 'self' 'unsafe-inline'",
-        `img-src 'self' data: blob: https://avatars.githubusercontent.com https://github.com${imgSrcExtra}`,
-        "font-src 'self' data:",
-        "connect-src 'self' https: wss:",
-        "media-src 'none'",
-        "object-src 'none'",
-        "frame-src 'none'",
-        "frame-ancestors 'none'",
-        "base-uri 'self'",
-        "form-action 'self'",
-      ].join("; "),
-    },
-  ];
-}
-
-function buildRemotePatterns() {
-  const patterns: { protocol: "https" | "http"; hostname: string }[] = [
-    { protocol: "https", hostname: "avatars.githubusercontent.com" },
-    { protocol: "https", hostname: "github.com" },
-  ];
-
-  const publicUrl = process.env.NEXT_PUBLIC_S3_PUBLIC_URL;
-  if (publicUrl) {
-    try {
-      const { protocol, hostname } = new URL(publicUrl);
-      patterns.push({
-        protocol: protocol.replace(":", "") as "https" | "http",
-        hostname,
-      });
-    } catch {
-      // invalid URL, skip
-    }
+if (process.env.NEXT_PUBLIC_S3_PUBLIC_URL) {
+  try {
+    const { protocol, hostname } = new URL(
+      process.env.NEXT_PUBLIC_S3_PUBLIC_URL
+    );
+    remotePatterns.push({
+      protocol: protocol.replace(":", "") as "https" | "http",
+      hostname,
+    });
+  } catch {
+    // URL invalide, ignorée
   }
-
-  const presignedOrigin = process.env.NEXT_PUBLIC_S3_PRESIGNED_ORIGIN;
-  if (presignedOrigin) {
-    try {
-      const { protocol, hostname } = new URL(presignedOrigin);
-      patterns.push({
-        protocol: protocol.replace(":", "") as "https" | "http",
-        hostname,
-      });
-    } catch {
-      // invalid URL, skip
-    }
-  }
-
-  return patterns;
 }
 
 const nextConfig: NextConfig = {
@@ -92,11 +80,9 @@ const nextConfig: NextConfig = {
     return config;
   },
   images: {
-    remotePatterns: buildRemotePatterns(),
+    remotePatterns,
   },
-  headers: async () => [
-    { source: "/(.*)", headers: buildSecurityHeaders() },
-  ],
+  headers: async () => [{ source: "/(.*)", headers: securityHeaders }],
 };
 
 export default nextConfig;

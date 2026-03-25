@@ -12,9 +12,17 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# NEXT_PUBLIC_API_URL est inliné au build (pas disponible à runtime)
+# Les NEXT_PUBLIC_* sont inlinés au build (pas disponibles à runtime).
+# Passer ces valeurs via --build-arg dans docker.yml / docker buildx.
 ARG NEXT_PUBLIC_API_URL=https://api.pumpkinhub.org
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+ARG NEXT_PUBLIC_S3_PUBLIC_URL=https://r2.pumpkinhub.org
+ENV NEXT_PUBLIC_S3_PUBLIC_URL=$NEXT_PUBLIC_S3_PUBLIC_URL
+
+ARG NEXT_PUBLIC_S3_PRESIGNED_ORIGIN
+ENV NEXT_PUBLIC_S3_PRESIGNED_ORIGIN=$NEXT_PUBLIC_S3_PRESIGNED_ORIGIN
+
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 

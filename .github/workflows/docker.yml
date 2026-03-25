@@ -47,6 +47,7 @@ jobs:
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
           build-args: |
             NEXT_PUBLIC_API_URL=https://api.pumpkinhub.org
+            NEXT_PUBLIC_S3_PUBLIC_URL=https://r2.pumpkinhub.org
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
