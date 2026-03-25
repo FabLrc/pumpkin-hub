@@ -71,7 +71,7 @@ export function ExplorerResults({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] text-text-dim">View:</span>
+          <span className="font-mono text-xs text-text-muted hidden sm:inline">View:</span>
           <button
             onClick={() => onViewModeChange("list")}
             className={`p-1.5 border transition-colors cursor-pointer ${

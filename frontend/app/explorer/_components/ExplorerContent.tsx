@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSearch } from "@/lib/hooks";
 import type { SearchSortOption } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
 import { ExplorerSidebar } from "./ExplorerSidebar";
 import { ExplorerResults } from "./ExplorerResults";
-import { useEffect } from "react";
+import { SlidersHorizontal } from "lucide-react";
 
 const DEFAULT_PER_PAGE = 10;
 
@@ -27,6 +27,7 @@ export function ExplorerContent() {
   const pumpkinVersion = searchParams.get("pumpkin_version") ?? undefined;
 
   const activeFilterCount = [category, platform, pumpkinVersion].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
 
   const { viewMode, setViewMode } = useViewPreference();
 
@@ -128,6 +129,15 @@ export function ExplorerContent() {
         onMobileFilterOpen={() => setIsMobileFilterOpen(true)}
         activeFilterCount={activeFilterCount}
       />
+      {/* Mobile filter FAB — fixed bottom-right on small screens */}
+      <button
+        onClick={() => setIsMobileFilterOpen(true)}
+        className="md:hidden fixed bottom-6 right-6 z-30 flex items-center gap-2 px-4 py-3 bg-accent text-black font-mono text-xs font-bold uppercase tracking-widest shadow-lg cursor-pointer"
+        aria-label="Open filters"
+      >
+        <SlidersHorizontal className="w-4 h-4" />
+        Filters{hasActiveFilters && " •"}
+      </button>
     </div>
   );
 }
