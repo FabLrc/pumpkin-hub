@@ -55,6 +55,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_me_in_production}
       - JWT_TTL_SECONDS=86400
       - API_PUBLIC_URL=http://localhost:8080
+      - ALLOWED_ORIGINS=http://localhost:3000
+      - COOKIE_DOMAIN=
       - S3_ENDPOINT_URL=http://minio-dev:9000
       - S3_PUBLIC_URL=http://localhost:9000
       - S3_BUCKET=pumpkin-hub-binaries
@@ -64,6 +66,7 @@ services:
       - S3_FORCE_PATH_STYLE=true
       - S3_USE_DIRECT_URLS=true
       - BINARY_MAX_SIZE_BYTES=104857600
+      - RUST_LOG=pumpkin_hub_api=debug,tower_http=debug
       # GitHub App (optional — set in .env to enable GitHub publishing)
       - GITHUB_APP_ID=${GITHUB_APP_ID:-}
       - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY:-}

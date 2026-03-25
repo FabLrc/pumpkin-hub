@@ -13,11 +13,13 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Les NEXT_PUBLIC_* sont inlinés au build (pas disponibles à runtime).
-# Passer ces valeurs via --build-arg dans docker.yml / docker buildx.
-ARG NEXT_PUBLIC_API_URL=https://api.pumpkinhub.org
+# Ces valeurs DOIVENT être passées via --build-arg depuis docker.yml.
+# Pas de valeur par défaut : un secret manquant produit une CSP vide (visible
+# dans la console du navigateur) plutôt qu'une URL hardcodée silencieuse.
+ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-ARG NEXT_PUBLIC_S3_PUBLIC_URL=https://r2.pumpkinhub.org
+ARG NEXT_PUBLIC_S3_PUBLIC_URL
 ENV NEXT_PUBLIC_S3_PUBLIC_URL=$NEXT_PUBLIC_S3_PUBLIC_URL
 
 ARG NEXT_PUBLIC_S3_PRESIGNED_ORIGIN

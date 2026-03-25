@@ -1,6 +1,10 @@
-# PRODUCTION — Stack Pumpkin Hub
-# Déployer via Coolify (Docker Compose Stack) ou `docker compose -f docker-compose.prod.yml up -d`
-# Copier .env.production.example → .env et renseigner toutes les valeurs avant de lancer.
+# PRODUCTION — Docker Compose Stack pour Coolify.
+# Toutes les variables ${...} sont configurées dans l'interface Coolify.
+# Aucune URL de domaine n'est codée en dur dans ce fichier.
+#
+# Adresses réseau Docker internes (http://api:8080, http://meilisearch:7700)
+# et constantes techniques (SERVER_HOST, S3_REGION, etc.) peuvent rester
+# hardcodées car elles ne dépendent pas de l'environnement de déploiement.
 
 services:
 
@@ -12,13 +16,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Utilisé par le proxy upload côté serveur (réseau Docker interne)
+      # Réseau Docker interne — valeur fixe, toujours correcte dans ce compose
       - NEXT_INTERNAL_API_URL=http://api:8080
-      # URL publique directe (pub-xxx.r2.dev ou domaine custom) — utilisée si S3_USE_DIRECT_URLS=true
-      - NEXT_PUBLIC_S3_PUBLIC_URL=${R2_PUBLIC_URL}
-      # Origine des URLs présignées R2 (format virtual-hosted : bucket.account.r2.cloudflarestorage.com)
-      # Doit correspondre à l'origine des URLs retournées par l'API quand S3_USE_DIRECT_URLS=false
-      - NEXT_PUBLIC_S3_PRESIGNED_ORIGIN=https://${R2_BUCKET:-pumpkin-hub-binaries}.${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+      # CONTRAT CSP : ces trois variables doivent avoir les mêmes valeurs que
+      # les secrets GitHub utilisés comme build-args dans docker.yml.
+      # Toute divergence provoque des violations CSP en production.
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_S3_PUBLIC_URL=${NEXT_PUBLIC_S3_PUBLIC_URL}
+      - NEXT_PUBLIC_S3_PRESIGNED_ORIGIN=${NEXT_PUBLIC_S3_PRESIGNED_ORIGIN}
     depends_on:
       api:
         condition: service_healthy
@@ -31,69 +36,64 @@ services:
     ports:
       - "8082:8080"
     environment:
-      # Serveur
+      # -- Serveur --
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
-      - API_PUBLIC_URL=https://api.pumpkinhub.org
-      - ALLOWED_ORIGINS=https://pumpkinhub.org
+      - API_PUBLIC_URL=${API_PUBLIC_URL}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - COOKIE_SECURE=true
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN}
 
-      # Base de données
+      # -- Base de données --
       - DATABASE_URL=postgres://${POSTGRES_USER:-pumpkin}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pumpkin_hub}
 
-      # Meilisearch
+      # -- Meilisearch (réseau Docker interne) --
       - MEILISEARCH_URL=http://meilisearch:7700
       - MEILISEARCH_KEY=${MEILISEARCH_KEY}
 
-      # JWT
+      # -- Auth --
       - JWT_SECRET=${JWT_SECRET}
       - JWT_TTL_SECONDS=86400
 
-      # OAuth — GitHub (obligatoire)
+      # -- OAuth GitHub (obligatoire) --
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - GITHUB_REDIRECT_URI=https://api.pumpkinhub.org/api/v1/auth/github/callback
+      # API_PUBLIC_URL ne doit pas avoir de slash final
+      - GITHUB_REDIRECT_URI=${API_PUBLIC_URL}/api/v1/auth/github/callback
 
-      # OAuth — Discord (optionnel)
+      # -- OAuth Discord (optionnel) --
       - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-}
       - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
-      - DISCORD_REDIRECT_URI=https://api.pumpkinhub.org/api/v1/auth/discord/callback
+      - DISCORD_REDIRECT_URI=${API_PUBLIC_URL}/api/v1/auth/discord/callback
 
-      # OAuth — Google (optionnel, décommenter quand prêt)
-      # - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      # - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      # - GOOGLE_REDIRECT_URI=https://api.pumpkinhub.org/api/v1/auth/google/callback
+      # -- OAuth Google (optionnel) --
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=${API_PUBLIC_URL}/api/v1/auth/google/callback
 
-      # Cloudflare R2 (S3-compatible)
+      # -- Cloudflare R2 (S3-compatible) --
       - S3_ENDPOINT_URL=https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
       - S3_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
       - S3_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
       - S3_BUCKET=${R2_BUCKET:-pumpkin-hub-binaries}
       - S3_REGION=auto
       - S3_FORCE_PATH_STYLE=false
-      # URL du domaine custom Cloudflare connecté au bucket R2 (ex: https://assets.pumpkinhub.org)
-      - S3_PUBLIC_URL=${R2_PUBLIC_URL}
-      # true = URLs directes via domaine custom (recommandé, CDN Cloudflare activé)
-      # false = URLs présignées via l'API S3 R2 (si pas de domaine custom)
-      - S3_USE_DIRECT_URLS=${S3_USE_DIRECT_URLS:-true}
+      # Réutilise la même variable que le frontend (même domaine R2)
+      - S3_PUBLIC_URL=${NEXT_PUBLIC_S3_PUBLIC_URL}
+      - S3_USE_DIRECT_URLS=true
 
-      # Email — Resend (SMTP)
-      - SMTP_HOST=smtp.resend.com
-      - SMTP_PORT=465
-      - SMTP_USERNAME=resend
-      - SMTP_PASSWORD=${RESEND_API_KEY}
-      - SMTP_FROM_ADDRESS=${SMTP_FROM_ADDRESS:-noreply@pumpkinhub.org}
+      # -- SMTP --
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM_ADDRESS=${SMTP_FROM_ADDRESS}
 
-      # Cookies — domaine partagé entre frontend (pumpkinhub.org) et API (api.pumpkinhub.org)
-      - COOKIE_DOMAIN=.pumpkinhub.org
-
-      # Limites
+      # -- Limites et logs --
       - BINARY_MAX_SIZE_BYTES=104857600
-
-      # Logs
       - RUST_LOG=pumpkin_hub_api=info,tower_http=info
 
-      # GitHub App (optionnel)
+      # -- GitHub App (optionnel) --
       - GITHUB_APP_ID=${GITHUB_APP_ID:-}
       - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY:-}
       - GITHUB_APP_WEBHOOK_SECRET=${GITHUB_APP_WEBHOOK_SECRET:-}

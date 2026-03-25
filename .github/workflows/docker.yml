@@ -45,9 +45,14 @@ jobs:
           tags: |
             ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          # IMPORTANT : les noms de ces secrets doivent correspondre EXACTEMENT
+          # aux noms des variables d'environnement configurées dans Coolify.
+          # C'est ce qui garantit que les valeurs inlinées au build (bundle JS)
+          # correspondent aux valeurs injectées à runtime (CSP + remotePatterns).
           build-args: |
-            NEXT_PUBLIC_API_URL=https://api.pumpkinhub.org
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_S3_PUBLIC_URL=${{ secrets.NEXT_PUBLIC_S3_PUBLIC_URL }}
+            NEXT_PUBLIC_S3_PRESIGNED_ORIGIN=${{ secrets.NEXT_PUBLIC_S3_PRESIGNED_ORIGIN }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
