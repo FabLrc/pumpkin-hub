@@ -44,7 +44,7 @@ export function Navbar() {
             </span>
           </Link>
           <span className="font-mono text-xs text-text-muted border border-border-default px-2 py-0.5">
-            v0.4.0-beta
+            beta
           </span>
         </div>
 
