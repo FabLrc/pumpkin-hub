@@ -124,7 +124,6 @@ export function Navbar() {
                     </div>
                     <Link
                       href="/profile"
-                      role="menuitem"
                       onClick={() => setIsMenuOpen(false)}
                       className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors"
                     >
@@ -133,7 +132,6 @@ export function Navbar() {
                     </Link>
                     <Link
                       href="/dashboard"
-                      role="menuitem"
                       onClick={() => setIsMenuOpen(false)}
                       className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors"
                     >
@@ -143,7 +141,6 @@ export function Navbar() {
                     {(user.role === "admin" || user.role === "moderator") && (
                       <Link
                         href="/admin"
-                        role="menuitem"
                         onClick={() => setIsMenuOpen(false)}
                         className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-accent hover:text-accent hover:bg-bg-surface transition-colors"
                       >
@@ -154,7 +151,6 @@ export function Navbar() {
                     <div className="border-t border-border-default">
                       <button
                         onClick={handleLogout}
-                        role="menuitem"
                         className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors cursor-pointer"
                       >
                         <LogOut className="w-3.5 h-3.5" />

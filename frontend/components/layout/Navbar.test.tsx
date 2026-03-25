@@ -51,7 +51,7 @@ describe("Navbar", () => {
     render(<Navbar />);
 
     expect(screen.getByText("NotificationBell")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /fab/i }));
+    await user.click(screen.getByRole("button", { name: /user menu/i }));
 
     expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/dashboard");
