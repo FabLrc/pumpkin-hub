@@ -195,7 +195,7 @@ export default function DashboardPage() {
               <Trophy className="w-4 h-4 text-accent" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-mono text-[10px] text-text-dim uppercase tracking-wider">
+              <span className="font-mono text-xs text-text-muted uppercase tracking-wider">
                 Top Performer
               </span>
               <div className="flex items-baseline gap-2">
@@ -251,7 +251,7 @@ export default function DashboardPage() {
             <span className="font-raleway font-bold text-sm text-text-primary group-hover:text-accent transition-colors">
               API Keys
             </span>
-            <span className="block font-mono text-[10px] text-text-dim">
+            <span className="block font-mono text-xs text-text-muted">
               Manage keys for CI/CD integration and programmatic access
             </span>
           </div>
@@ -277,7 +277,7 @@ export default function DashboardPage() {
             <span className="font-raleway font-bold text-sm text-text-primary group-hover:text-accent transition-colors">
               Notifications
             </span>
-            <span className="block font-mono text-[10px] text-text-dim">
+            <span className="block font-mono text-xs text-text-muted">
               Download milestones and plugin activity updates
             </span>
           </div>
@@ -290,7 +290,7 @@ export default function DashboardPage() {
             <h2 className="font-raleway font-bold text-sm text-text-primary tracking-wide uppercase">
               Your Plugins
             </h2>
-            <span className="font-mono text-[10px] text-text-dim">
+            <span className="font-mono text-xs text-text-muted">
               {plugins.length} {plugins.length === 1 ? "plugin" : "plugins"}
             </span>
           </div>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
 
         {/* Member Info */}
         <div className="mt-4 text-right">
-          <span className="font-mono text-[10px] text-text-dim">
+          <span className="font-mono text-xs text-text-muted">
             Member since {user ? formatDate(user.created_at) : "—"}
           </span>
         </div>
@@ -357,7 +357,7 @@ function KpiCard({
     <div className="border border-border-default bg-bg-elevated p-5">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-accent">{icon}</span>
-        <span className="font-mono text-[10px] text-text-dim uppercase tracking-wider">
+        <span className="font-mono text-xs text-text-muted uppercase tracking-wider">
           {label}
         </span>
       </div>
@@ -367,7 +367,7 @@ function KpiCard({
         </div>
         {trend !== undefined && trend !== 0 && (
           <span
-            className={`inline-flex items-center gap-0.5 font-mono text-[10px] font-bold ${
+            className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold ${
               trend > 0 ? "text-success" : "text-danger"
             }`}
           >
@@ -402,7 +402,7 @@ function PluginRow({ plugin }: { plugin: PluginSummary }) {
         >
           {plugin.name}
         </Link>
-        <div className="font-mono text-[10px] text-text-dim mt-0.5 flex items-center gap-3">
+        <div className="font-mono text-xs text-text-muted mt-0.5 flex items-center gap-3">
           <span>Created {formatDate(plugin.created_at)}</span>
           {plugin.categories.length > 0 && (
             <span>
@@ -417,7 +417,7 @@ function PluginRow({ plugin }: { plugin: PluginSummary }) {
         <div className="font-mono text-sm font-bold text-text-primary">
           {formatDownloads(plugin.downloads_total)}
         </div>
-        <div className="font-mono text-[10px] text-text-dim">downloads</div>
+        <div className="font-mono text-xs text-text-muted">downloads</div>
       </div>
 
       {/* Actions */}

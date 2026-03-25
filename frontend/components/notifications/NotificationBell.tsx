@@ -86,7 +86,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="font-mono text-[10px] text-accent hover:text-accent-light transition-colors cursor-pointer"
+                className="font-mono text-xs text-accent hover:text-accent-light transition-colors cursor-pointer"
               >
                 Mark all read
               </button>
@@ -126,7 +126,7 @@ export function NotificationBell() {
                       {notification.title}
                     </p>
                     {notification.body && (
-                      <p className="font-mono text-[10px] text-text-dim truncate mt-0.5">
+                      <p className="font-mono text-xs text-text-muted truncate mt-0.5">
                         {notification.body}
                       </p>
                     )}
@@ -162,7 +162,7 @@ export function NotificationBell() {
             <Link
               href="/dashboard/notifications"
               onClick={() => setIsOpen(false)}
-              className="flex items-center justify-center px-3 py-2 font-mono text-[10px] text-text-dim hover:text-text-primary transition-colors uppercase tracking-wider"
+              className="flex items-center justify-center px-3 py-2 font-mono text-xs text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider"
             >
               View All Notifications
             </Link>

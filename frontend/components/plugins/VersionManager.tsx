@@ -39,7 +39,7 @@ export function VersionManager({
       <button
         onClick={() => setShowConfirm(true)}
         disabled={isLoading}
-        className={`font-mono text-[10px] px-2 py-1 border transition-colors cursor-pointer flex items-center gap-1 ${
+        className={`font-mono text-xs px-2 py-1 border transition-colors cursor-pointer flex items-center gap-1 ${
           nextYanked
             ? "border-error/30 text-error/70 hover:border-error hover:text-error"
             : "border-green-500/30 text-green-500/70 hover:border-green-500 hover:text-green-500"
@@ -71,7 +71,7 @@ export function VersionManager({
                 <h2 className="font-raleway font-bold text-lg text-text-primary">
                   {nextYanked ? "Yank Version" : "Restore Version"}
                 </h2>
-                <p className="font-mono text-[10px] text-text-dim">
+                <p className="font-mono text-xs text-text-muted">
                   v{version.version}
                 </p>
               </div>

@@ -43,8 +43,8 @@ export function Navbar() {
               Pumpkin Hub
             </span>
           </Link>
-          <span className="font-mono text-[10px] text-text-dim border border-border-default px-2 py-0.5">
-            beta
+          <span className="font-mono text-xs text-text-muted border border-border-default px-2 py-0.5">
+            v0.4.0-beta
           </span>
         </div>
 
@@ -114,7 +114,7 @@ export function Navbar() {
                       <div className="font-mono text-xs text-text-primary truncate">
                         {user.display_name ?? user.username}
                       </div>
-                      <div className="font-mono text-[10px] text-text-dim truncate">
+                      <div className="font-mono text-xs text-text-muted truncate">
                         @{user.username}
                       </div>
                     </div>
