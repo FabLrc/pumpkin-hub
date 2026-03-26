@@ -287,8 +287,8 @@ body::before {
 }
 
 .md-content ul li {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: var(--font-raleway);
+  font-size: 0.875rem;
   color: #a3a3a3;
   padding: 0.25rem 0;
   padding-left: 1.25rem;

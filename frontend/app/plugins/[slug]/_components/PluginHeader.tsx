@@ -27,8 +27,10 @@ function formatTimeAgo(dateString: string): string {
   if (diffInSeconds < 60) return "just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 2592000)
-    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  if (diffInSeconds < 2592000) {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} ${days === 1 ? "day" : "days"} ago`;
+  }
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -53,7 +55,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
         >
           hub
         </Link>
-        <span className="text-border-default">/</span>
+        <span className="text-text-dim">/</span>
         <Link
           href="/explorer"
           className="hover:text-text-subtle transition-colors"
@@ -62,7 +64,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
         </Link>
         {primaryCategory && (
           <>
-            <span className="text-border-default">/</span>
+            <span className="text-text-dim">/</span>
             <Link
               href={`/explorer?category=${primaryCategory.slug}`}
               className="hover:text-text-subtle transition-colors"
@@ -71,7 +73,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
             </Link>
           </>
         )}
-        <span className="text-border-default">/</span>
+        <span className="text-text-dim">/</span>
         <span className="text-text-subtle">{plugin.slug}</span>
       </nav>
 
@@ -91,7 +93,9 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
               <h1 className="font-raleway font-black text-3xl text-text-primary">
                 {plugin.name}
               </h1>
-              <Badge variant="orange">FEATURED</Badge>
+              {new Date().getTime() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000 && (
+                <Badge variant="orange">NEW</Badge>
+              )}
             </div>
             <div className="flex items-center gap-4 font-mono text-xs text-text-dim flex-wrap">
               <span>

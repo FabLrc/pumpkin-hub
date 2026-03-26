@@ -105,7 +105,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
                   onKeyDown={handleSearchKeydown}
                   placeholder={`Search plugins, authors, tags... (${isMac ? "⌘" : "Ctrl+"}K)`}
                   className="search-input flex-1 bg-transparent font-mono text-sm text-text-primary placeholder-text-dim border-0 outline-none"
-                  autoFocus
                   aria-label="Search plugins"
                 />
                 <div className="flex items-center gap-2">
@@ -186,14 +185,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
             </div>
             <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
               Downloads
-            </div>
-          </div>
-          <div className="border-l border-border-default pl-8">
-            <div className="font-mono text-2xl font-bold text-text-primary">
-              0.38s
-            </div>
-            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
-              Avg Build
             </div>
           </div>
         </div>
