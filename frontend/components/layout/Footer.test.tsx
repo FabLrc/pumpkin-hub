@@ -8,7 +8,7 @@ describe("Footer", () => {
 
     expect(screen.getByText(/Pumpkin Hub/i)).toBeInTheDocument();
     const githubLink = screen.getByRole("link", { name: "GitHub" });
-    expect(githubLink).toHaveAttribute("href", "https://github.com/Snowiiii/Pumpkin");
+    expect(githubLink).toHaveAttribute("href", "https://github.com/FabLrc/pumpkin-hub");
     expect(githubLink).toHaveAttribute("target", "_blank");
   });
 });

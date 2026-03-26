@@ -14,7 +14,7 @@ export function Footer() {
         </div>
         <div className="flex items-center gap-6 font-mono text-xs text-text-dim">
           <a
-            href="https://github.com/Snowiiii/Pumpkin"
+            href="https://github.com/FabLrc/pumpkin-hub"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-text-primary transition-colors"
