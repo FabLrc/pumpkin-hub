@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StarRating } from "./StarRating";
+import { Button } from "@/components/ui/Button";
 
 interface ReviewFormProps {
   onSubmit: (data: { rating: number; title: string; body: string }) => Promise<void>;
@@ -60,7 +61,7 @@ export function ReviewForm({
 
       {/* Star rating */}
       <div className="space-y-1">
-        <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+        <label className="font-mono text-xs text-text-muted uppercase tracking-widest">
           Rating *
         </label>
         <StarRating value={rating} onChange={setRating} size="lg" />
@@ -70,7 +71,7 @@ export function ReviewForm({
       <div className="space-y-1">
         <label
           htmlFor="review-title"
-          className="font-mono text-[10px] text-text-dim uppercase tracking-widest"
+          className="font-mono text-xs text-text-muted uppercase tracking-widest"
         >
           Title
         </label>
@@ -89,7 +90,7 @@ export function ReviewForm({
       <div className="space-y-1">
         <label
           htmlFor="review-body"
-          className="font-mono text-[10px] text-text-dim uppercase tracking-widest"
+          className="font-mono text-xs text-text-muted uppercase tracking-widest"
         >
           Comment
         </label>
@@ -106,21 +107,17 @@ export function ReviewForm({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting || rating === 0}
-          className="font-mono text-xs bg-accent hover:bg-accent-dark text-black font-bold px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Submitting..." : submitLabel}
-        </button>
+        </Button>
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="font-mono text-xs border border-border-default text-text-muted hover:text-text-primary px-4 py-2 transition-colors cursor-pointer"
-          >
+          <Button type="button" variant="ghost" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         )}
       </div>
     </form>

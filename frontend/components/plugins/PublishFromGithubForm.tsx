@@ -119,7 +119,7 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* ── Step 1: Load repositories ────────────────────────────────── */}
       <div>
-        <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
+        <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
           Step 1 — Select a GitHub Repository
         </label>
 
@@ -242,12 +242,12 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
       {selectedRepo && (
         <>
           <div className="border-t border-border-default pt-5 space-y-4">
-            <p className="font-mono text-[10px] text-text-dim uppercase tracking-widest">
+            <p className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Step 2 — Plugin Details (auto-filled from GitHub)
             </p>
 
             <div>
-              <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
+              <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
                 Plugin Name
               </label>
               <input
@@ -260,7 +260,7 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
             </div>
 
             <div>
-              <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
+              <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
                 Short Description
               </label>
               <input
@@ -276,7 +276,7 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
             {/* Categories */}
             {categories && categories.length > 0 && (
               <div>
-                <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-1.5">
+                <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
                   Categories{" "}
                   <span className="text-text-dim/60">
                     ({selectedCategoryIds.length}/5)
@@ -310,7 +310,7 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
 
             {/* Sync / publish options */}
             <div>
-              <label className="font-mono text-[10px] text-text-dim uppercase tracking-widest block mb-2">
+              <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
                 GitHub Sync Options
               </label>
               <div className="grid grid-cols-3 gap-3">

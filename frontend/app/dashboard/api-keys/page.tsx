@@ -20,6 +20,7 @@ import { Navbar, Footer } from "@/components/layout";
 import { useCurrentUser, useApiKeys } from "@/lib/hooks";
 import { createApiKey, revokeApiKey, getApiKeysPath } from "@/lib/api";
 import type { CreateApiKeyResponse, ApiKeySummary } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
 
 const AVAILABLE_PERMISSIONS = [
   { value: "publish", label: "Publish", description: "Create and update plugins" },
@@ -125,7 +126,7 @@ export default function ApiKeysPage() {
             <h2 className="font-raleway font-bold text-sm text-text-primary tracking-wide uppercase">
               Active Keys
             </h2>
-            <span className="font-mono text-[10px] text-text-dim">
+            <span className="font-mono text-xs text-text-muted">
               {keys?.length ?? 0} / 10
             </span>
           </div>
@@ -247,7 +248,7 @@ function CreateApiKeyForm({
       <div className="mb-4">
         <label
           htmlFor="key-name"
-          className="block font-mono text-[10px] text-text-dim uppercase tracking-wider mb-2"
+          className="block font-mono text-xs text-text-muted uppercase tracking-wider mb-2"
         >
           Name
         </label>
@@ -264,7 +265,7 @@ function CreateApiKeyForm({
 
       {/* Permissions */}
       <div className="mb-4">
-        <span className="block font-mono text-[10px] text-text-dim uppercase tracking-wider mb-2">
+        <span className="block font-mono text-xs text-text-muted uppercase tracking-wider mb-2">
           Permissions
         </span>
         <div className="flex flex-wrap gap-2">
@@ -290,7 +291,7 @@ function CreateApiKeyForm({
       <div className="mb-6">
         <label
           htmlFor="key-expires"
-          className="block font-mono text-[10px] text-text-dim uppercase tracking-wider mb-2"
+          className="block font-mono text-xs text-text-muted uppercase tracking-wider mb-2"
         >
           Expires
         </label>
@@ -310,20 +311,20 @@ function CreateApiKeyForm({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="submit"
           disabled={submitting}
-          className="px-4 py-2 bg-accent text-black font-mono text-xs font-bold uppercase tracking-wider hover:bg-accent-light transition-colors disabled:opacity-50"
+          className="font-bold uppercase tracking-wider disabled:opacity-50"
         >
           {submitting ? "Creating..." : "Create Key"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={onCancel}
-          className="px-4 py-2 border border-border-default font-mono text-xs text-text-dim hover:text-text-primary hover:border-border-hover transition-colors cursor-pointer"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -426,7 +427,7 @@ function ApiKeyRow({ apiKey }: { apiKey: ApiKeySummary }) {
             )}
           </div>
 
-          <div className="flex items-center gap-3 font-mono text-[10px] text-text-dim">
+          <div className="flex items-center gap-3 font-mono text-xs text-text-muted">
             <code className="px-1.5 py-0.5 bg-bg-surface border border-border-default text-text-subtle">
               {apiKey.key_prefix}...
             </code>
@@ -467,14 +468,14 @@ function ApiKeyRow({ apiKey }: { apiKey: ApiKeySummary }) {
                 type="button"
                 onClick={handleRevoke}
                 disabled={deleting}
-                className="px-3 py-1.5 bg-danger text-white font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-danger/80 transition-colors disabled:opacity-50 cursor-pointer"
+                className="px-3 py-1.5 bg-danger text-white font-mono text-xs font-bold uppercase tracking-wider hover:bg-danger/80 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {deleting ? "..." : "Confirm"}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="px-3 py-1.5 border border-border-default font-mono text-[10px] text-text-dim hover:text-text-primary transition-colors cursor-pointer"
+                className="px-3 py-1.5 border border-border-default font-mono text-xs text-text-dim hover:text-text-primary transition-colors cursor-pointer"
               >
                 Cancel
               </button>

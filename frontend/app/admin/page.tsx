@@ -99,7 +99,7 @@ function StatCard({
     <div className="border border-border-default bg-bg-elevated/30 p-4">
       <div className={`flex items-center gap-2 mb-2 ${accent ?? "text-accent"}`}>
         {icon}
-        <span className="font-mono text-[10px] uppercase tracking-widest text-text-dim">
+        <span className="font-mono text-xs uppercase tracking-widest text-text-muted">
           {label}
         </span>
       </div>
@@ -189,13 +189,13 @@ function PluginsTab() {
                   </span>
                 )}
               </div>
-              <p className="font-mono text-[10px] text-text-dim">
+              <p className="font-mono text-xs text-text-muted">
                 by {plugin.author_username} · {formatNumber(plugin.downloads_total)} downloads
               </p>
             </div>
             <button
               onClick={() => handleTogglePlugin(plugin)}
-              className={`font-mono text-[10px] px-3 py-1.5 border transition-colors ${
+              className={`font-mono text-xs px-3 py-1.5 border transition-colors ${
                 plugin.is_active
                   ? "border-red-500/30 text-red-400 hover:bg-red-500/10"
                   : "border-green-500/30 text-green-400 hover:bg-green-500/10"
@@ -301,7 +301,7 @@ function UsersTab() {
                   </span>
                 )}
               </div>
-              <p className="font-mono text-[10px] text-text-dim">
+              <p className="font-mono text-xs text-text-muted">
                 {user.email ?? "No email"} · {user.plugin_count} plugins · Joined{" "}
                 {formatDate(user.created_at)}
               </p>
@@ -314,7 +314,7 @@ function UsersTab() {
               />
               <button
                 onClick={() => handleToggleUser(user)}
-                className={`font-mono text-[10px] px-3 py-1.5 border transition-colors ${
+                className={`font-mono text-xs px-3 py-1.5 border transition-colors ${
                   user.is_active
                     ? "border-red-500/30 text-red-400 hover:bg-red-500/10"
                     : "border-green-500/30 text-green-400 hover:bg-green-500/10"
@@ -346,7 +346,7 @@ function RoleSelector({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="font-mono text-[10px] px-3 py-1.5 border border-border-default text-text-subtle hover:border-border-hover flex items-center gap-1.5 transition-colors"
+        className="font-mono text-xs px-3 py-1.5 border border-border-default text-text-subtle hover:border-border-hover flex items-center gap-1.5 transition-colors"
       >
         {currentRole}
         <ChevronDown className="w-3 h-3" />
@@ -360,7 +360,7 @@ function RoleSelector({
                 if (role !== currentRole) onChange(role);
                 setIsOpen(false);
               }}
-              className={`block w-full text-left font-mono text-[10px] px-3 py-1.5 hover:bg-bg-surface transition-colors ${
+              className={`block w-full text-left font-mono text-xs px-3 py-1.5 hover:bg-bg-surface transition-colors ${
                 role === currentRole ? "text-accent" : "text-text-subtle"
               }`}
             >
@@ -432,16 +432,16 @@ function AuditLogRow({ log }: { log: AuditLogEntry }) {
         <span className={`font-mono text-xs font-bold ${actionColors[log.action] ?? "text-text-primary"}`}>
           {log.action}
         </span>{" "}
-        <span className="font-mono text-[10px] text-text-dim">
+        <span className="font-mono text-xs text-text-muted">
           on {log.target_type}:{log.target_id.slice(0, 8)}
         </span>
         {log.details && (
-          <span className="font-mono text-[10px] text-text-dim ml-2">
+          <span className="font-mono text-xs text-text-muted ml-2">
             {JSON.stringify(log.details)}
           </span>
         )}
       </div>
-      <span className="font-mono text-[10px] text-text-dim flex-shrink-0">
+      <span className="font-mono text-xs text-text-muted flex-shrink-0">
         {formatDate(log.created_at)}
       </span>
     </div>

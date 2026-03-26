@@ -65,7 +65,7 @@ export function ReviewCard({
               </Link>
               <StarRating value={review.rating} readonly size="sm" />
             </div>
-            <span className="font-mono text-[10px] text-text-dim">
+            <span className="font-mono text-xs text-text-muted">
               {formatTimeAgo(review.created_at)}
               {review.updated_at !== review.created_at && " (edited)"}
             </span>

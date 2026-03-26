@@ -7,6 +7,8 @@ import { useCategories } from "@/lib/hooks";
 import type { PluginFormData, FieldError } from "@/lib/validation";
 import { validatePluginForm, PLUGIN_RULES } from "@/lib/validation";
 import type { CategoryResponse } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
+import { formatMarkdown } from "@/lib/markdown";
 
 interface PluginFormProps {
   initialData?: PluginFormData;
@@ -34,6 +36,7 @@ export function PluginForm({
   const [form, setForm] = useState<PluginFormData>(initialData ?? EMPTY_FORM);
   const [errors, setErrors] = useState<FieldError[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [descPreview, setDescPreview] = useState(false);
   const { data: categories } = useCategories();
 
   const fieldError = useCallback(
@@ -128,23 +131,67 @@ export function PluginForm({
         />
       </FormField>
 
-      {/* Description */}
-      <FormField
-        label="Description"
-        htmlFor="description"
-        error={fieldError("description")}
-        hint="Markdown supported"
-      >
-        <textarea
-          id="description"
-          value={form.description}
-          onChange={(e) => updateField("description", e.target.value)}
-          maxLength={PLUGIN_RULES.DESCRIPTION_MAX_LENGTH}
-          rows={8}
-          className={`${inputClasses(fieldError("description"))} resize-y min-h-[120px]`}
-          placeholder="Detailed description of your plugin — what it does, how to use it, configuration examples…"
-        />
-      </FormField>
+      {/* Description with Edit/Preview toggle */}
+      <div>
+        <div className="flex items-baseline justify-between mb-1">
+          <label
+            htmlFor="description"
+            className="block font-mono text-xs text-text-muted uppercase tracking-widest"
+          >
+            Description
+          </label>
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => setDescPreview(false)}
+              className={`font-mono text-xs px-2.5 py-0.5 border transition-colors cursor-pointer ${
+                !descPreview
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border-default text-text-dim hover:text-text-primary"
+              }`}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => setDescPreview(true)}
+              className={`font-mono text-xs px-2.5 py-0.5 border transition-colors cursor-pointer ${
+                descPreview
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border-default text-text-dim hover:text-text-primary"
+              }`}
+            >
+              Preview
+            </button>
+          </div>
+        </div>
+        {descPreview ? (
+          <div
+            className="md-content w-full px-3 py-2 bg-bg-surface border border-border-default min-h-[120px]"
+            dangerouslySetInnerHTML={{
+              __html: form.description
+                ? formatMarkdown(form.description)
+                : `<p class="text-text-dim">Nothing to preview yet.</p>`,
+            }}
+          />
+        ) : (
+          <textarea
+            id="description"
+            value={form.description}
+            onChange={(e) => updateField("description", e.target.value)}
+            maxLength={PLUGIN_RULES.DESCRIPTION_MAX_LENGTH}
+            rows={8}
+            className={`${inputClasses(fieldError("description"))} resize-y min-h-[120px]`}
+            placeholder="Detailed description of your plugin — what it does, how to use it, configuration examples…"
+          />
+        )}
+        {fieldError("description") && (
+          <p className="mt-1 font-mono text-xs text-error flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            {fieldError("description")}
+          </p>
+        )}
+      </div>
 
       {/* Categories */}
       <FormField
@@ -214,13 +261,13 @@ export function PluginForm({
 
       {/* Submit */}
       <div className="pt-2">
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full sm:w-auto px-6 py-2.5 bg-accent hover:bg-accent-dark text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full sm:w-auto uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Processing…" : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -248,18 +295,18 @@ function FormField({
       <div className="flex items-baseline justify-between mb-1">
         <label
           htmlFor={htmlFor}
-          className="block font-mono text-[10px] text-text-dim uppercase tracking-widest"
+          className="block font-mono text-xs text-text-muted uppercase tracking-widest"
         >
           {label}
           {required && <span className="text-accent ml-1">*</span>}
         </label>
         {hint && (
-          <span className="font-mono text-[10px] text-text-dim">{hint}</span>
+          <span className="font-mono text-xs text-text-muted">{hint}</span>
         )}
       </div>
       {children}
       {error && (
-        <p className="mt-1 font-mono text-[10px] text-error flex items-center gap-1">
+        <p className="mt-1 font-mono text-xs text-error flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
           {error}
         </p>

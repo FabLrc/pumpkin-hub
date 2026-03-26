@@ -63,7 +63,7 @@ function GitHubBadgeCard({ slug }: { slug: string }) {
 
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-5">
-      <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
+      <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
         GitHub
       </div>
       <a
@@ -91,7 +91,7 @@ function StatisticsCard({ slug, downloads }: { slug: string; downloads: number }
 
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-5">
-      <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
+      <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
         Statistics
       </div>
 
@@ -177,7 +177,7 @@ function LinksCard({ plugin }: { plugin: PluginResponse }) {
 
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-5">
-      <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
+      <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
         Links
       </div>
       <div className="space-y-2">
@@ -219,7 +219,7 @@ function DetailsCard({
 
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-5">
-      <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
+      <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
         Details
       </div>
       {latestVersion && (
@@ -261,7 +261,7 @@ function AuthorCard({ plugin }: { plugin: PluginResponse }) {
       href={`/users/${plugin.author.username}`}
       className="block border border-border-default bg-bg-elevated/30 p-5 hover:border-border-hover transition-colors"
     >
-      <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-4">
+      <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
         Author
       </div>
       <div className="flex items-center gap-3">

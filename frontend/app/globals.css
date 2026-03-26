@@ -5,6 +5,7 @@
 @theme inline {
   /* Background */
   --color-bg-base: #0a0a0a;
+  --color-bg-deep: #0d0d0d;
   --color-bg-elevated: #111111;
   --color-bg-surface: #1a1a1a;
 

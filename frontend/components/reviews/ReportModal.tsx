@@ -52,22 +52,23 @@ export function ReportModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
-        }}
-        role="button"
-        tabIndex={-1}
-        aria-label="Close report dialog"
+        aria-hidden="true"
       />
 
       {/* Dialog */}
       <div className="relative bg-bg-surface border border-border-default p-6 w-full max-w-md z-10">
-        <h3 className="font-raleway text-lg font-bold text-text-primary mb-4">
+        <h3 id="report-modal-title" className="font-raleway text-lg font-bold text-text-primary mb-4">
           Report review
         </h3>
 

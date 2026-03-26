@@ -75,113 +75,153 @@ export function ExplorerSidebar({
           </button>
         </div>
       )}
-        {/* Search with autocomplete */}
-        <SearchBar value={searchQuery} onChange={onSearchChange} />
 
-        {/* Sort */}
-        <div>
-          <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
-            Sort By
-          </div>
-          <div className="space-y-1">
-            {SORT_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => onSortChange(option.value)}
-                className={`sort-btn w-full text-left font-mono text-xs px-3 py-2 border transition-colors cursor-pointer ${
-                  sortBy === option.value
-                    ? "active border-accent"
-                    : "border-transparent text-text-dim hover:border-border-default"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+      {/* Search with autocomplete */}
+      <SearchBar value={searchQuery} onChange={onSearchChange} />
+
+      {/* Sort */}
+      <div>
+        <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
+          Sort By
         </div>
-
-        {/* Category Filter */}
-        <div>
-          <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
-            Category
-          </div>
-          <div className="space-y-1.5">
-            {/* All */}
+        <div className="space-y-1">
+          {SORT_OPTIONS.map((option) => (
             <button
-              onClick={() => onCategoryChange(undefined)}
-              className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-                !activeCategory
-                  ? "text-accent border-accent/40 bg-accent/5"
-                  : "text-text-subtle border-border-default hover:border-border-hover"
+              key={option.value}
+              onClick={() => onSortChange(option.value)}
+              className={`sort-btn w-full text-left font-mono text-xs px-3 py-2 border transition-colors cursor-pointer ${
+                sortBy === option.value
+                  ? "active border-accent"
+                  : "border-transparent text-text-dim hover:border-border-default"
               }`}
             >
-              <span>All</span>
+              {option.label}
             </button>
-
-            {categoriesLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-8 bg-bg-surface border border-border-default animate-pulse"
-                />
-              ))
-            ) : (
-              categories?.map((cat: { slug: string; name: string; icon: string | null }) => {
-                const Icon = getCategoryIcon(cat.icon);
-                const count = facets?.categories[cat.slug];
-                return (
-                  <button
-                    key={cat.slug}
-                    onClick={() => onCategoryChange(cat.slug)}
-                    className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-                      activeCategory === cat.slug
-                        ? "text-accent border-accent/40 bg-accent/5"
-                        : "text-text-dim border-border-default hover:border-border-hover"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-[11px] h-[11px]" />
-                      <span>{cat.name}</span>
-                    </div>
-                    {count !== undefined && (
-                      <span className="text-text-dim text-[10px]">{count}</span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
+          ))}
         </div>
+      </div>
 
-        {/* Platform Filter */}
-        <div>
-          <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
-            Platform
-          </div>
-          <div className="space-y-1.5">
-            <button
-              onClick={() => onPlatformChange(undefined)}
-              className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-                !activePlatform
-                  ? "text-accent border-accent/40 bg-accent/5"
-                  : "text-text-subtle border-border-default hover:border-border-hover"
-              }`}
-            >
-              <span>All</span>
-            </button>
-            {PLATFORMS.map((platform) => {
-              const count = facets?.platforms[platform];
+      {/* Category Filter */}
+      <div>
+        <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
+          Category
+        </div>
+        <div className="space-y-1.5">
+          {/* All */}
+          <button
+            onClick={() => onCategoryChange(undefined)}
+            className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+              !activeCategory
+                ? "text-accent border-accent/40 bg-accent/5"
+                : "text-text-subtle border-border-default hover:border-border-hover"
+            }`}
+          >
+            <span>All</span>
+          </button>
+
+          {categoriesLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-8 bg-bg-surface border border-border-default animate-pulse"
+              />
+            ))
+          ) : (
+            categories?.map((cat: { slug: string; name: string; icon: string | null }) => {
+              const Icon = getCategoryIcon(cat.icon);
+              const count = facets?.categories[cat.slug];
               return (
                 <button
-                  key={platform}
-                  onClick={() => onPlatformChange(platform)}
-                  className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer capitalize ${
-                    activePlatform === platform
+                  key={cat.slug}
+                  onClick={() => onCategoryChange(cat.slug)}
+                  className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+                    activeCategory === cat.slug
                       ? "text-accent border-accent/40 bg-accent/5"
                       : "text-text-dim border-border-default hover:border-border-hover"
                   }`}
                 >
-                  <span>{platform}</span>
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-[11px] h-[11px]" />
+                    <span>{cat.name}</span>
+                  </div>
+                  {count !== undefined && (
+                    <span className="text-text-dim text-[10px]">{count}</span>
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Platform Filter */}
+      <div>
+        <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
+          Platform
+        </div>
+        <div className="space-y-1.5">
+          <button
+            onClick={() => onPlatformChange(undefined)}
+            className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+              !activePlatform
+                ? "text-accent border-accent/40 bg-accent/5"
+                : "text-text-subtle border-border-default hover:border-border-hover"
+            }`}
+          >
+            <span>All</span>
+          </button>
+          {PLATFORMS.map((platform) => {
+            const count = facets?.platforms[platform];
+            return (
+              <button
+                key={platform}
+                onClick={() => onPlatformChange(platform)}
+                className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer capitalize ${
+                  activePlatform === platform
+                    ? "text-accent border-accent/40 bg-accent/5"
+                    : "text-text-dim border-border-default hover:border-border-hover"
+                }`}
+              >
+                <span>{platform}</span>
+                {count !== undefined && (
+                  <span className="text-text-dim text-[10px]">{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Pumpkin Version Filter */}
+      {pumpkinVersions && pumpkinVersions.length > 0 && (
+        <div>
+          <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
+            Pumpkin Version
+          </div>
+          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            <button
+              onClick={() => onPumpkinVersionChange(undefined)}
+              className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+                !activePumpkinVersion
+                  ? "text-accent border-accent/40 bg-accent/5"
+                  : "text-text-subtle border-border-default hover:border-border-hover"
+              }`}
+            >
+              <span>All</span>
+            </button>
+            {pumpkinVersions.map((ver: { version: string }) => {
+              const count = facets?.pumpkin_versions[ver.version];
+              return (
+                <button
+                  key={ver.version}
+                  onClick={() => onPumpkinVersionChange(ver.version)}
+                  className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
+                    activePumpkinVersion === ver.version
+                      ? "text-accent border-accent/40 bg-accent/5"
+                      : "text-text-dim border-border-default hover:border-border-hover"
+                  }`}
+                >
+                  <span>{ver.version}</span>
                   {count !== undefined && (
                     <span className="text-text-dim text-[10px]">{count}</span>
                   )}
@@ -190,57 +230,18 @@ export function ExplorerSidebar({
             })}
           </div>
         </div>
+      )}
 
-        {/* Pumpkin Version Filter */}
-        {pumpkinVersions && pumpkinVersions.length > 0 && (
-          <div>
-            <div className="font-mono text-[10px] text-text-dim uppercase tracking-widest mb-3">
-              Pumpkin Version
-            </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              <button
-                onClick={() => onPumpkinVersionChange(undefined)}
-                className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-                  !activePumpkinVersion
-                    ? "text-accent border-accent/40 bg-accent/5"
-                    : "text-text-subtle border-border-default hover:border-border-hover"
-                }`}
-              >
-                <span>All</span>
-              </button>
-              {pumpkinVersions.map((ver: { version: string }) => {
-                const count = facets?.pumpkin_versions[ver.version];
-                return (
-                  <button
-                    key={ver.version}
-                    onClick={() => onPumpkinVersionChange(ver.version)}
-                    className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-                      activePumpkinVersion === ver.version
-                        ? "text-accent border-accent/40 bg-accent/5"
-                        : "text-text-dim border-border-default hover:border-border-hover"
-                    }`}
-                  >
-                    <span>{ver.version}</span>
-                    {count !== undefined && (
-                      <span className="text-text-dim text-[10px]">{count}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Clear filters */}
-        {hasActiveFilters && (
-          <button
-            onClick={onClearFilters}
-            className="w-full font-mono text-xs text-text-dim hover:text-accent border border-border-default hover:border-accent/30 px-3 py-2 transition-colors cursor-pointer"
-          >
-            Clear all filters
-          </button>
-        )}
-      </div>
+      {/* Clear filters */}
+      {hasActiveFilters && (
+        <button
+          onClick={onClearFilters}
+          className="w-full font-mono text-xs text-text-dim hover:text-accent border border-border-default hover:border-accent/30 px-3 py-2 transition-colors cursor-pointer"
+        >
+          Clear all filters
+        </button>
+      )}
+    </div>
   );
 
   return (

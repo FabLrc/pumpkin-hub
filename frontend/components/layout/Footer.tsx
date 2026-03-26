@@ -4,7 +4,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 bg-accent flex items-center justify-center">
-            <span className="text-black font-mono font-bold text-[8px]">
+            <span className="text-black font-mono font-bold text-[10px]">
               PH
             </span>
           </div>

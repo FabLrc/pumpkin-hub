@@ -14,7 +14,7 @@ interface BinaryListProps {
 export function BinaryList({ slug, version, binaries }: BinaryListProps) {
   if (binaries.length === 0) {
     return (
-      <p className="font-mono text-[10px] text-text-dim">
+      <p className="font-mono text-xs text-text-muted">
         No binaries uploaded yet.
       </p>
     );
@@ -81,7 +81,7 @@ function BinaryCard({
             <span className="font-bold">{platformLabel(binary.platform)}</span>
             <span className="text-text-dim truncate">{binary.file_name}</span>
           </div>
-          <div className="font-mono text-[10px] text-text-dim flex items-center gap-2 mt-0.5">
+          <div className="font-mono text-xs text-text-muted flex items-center gap-2 mt-0.5">
             <span>{formatFileSize(binary.file_size)}</span>
             <span>·</span>
             <button
@@ -109,7 +109,7 @@ function BinaryCard({
         type="button"
         onClick={handleDownload}
         disabled={isDownloading}
-        className="font-mono text-[10px] border border-accent/50 text-accent hover:bg-accent/10 px-3 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="font-mono text-xs border border-accent/50 text-accent hover:bg-accent/10 px-3 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Download className="w-3 h-3" />
         {isDownloading ? "…" : "Download"}
@@ -155,6 +155,6 @@ function PlatformIcon({ platform }: { platform: string }) {
         </svg>
       );
     default:
-      return <span className="font-mono text-[10px] text-text-dim">?</span>;
+      return <span className="font-mono text-xs text-text-dim">?</span>;
   }
 }

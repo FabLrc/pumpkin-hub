@@ -43,7 +43,7 @@ export function Navbar() {
               Pumpkin Hub
             </span>
           </Link>
-          <span className="font-mono text-[10px] text-text-dim border border-border-default px-2 py-0.5">
+          <span className="font-mono text-xs text-text-muted border border-border-default px-2 py-0.5">
             beta
           </span>
         </div>
@@ -88,6 +88,10 @@ export function Navbar() {
               <div ref={menuRef} className="relative">
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onKeyDown={(e) => { if (e.key === "Escape") setIsMenuOpen(false); }}
+                  aria-expanded={isMenuOpen}
+                  aria-haspopup="menu"
+                  aria-label="User menu"
                   className="flex items-center gap-2 px-2 py-1.5 border border-border-default hover:border-border-hover transition-colors cursor-pointer"
                 >
                   {user.avatar_url ? (
@@ -109,12 +113,12 @@ export function Navbar() {
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-bg-elevated border border-border-default z-50">
+                  <div role="menu" className="absolute right-0 top-full mt-1 w-48 bg-bg-elevated border border-border-default z-50">
                     <div className="px-3 py-2 border-b border-border-default">
                       <div className="font-mono text-xs text-text-primary truncate">
                         {user.display_name ?? user.username}
                       </div>
-                      <div className="font-mono text-[10px] text-text-dim truncate">
+                      <div className="font-mono text-xs text-text-muted truncate">
                         @{user.username}
                       </div>
                     </div>

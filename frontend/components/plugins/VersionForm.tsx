@@ -5,6 +5,7 @@ import { AlertCircle, ChevronDown } from "lucide-react";
 import type { VersionFormData, FieldError } from "@/lib/validation";
 import { validateVersionForm, VERSION_RULES } from "@/lib/validation";
 import { usePumpkinVersions } from "@/lib/hooks";
+import { Button } from "@/components/ui/Button";
 
 interface VersionFormProps {
   onSubmit: (data: VersionFormData) => Promise<void>;
@@ -166,21 +167,22 @@ export function VersionForm({
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-2">
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting}
-          className="px-5 py-2 bg-accent hover:bg-accent-dark text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Publishing…" : "Publish Version"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="font-mono text-xs border border-border-default text-text-dim hover:text-text-primary px-4 py-2 transition-colors cursor-pointer"
+          className="disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -208,18 +210,18 @@ function FormField({
       <div className="flex items-baseline justify-between mb-1">
         <label
           htmlFor={htmlFor}
-          className="block font-mono text-[10px] text-text-dim uppercase tracking-widest"
+          className="block font-mono text-xs text-text-muted uppercase tracking-widest"
         >
           {label}
           {required && <span className="text-accent ml-1">*</span>}
         </label>
         {hint && (
-          <span className="font-mono text-[10px] text-text-dim">{hint}</span>
+          <span className="font-mono text-xs text-text-muted">{hint}</span>
         )}
       </div>
       {children}
       {error && (
-        <p className="mt-1 font-mono text-[10px] text-error flex items-center gap-1">
+        <p className="mt-1 font-mono text-xs text-error flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
           {error}
         </p>

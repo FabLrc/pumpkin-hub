@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, RotateCcw, Undo2 } from "lucide-react";
 import { yankVersion } from "@/lib/api";
 import type { VersionResponse } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
 
 interface VersionManagerProps {
   slug: string;
@@ -39,7 +40,7 @@ export function VersionManager({
       <button
         onClick={() => setShowConfirm(true)}
         disabled={isLoading}
-        className={`font-mono text-[10px] px-2 py-1 border transition-colors cursor-pointer flex items-center gap-1 ${
+        className={`font-mono text-xs px-2 py-1 border transition-colors cursor-pointer flex items-center gap-1 ${
           nextYanked
             ? "border-error/30 text-error/70 hover:border-error hover:text-error"
             : "border-green-500/30 text-green-500/70 hover:border-green-500 hover:text-green-500"
@@ -51,8 +52,17 @@ export function VersionManager({
       </button>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="version-manager-title"
+            className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
+          >
             <div className="flex items-center gap-3 mb-4">
               <div
                 className={`w-10 h-10 border flex items-center justify-center ${
@@ -68,10 +78,10 @@ export function VersionManager({
                 )}
               </div>
               <div>
-                <h2 className="font-raleway font-bold text-lg text-text-primary">
+                <h2 id="version-manager-title" className="font-raleway font-bold text-lg text-text-primary">
                   {nextYanked ? "Yank Version" : "Restore Version"}
                 </h2>
-                <p className="font-mono text-[10px] text-text-dim">
+                <p className="font-mono text-xs text-text-muted">
                   v{version.version}
                 </p>
               </div>
@@ -84,13 +94,14 @@ export function VersionManager({
             </p>
 
             <div className="flex items-center gap-3 justify-end">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => setShowConfirm(false)}
                 disabled={isLoading}
-                className="font-mono text-xs border border-border-default text-text-dim hover:text-text-primary px-4 py-2 transition-colors cursor-pointer"
               >
                 Cancel
-              </button>
+              </Button>
               <button
                 onClick={handleToggleYank}
                 disabled={isLoading}
