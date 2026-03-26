@@ -78,9 +78,15 @@ describe("PluginHeader", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("renders FEATURED badge", () => {
+  it("does not render badge for plugin older than 7 days", () => {
     render(<PluginHeader plugin={mockPlugin} />);
-    expect(screen.getByText("FEATURED")).toBeInTheDocument();
+    expect(screen.queryByTestId("badge")).not.toBeInTheDocument();
+  });
+
+  it("renders NEW badge for recently published plugin", () => {
+    const recentPlugin = { ...mockPlugin, created_at: new Date().toISOString() };
+    render(<PluginHeader plugin={recentPlugin} />);
+    expect(screen.getByText("NEW")).toBeInTheDocument();
   });
 
   it("renders breadcrumb with category link", () => {
