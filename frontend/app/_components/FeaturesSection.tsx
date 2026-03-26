@@ -18,33 +18,28 @@ export function FeaturesSection() {
               <Zap className="text-accent w-[18px] h-[18px]" />
             </div>
             <h3 className="font-raleway font-black text-xl text-text-primary mb-3">
-              Zero-Cost Abstractions
+              Native Performance
             </h3>
             <p className="font-raleway text-sm text-text-dim leading-relaxed mb-6">
-              Every plugin in this registry is compiled to native machine code.
-              No JVM warmup, no bytecode interpretation — just blazing-fast
-              execution from first tick.
+              Plugins compile to native binaries (.dll / .so / .dylib) and run
+              directly inside Pumpkin MC — a high-performance Minecraft server
+              written in Rust. No JVM, no interpreter, no overhead.
             </p>
             <div className="space-y-2 border-t border-border-default pt-6">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-text-dim">
-                  Tick time (avg)
-                </span>
-                <span className="font-mono text-xs text-text-primary">
-                  0.8ms
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-text-dim">
-                  vs Paper MC
-                </span>
-                <span className="font-mono text-xs text-success">
-                  12x faster
-                </span>
-              </div>
-              <div className="w-full bg-bg-surface h-1 mt-3">
-                <div className="bg-accent h-1 w-11/12" />
-              </div>
+              {[
+                { label: "Plugin format", value: ".dll / .so / .dylib" },
+                { label: "Server runtime", value: "Rust / Tokio" },
+                { label: "API backend", value: "Axum 0.8 async" },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="font-mono text-xs text-text-dim">
+                    {label}
+                  </span>
+                  <span className="font-mono text-xs text-text-primary">
+                    {value}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -57,55 +52,49 @@ export function FeaturesSection() {
               Binary Verification
             </h3>
             <p className="font-raleway text-sm text-text-dim leading-relaxed mb-6">
-              Every release is SHA-256 hashed and stored immutably. Our
-              automated pipeline scans for unsafe blocks and memory
-              vulnerabilities before a plugin is ever published.
+              Every published release is SHA-256 hashed. Download the checksum
+              alongside any binary and verify integrity before deploying to your
+              server.
             </p>
             <div className="border border-border-default bg-bg-elevated p-3 mt-auto">
               <div className="font-mono text-[10px] text-text-dim mb-2">
-                # Verify a download
+                # Checksum displayed on every release
               </div>
-              <div className="font-mono text-[11px] text-text-muted">
-                <span className="text-accent select-none">$ </span>pumpkin
-                verify
+              <div className="font-mono text-[11px] text-text-muted break-all">
+                <span className="text-text-dim">sha256: </span>
+                <span className="text-text-primary">a3f8c2…d94e1b</span>
                 <br />
-                <span className="text-text-dim">
-                  &nbsp;&nbsp;--plugin guard@2.1.3
-                </span>
-                <br />
-                <span className="text-success">
-                  &nbsp;&nbsp;✓ SHA-256 match
-                </span>
+                <span className="text-success">&nbsp;&nbsp;✓ integrity guaranteed</span>
               </div>
             </div>
           </div>
 
-          {/* Pillar 3: Compatibility */}
+          {/* Pillar 3: Cross-Platform */}
           <div className="p-8">
             <div className="w-10 h-10 bg-bg-elevated border border-border-default flex items-center justify-center mb-6">
               <Cpu className="text-accent w-[18px] h-[18px]" />
             </div>
             <h3 className="font-raleway font-black text-xl text-text-primary mb-3">
-              Cross-Architecture
+              Cross-Platform
             </h3>
             <p className="font-raleway text-sm text-text-dim leading-relaxed mb-6">
-              Rust&apos;s compile targets mean plugins ship for x86_64, aarch64,
-              and RISC-V. Every plugin page lists supported architectures so you
-              never ship a broken binary.
+              Publish separate binaries for each OS. Every plugin page lists
+              supported platforms so server admins always download the right
+              binary for their environment.
             </p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { arch: "x86_64", status: "✓ Supported", color: "text-success" },
-                { arch: "aarch64", status: "✓ Supported", color: "text-success" },
-                { arch: "RISC-V", status: "~ Experimental", color: "text-warning" },
-                { arch: "WASM", status: "~ Experimental", color: "text-warning" },
-              ].map(({ arch, status, color }) => (
-                <div key={arch} className="border border-border-default p-2 text-center">
+                { label: "Windows", ext: ".dll", color: "text-success" },
+                { label: "Linux", ext: ".so", color: "text-success" },
+                { label: "macOS", ext: ".dylib", color: "text-success" },
+                { label: "GitHub CI", ext: "auto-publish", color: "text-accent" },
+              ].map(({ label, ext, color }) => (
+                <div key={label} className="border border-border-default p-2 text-center">
                   <div className="font-mono text-[10px] text-text-primary mb-0.5">
-                    {arch}
+                    {label}
                   </div>
                   <div className={`font-mono text-[10px] ${color}`}>
-                    {status}
+                    {ext}
                   </div>
                 </div>
               ))}
