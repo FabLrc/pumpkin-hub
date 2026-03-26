@@ -76,7 +76,7 @@ export function FeaturesSection() {
               Cross-Architecture
             </h3>
             <p className="font-raleway text-sm text-text-dim leading-relaxed mb-6">
-              Rust's compile targets mean plugins ship for x86_64, aarch64, and
+              Rust&apos;s compile targets mean plugins ship for x86_64, aarch64, and
               RISC-V. Every plugin page lists supported architectures so you never
               ship a broken binary.
             </p>
