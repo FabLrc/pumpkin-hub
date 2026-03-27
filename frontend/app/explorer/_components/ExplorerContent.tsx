@@ -122,8 +122,6 @@ export function ExplorerContent() {
         currentPage={page}
         perPage={DEFAULT_PER_PAGE}
         onPageChange={handlePageChange}
-        searchQuery={searchQuery}
-        sortBy={sortBy}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onMobileFilterOpen={() => setIsMobileFilterOpen(true)}

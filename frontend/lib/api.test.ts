@@ -59,7 +59,7 @@ class MockXMLHttpRequest {
     this.listeners.set("error", cb);
   }
 
-  send(_body: FormData) {
+  send() {
     this.status = MockXMLHttpRequest.nextStatus;
     this.responseText = MockXMLHttpRequest.nextResponseText;
 
@@ -102,7 +102,6 @@ describe("lib/api", () => {
     expect(api.getNotificationsPath(2, 15, true)).toBe("/notifications?page=2&per_page=15&unread_only=true");
     expect(api.getUnreadCountPath()).toBe("/notifications/unread-count");
 
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
     expect(api.getGithubLoginUrl()).toContain("/api/v1/auth/github");
     expect(api.getOAuthLoginUrl("google")).toContain("/api/v1/auth/google");
     expect(api.getPluginBadgeUrl("my plugin")).toContain("/plugins/my%20plugin/badge.svg");

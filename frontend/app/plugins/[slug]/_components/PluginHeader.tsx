@@ -44,6 +44,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
   const [installOpen, setInstallOpen] = useState(false);
 
   const primaryCategory = plugin.categories[0];
+  const isNew = new Date().getTime() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
 
   return (
     <div className="border-b border-border-default py-6">
@@ -93,9 +94,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
               <h1 className="font-raleway font-black text-3xl text-text-primary">
                 {plugin.name}
               </h1>
-              {Date.now() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000 && (
-                <Badge variant="orange">NEW</Badge>
-              )}
+              {isNew && <Badge variant="orange">NEW</Badge>}
             </div>
             <div className="flex items-center gap-4 font-mono text-xs text-text-dim flex-wrap">
               <span>
