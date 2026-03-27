@@ -1074,20 +1074,7 @@ async fn upsert_oauth_user(
         .map_err(AppError::internal)?;
 
         // Cache the provider avatar locally if it is still an external URL.
-        if let Some(url) = user.avatar_url.clone() {
-            if !url.contains("/api/v1/users/") {
-                if let Some(internal) = cache_oauth_avatar(
-                    &state.db,
-                    &state.config.server.api_public_url,
-                    user.id,
-                    &url,
-                )
-                .await
-                {
-                    user.avatar_url = Some(internal);
-                }
-            }
-        }
+        apply_cached_avatar(&state.db, &state.config.server.api_public_url, &mut user).await;
 
         return Ok(user);
     }
@@ -1130,20 +1117,27 @@ async fn upsert_oauth_user(
     link_provider(&state.db, user.id, provider, provider_id).await?;
 
     // Cache the provider avatar locally for new users.
-    if let Some(url) = user.avatar_url.clone() {
-        if let Some(internal) = cache_oauth_avatar(
-            &state.db,
-            &state.config.server.api_public_url,
-            user.id,
-            &url,
-        )
-        .await
-        {
-            user.avatar_url = Some(internal);
-        }
-    }
+    apply_cached_avatar(&state.db, &state.config.server.api_public_url, &mut user).await;
 
     Ok(user)
+}
+
+/// Caches the provider avatar locally if `user.avatar_url` is an external URL.
+/// Updates `user.avatar_url` to the internal endpoint on success.
+async fn apply_cached_avatar(
+    db: &sqlx::PgPool,
+    api_public_url: &str,
+    user: &mut crate::models::user::User,
+) {
+    let Some(url) = user.avatar_url.clone() else {
+        return;
+    };
+    if url.contains("/api/v1/users/") {
+        return;
+    }
+    if let Some(internal) = cache_oauth_avatar(db, api_public_url, user.id, &url).await {
+        user.avatar_url = Some(internal);
+    }
 }
 
 /// Inserts a row into `auth_providers` linking a user to an OAuth provider.
