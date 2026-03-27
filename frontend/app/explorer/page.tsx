@@ -36,8 +36,8 @@ export default function ExplorerPage() {
             </div>
             <main className="flex-1 p-8">
               <div className="animate-pulse space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-28 bg-bg-surface border border-border-default" />
+                {["sk-1","sk-2","sk-3","sk-4","sk-5"].map((key) => (
+                  <div key={key} className="h-28 bg-bg-surface border border-border-default" />
                 ))}
               </div>
             </main>

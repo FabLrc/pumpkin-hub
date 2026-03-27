@@ -8,9 +8,9 @@ import { usePumpkinVersions } from "@/lib/hooks";
 import { Button } from "@/components/ui/Button";
 
 interface VersionFormProps {
-  onSubmit: (data: VersionFormData) => Promise<void>;
-  isSubmitting: boolean;
-  onCancel: () => void;
+  readonly onSubmit: (data: VersionFormData) => Promise<void>;
+  readonly isSubmitting: boolean;
+  readonly onCancel: () => void;
 }
 
 const EMPTY_FORM: VersionFormData = {
@@ -58,7 +58,7 @@ export function VersionForm({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = message.match(/"error":\s*"([^"]+)"/);
+      const match = /"error":\s*"([^"]+)"/.exec(message);
       setServerError(match ? match[1] : message);
     }
   }
@@ -198,12 +198,12 @@ function FormField({
   required,
   children,
 }: {
-  label: string;
-  htmlFor: string;
-  error: string | null;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
+  readonly label: string;
+  readonly htmlFor: string;
+  readonly error: string | null;
+  readonly hint?: string;
+  readonly required?: boolean;
+  readonly children: React.ReactNode;
 }) {
   return (
     <div>

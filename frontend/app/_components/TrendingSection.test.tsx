@@ -19,7 +19,7 @@ const makePlugin = (overrides: Partial<PluginSummary> = {}): PluginSummary => ({
   license: "MIT",
   downloads_total: 1500,
   categories: [{ id: "c1", name: "Security", slug: "security" }],
-  average_rating: 4.0,
+  average_rating: 4,
   review_count: 10,
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",

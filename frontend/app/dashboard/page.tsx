@@ -157,7 +157,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
-                key={i}
+                key={`skeleton-kpi-${i}`}
                 className="h-28 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}
@@ -222,20 +222,26 @@ export default function DashboardPage() {
             <GranularitySelector value={granularity} onChange={setGranularity} />
           </div>
           <div className="px-6 py-6">
-            {isLoadingStats ? (
-              <div className="h-[160px] bg-bg-surface border border-border-default animate-pulse" />
-            ) : stats?.recent_downloads && stats.recent_downloads.length > 0 ? (
-              <DownloadChart
-                data={stats.recent_downloads}
-                granularity={granularity}
-              />
-            ) : (
-              <div className="h-[160px] flex items-center justify-center">
-                <p className="font-mono text-xs text-text-dim">
-                  No download data yet. Downloads will appear here once users start downloading your plugins.
-                </p>
-              </div>
-            )}
+            {(() => {
+              if (isLoadingStats) {
+                return <div className="h-[160px] bg-bg-surface border border-border-default animate-pulse" />;
+              }
+              if (stats?.recent_downloads && stats.recent_downloads.length > 0) {
+                return (
+                  <DownloadChart
+                    data={stats.recent_downloads}
+                    granularity={granularity}
+                  />
+                );
+              }
+              return (
+                <div className="h-[160px] flex items-center justify-center">
+                  <p className="font-mono text-xs text-text-dim">
+                    No download data yet. Downloads will appear here once users start downloading your plugins.
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -295,39 +301,47 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          {isLoading ? (
-            <div className="p-6 space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-16 bg-bg-surface border border-border-default animate-pulse"
-                />
-              ))}
-            </div>
-          ) : plugins.length === 0 ? (
-            <div className="p-12 text-center">
-              <Package className="w-10 h-10 text-text-dim mx-auto mb-4" />
-              <p className="font-mono text-sm text-text-muted mb-2">
-                No plugins yet
-              </p>
-              <p className="font-mono text-xs text-text-dim mb-6 max-w-sm mx-auto">
-                Share your first creation with the Pumpkin MC community.
-              </p>
-              <Link
-                href="/plugins/new"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-black font-mono text-xs font-bold tracking-wider uppercase hover:bg-accent-light transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Publish Your First Plugin
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-border-default">
-              {plugins.map((plugin) => (
-                <PluginRow key={plugin.id} plugin={plugin} />
-              ))}
-            </div>
-          )}
+          {(() => {
+            if (isLoading) {
+              return (
+                <div className="p-6 space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={`skeleton-plugin-${i}`}
+                      className="h-16 bg-bg-surface border border-border-default animate-pulse"
+                    />
+                  ))}
+                </div>
+              );
+            }
+            if (plugins.length === 0) {
+              return (
+                <div className="p-12 text-center">
+                  <Package className="w-10 h-10 text-text-dim mx-auto mb-4" />
+                  <p className="font-mono text-sm text-text-muted mb-2">
+                    No plugins yet
+                  </p>
+                  <p className="font-mono text-xs text-text-dim mb-6 max-w-sm mx-auto">
+                    Share your first creation with the Pumpkin MC community.
+                  </p>
+                  <Link
+                    href="/plugins/new"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-black font-mono text-xs font-bold tracking-wider uppercase hover:bg-accent-light transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Publish Your First Plugin
+                  </Link>
+                </div>
+              );
+            }
+            return (
+              <div className="divide-y divide-border-default">
+                {plugins.map((plugin) => (
+                  <PluginRow key={plugin.id} plugin={plugin} />
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Member Info */}
@@ -348,10 +362,10 @@ function KpiCard({
   value,
   trend,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  trend?: number;
+  readonly icon: React.ReactNode;
+  readonly label: string;
+  readonly value: string;
+  readonly trend?: number;
 }) {
   return (
     <div className="border border-border-default bg-bg-elevated p-5">
@@ -384,7 +398,7 @@ function KpiCard({
   );
 }
 
-function PluginRow({ plugin }: { plugin: PluginSummary }) {
+function PluginRow({ plugin }: { readonly plugin: PluginSummary }) {
   return (
     <div className="px-6 py-4 flex items-center gap-4">
       {/* Icon */}

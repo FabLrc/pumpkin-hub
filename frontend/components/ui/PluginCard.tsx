@@ -5,8 +5,8 @@ import { Badge } from "./Badge";
 import { PluginIcon } from "./PluginIcon";
 
 interface PluginCardProps {
-  plugin: PluginSummary;
-  featured?: boolean;
+  readonly plugin: PluginSummary;
+  readonly featured?: boolean;
 }
 
 export function formatDownloads(count: number): string {

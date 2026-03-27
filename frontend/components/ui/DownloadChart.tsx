@@ -3,9 +3,9 @@
 import type { DownloadDataPoint, DownloadGranularity } from "@/lib/types";
 
 interface DownloadChartProps {
-  data: DownloadDataPoint[];
-  granularity: DownloadGranularity;
-  height?: number;
+  readonly data: DownloadDataPoint[];
+  readonly granularity: DownloadGranularity;
+  readonly height?: number;
 }
 
 function getChartHeightClass(height: number): string {
@@ -106,8 +106,8 @@ export function DownloadChart({
 }
 
 interface GranularitySelectorProps {
-  value: DownloadGranularity;
-  onChange: (value: DownloadGranularity) => void;
+  readonly value: DownloadGranularity;
+  readonly onChange: (value: DownloadGranularity) => void;
 }
 
 const GRANULARITY_OPTIONS: { value: DownloadGranularity; label: string }[] = [

@@ -15,9 +15,9 @@ import { listMyGithubRepos, publishPluginFromGithub } from "@/lib/api";
 import type { MyGithubRepository } from "@/lib/types";
 
 interface PublishFromGithubFormProps {
-  onSuccess: (pluginSlug: string) => void;
+  readonly onSuccess: (pluginSlug: string) => void;
   /** Auto-trigger repository loading on mount (e.g. after GitHub App installation redirect). */
-  autoLoad?: boolean;
+  readonly autoLoad?: boolean;
 }
 
 export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithubFormProps) {
@@ -73,7 +73,7 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
 
   function handleSelectRepo(repo: MyGithubRepository) {
     setSelectedRepo(repo);
-    setPluginName(repo.name.replace(/-/g, " "));
+    setPluginName(repo.name.replaceAll("-", " "));
     setShortDescription(repo.description ?? "");
   }
 
@@ -119,11 +119,96 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* ── Step 1: Load repositories ────────────────────────────────── */}
       <div>
-        <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
+        <p className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
           Step 1 — Select a GitHub Repository
-        </label>
+        </p>
 
-        {!hasLoaded ? (
+        {hasLoaded ? (
+          repos.length === 0 ? (
+            <div className="border border-border-default p-4 text-center space-y-2">
+              <p className="font-mono text-xs text-text-dim">
+                No repositories found.
+              </p>
+              <p className="font-mono text-[10px] text-text-dim/70">
+                Install the{" "}
+                <a
+                  href="https://github.com/apps/pumpkin-hub-app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline"
+                >
+                  Pumpkin Hub GitHub App
+                </a>{" "}
+                on your GitHub account, then{" "}
+                <button
+                  type="button"
+                  onClick={handleLoadRepos}
+                  className="text-accent hover:underline cursor-pointer"
+                >
+                  retry
+                </button>.
+              </p>
+            </div>
+          ) : (
+            <>
+              {repos.length > 5 && (
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-text-dim/50" />
+                  <input
+                    type="text"
+                    value={repoSearch}
+                    onChange={(e) => setRepoSearch(e.target.value)}
+                    placeholder="Filter repositories..."
+                    className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary pl-8 pr-3 py-2 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
+                  />
+                </div>
+              )}
+
+              <div className="border border-border-default max-h-52 overflow-y-auto">
+                {filteredRepos.length === 0 ? (
+                  <p className="font-mono text-[10px] text-text-dim p-3 text-center">
+                    No repositories match your filter.
+                  </p>
+                ) : (
+                  filteredRepos.map((repo) => (
+                    <button
+                      key={repo.full_name}
+                      type="button"
+                      onClick={() => handleSelectRepo(repo)}
+                      className={`w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 transition-colors cursor-pointer ${
+                        selectedRepo?.full_name === repo.full_name
+                          ? "bg-accent/10 border-l-2 border-l-accent"
+                          : "hover:bg-bg-surface"
+                      }`}
+                    >
+                      <div className="font-mono text-xs text-text-primary font-bold">
+                        {repo.full_name}
+                      </div>
+                      {repo.description && (
+                        <div className="font-mono text-[10px] text-text-dim mt-0.5 truncate">
+                          {repo.description}
+                        </div>
+                      )}
+                      <div className="font-mono text-[10px] text-text-dim/60 mt-0.5">
+                        Branch: {repo.default_branch}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLoadRepos}
+                disabled={isLoadingRepos}
+                className="font-mono text-[10px] text-text-dim hover:text-accent transition-colors mt-1.5 cursor-pointer flex items-center gap-1"
+              >
+                <RefreshCw className={`w-2.5 h-2.5 ${isLoadingRepos ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </>
+          )
+        ) : (
           <>
             <button
               type="button"
@@ -152,89 +237,6 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
               is installed on your GitHub account.
             </p>
           </>
-        ) : repos.length === 0 ? (
-          <div className="border border-border-default p-4 text-center space-y-2">
-            <p className="font-mono text-xs text-text-dim">
-              No repositories found.
-            </p>
-            <p className="font-mono text-[10px] text-text-dim/70">
-              Install the{" "}
-              <a
-                href="https://github.com/apps/pumpkin-hub-app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                Pumpkin Hub GitHub App
-              </a>{" "}
-              on your GitHub account, then{" "}
-              <button
-                type="button"
-                onClick={handleLoadRepos}
-                className="text-accent hover:underline cursor-pointer"
-              >
-                retry
-              </button>.
-            </p>
-          </div>
-        ) : (
-          <>
-            {repos.length > 5 && (
-              <div className="relative mb-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-text-dim/50" />
-                <input
-                  type="text"
-                  value={repoSearch}
-                  onChange={(e) => setRepoSearch(e.target.value)}
-                  placeholder="Filter repositories..."
-                  className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary pl-8 pr-3 py-2 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
-                />
-              </div>
-            )}
-
-            <div className="border border-border-default max-h-52 overflow-y-auto">
-              {filteredRepos.length === 0 ? (
-                <p className="font-mono text-[10px] text-text-dim p-3 text-center">
-                  No repositories match your filter.
-                </p>
-              ) : (
-                filteredRepos.map((repo) => (
-                  <button
-                    key={repo.full_name}
-                    type="button"
-                    onClick={() => handleSelectRepo(repo)}
-                    className={`w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 transition-colors cursor-pointer ${
-                      selectedRepo?.full_name === repo.full_name
-                        ? "bg-accent/10 border-l-2 border-l-accent"
-                        : "hover:bg-bg-surface"
-                    }`}
-                  >
-                    <div className="font-mono text-xs text-text-primary font-bold">
-                      {repo.full_name}
-                    </div>
-                    {repo.description && (
-                      <div className="font-mono text-[10px] text-text-dim mt-0.5 truncate">
-                        {repo.description}
-                      </div>
-                    )}
-                    <div className="font-mono text-[10px] text-text-dim/60 mt-0.5">
-                      Branch: {repo.default_branch}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleLoadRepos}
-              disabled={isLoadingRepos}
-              className="font-mono text-[10px] text-text-dim hover:text-accent transition-colors mt-1.5 cursor-pointer flex items-center gap-1"
-            >
-              <RefreshCw className={`w-2.5 h-2.5 ${isLoadingRepos ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-          </>
         )}
       </div>
 
@@ -247,10 +249,11 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
             </p>
 
             <div>
-              <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
+              <label htmlFor="github-plugin-name" className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
                 Plugin Name
               </label>
               <input
+                id="github-plugin-name"
                 type="text"
                 value={pluginName}
                 onChange={(e) => setPluginName(e.target.value)}
@@ -260,10 +263,11 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
             </div>
 
             <div>
-              <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
+              <label htmlFor="github-short-description" className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
                 Short Description
               </label>
               <input
+                id="github-short-description"
                 type="text"
                 value={shortDescription}
                 onChange={(e) => setShortDescription(e.target.value)}
@@ -276,12 +280,12 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
             {/* Categories */}
             {categories && categories.length > 0 && (
               <div>
-                <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
+                <p className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
                   Categories{" "}
                   <span className="text-text-dim/60">
                     ({selectedCategoryIds.length}/5)
                   </span>
-                </label>
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat) => {
                     const isSelected = selectedCategoryIds.includes(cat.id);
@@ -310,9 +314,9 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
 
             {/* Sync / publish options */}
             <div>
-              <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
+              <p className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
                 GitHub Sync Options
-              </label>
+              </p>
               <div className="grid grid-cols-3 gap-3">
                 <SyncToggle label="Auto-publish" checked={autoPublish} onChange={setAutoPublish} />
                 <SyncToggle label="Sync README" checked={syncReadme} onChange={setSyncReadme} />
@@ -357,9 +361,9 @@ function SyncToggle({
   checked,
   onChange,
 }: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
+  readonly label: string;
+  readonly checked: boolean;
+  readonly onChange: (v: boolean) => void;
 }) {
   return (
     <button

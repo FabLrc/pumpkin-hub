@@ -558,7 +558,8 @@ export function getAuthorPluginsPath(
   if (page) params.set("page", String(page));
   if (perPage) params.set("per_page", String(perPage));
   const queryString = params.toString();
-  return `/users/${encodeURIComponent(username)}/plugins${queryString ? `?${queryString}` : ""}`;
+  const qs = queryString ? `?${queryString}` : "";
+  return `/users/${encodeURIComponent(username)}/plugins${qs}`;
 }
 
 export async function fetchAuthorPlugins(
@@ -587,8 +588,9 @@ export async function fetchAdminPlugins(
   if (perPage) params.set("per_page", String(perPage));
   if (search) params.set("search", search);
   const qs = params.toString();
+  const queryString = qs ? `?${qs}` : "";
   return apiFetch<PaginatedResponse<AdminPluginEntry>>(
-    `/admin/plugins${qs ? `?${qs}` : ""}`,
+    `/admin/plugins${queryString}`,
   );
 }
 
@@ -614,8 +616,9 @@ export async function fetchAdminUsers(
   if (perPage) params.set("per_page", String(perPage));
   if (search) params.set("search", search);
   const qs = params.toString();
+  const queryString = qs ? `?${qs}` : "";
   return apiFetch<PaginatedResponse<AdminUserEntry>>(
-    `/admin/users${qs ? `?${qs}` : ""}`,
+    `/admin/users${queryString}`,
   );
 }
 
@@ -649,8 +652,9 @@ export async function fetchAuditLogs(
   if (page) params.set("page", String(page));
   if (perPage) params.set("per_page", String(perPage));
   const qs = params.toString();
+  const queryString = qs ? `?${qs}` : "";
   return apiFetch<PaginatedResponse<AuditLogEntry>>(
-    `/admin/audit-logs${qs ? `?${qs}` : ""}`,
+    `/admin/audit-logs${queryString}`,
   );
 }
 
@@ -722,7 +726,8 @@ export function getNotificationsPath(
   if (perPage) params.set("per_page", String(perPage));
   if (unreadOnly) params.set("unread_only", "true");
   const qs = params.toString();
-  return `/notifications${qs ? `?${qs}` : ""}`;
+  const queryString = qs ? `?${qs}` : "";
+  return `/notifications${queryString}`;
 }
 
 export function getUnreadCountPath(): string {
@@ -813,7 +818,8 @@ export function getReviewsPath(
   if (page) params.set("page", String(page));
   if (perPage) params.set("per_page", String(perPage));
   const qs = params.toString();
-  return `/plugins/${encodeURIComponent(slug)}/reviews${qs ? `?${qs}` : ""}`;
+  const queryString = qs ? `?${qs}` : "";
+  return `/plugins/${encodeURIComponent(slug)}/reviews${queryString}`;
 }
 
 export async function fetchReviews(

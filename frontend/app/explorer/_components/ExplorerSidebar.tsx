@@ -22,20 +22,20 @@ const SORT_OPTIONS: { value: SearchSortOption; label: string }[] = [
 // ── Props ─────────────────────────────────────────────────────────────────
 
 interface ExplorerSidebarProps {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  sortBy: SearchSortOption;
-  onSortChange: (sort: SearchSortOption) => void;
-  activeCategory: string | undefined;
-  onCategoryChange: (category: string | undefined) => void;
-  activePlatform: string | undefined;
-  onPlatformChange: (platform: string | undefined) => void;
-  activePumpkinVersion: string | undefined;
-  onPumpkinVersionChange: (version: string | undefined) => void;
-  facets: FacetDistribution | null;
-  onClearFilters: () => void;
-  isMobileOpen?: boolean;
-  onMobileClose?: () => void;
+  readonly searchQuery: string;
+  readonly onSearchChange: (query: string) => void;
+  readonly sortBy: SearchSortOption;
+  readonly onSortChange: (sort: SearchSortOption) => void;
+  readonly activeCategory: string | undefined;
+  readonly onCategoryChange: (category: string | undefined) => void;
+  readonly activePlatform: string | undefined;
+  readonly onPlatformChange: (platform: string | undefined) => void;
+  readonly activePumpkinVersion: string | undefined;
+  readonly onPumpkinVersionChange: (version: string | undefined) => void;
+  readonly facets: FacetDistribution | null;
+  readonly onClearFilters: () => void;
+  readonly isMobileOpen?: boolean;
+  readonly onMobileClose?: () => void;
 }
 
 export function ExplorerSidebar({
@@ -111,18 +111,18 @@ export function ExplorerSidebar({
           <button
             onClick={() => onCategoryChange(undefined)}
             className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-              !activeCategory
-                ? "text-accent border-accent/40 bg-accent/5"
-                : "text-text-subtle border-border-default hover:border-border-hover"
+              activeCategory
+                ? "text-text-subtle border-border-default hover:border-border-hover"
+                : "text-accent border-accent/40 bg-accent/5"
             }`}
           >
             <span>All</span>
           </button>
 
           {categoriesLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
+            ["sk-1","sk-2","sk-3","sk-4"].map((key) => (
               <div
-                key={i}
+                key={key}
                 className="h-8 bg-bg-surface border border-border-default animate-pulse"
               />
             ))
@@ -163,9 +163,9 @@ export function ExplorerSidebar({
           <button
             onClick={() => onPlatformChange(undefined)}
             className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-              !activePlatform
-                ? "text-accent border-accent/40 bg-accent/5"
-                : "text-text-subtle border-border-default hover:border-border-hover"
+              activePlatform
+                ? "text-text-subtle border-border-default hover:border-border-hover"
+                : "text-accent border-accent/40 bg-accent/5"
             }`}
           >
             <span>All</span>
@@ -202,9 +202,9 @@ export function ExplorerSidebar({
             <button
               onClick={() => onPumpkinVersionChange(undefined)}
               className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-                !activePumpkinVersion
-                  ? "text-accent border-accent/40 bg-accent/5"
-                  : "text-text-subtle border-border-default hover:border-border-hover"
+                activePumpkinVersion
+                  ? "text-text-subtle border-border-default hover:border-border-hover"
+                  : "text-accent border-accent/40 bg-accent/5"
               }`}
             >
               <span>All</span>

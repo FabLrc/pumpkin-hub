@@ -138,18 +138,20 @@ export default function NewPluginPage() {
         </div>
 
         {/* Form */}
-        {isLoadingUser ? (
+        {isLoadingUser && (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
-                key={i}
+                key={`skeleton-${i}`}
                 className="h-12 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}
           </div>
-        ) : mode === "github" ? (
+        )}
+        {!isLoadingUser && mode === "github" && (
           <PublishFromGithubForm onSuccess={handleGithubSuccess} autoLoad={autoLoad} />
-        ) : (
+        )}
+        {!isLoadingUser && mode !== "github" && (
           <div className="space-y-6">
             <PluginForm
               onSubmit={handleCreate}
@@ -207,11 +209,11 @@ function ModeTab({
   label,
   description,
 }: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  description: string;
+  readonly active: boolean;
+  readonly onClick: () => void;
+  readonly icon: React.ReactNode;
+  readonly label: string;
+  readonly description: string;
 }) {
   return (
     <button

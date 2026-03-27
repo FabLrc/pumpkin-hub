@@ -12,13 +12,8 @@ export function formatMarkdown(raw: string): string {
 
   for (const line of lines) {
     if (line.trim().startsWith("```")) {
-      if (inCodeBlock) {
-        htmlParts.push(`<pre>${escapeHtml(codeBuffer.join("\n"))}</pre>`);
-        codeBuffer = [];
-        inCodeBlock = false;
-      } else {
-        inCodeBlock = true;
-      }
+      inCodeBlock = toggleCodeBlock(inCodeBlock, codeBuffer, htmlParts);
+      if (!inCodeBlock) codeBuffer = [];
       continue;
     }
 
@@ -28,24 +23,9 @@ export function formatMarkdown(raw: string): string {
     }
 
     const trimmed = line.trim();
-
-    if (trimmed === "") continue;
-
-    if (trimmed.startsWith("### ")) {
-      htmlParts.push(`<h3>${escapeHtml(trimmed.slice(4))}</h3>`);
-      continue;
+    if (trimmed !== "") {
+      htmlParts.push(formatLine(trimmed));
     }
-    if (trimmed.startsWith("## ")) {
-      htmlParts.push(`<h2>${escapeHtml(trimmed.slice(3))}</h2>`);
-      continue;
-    }
-
-    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-      htmlParts.push(`<ul><li>${inlineFormat(trimmed.slice(2))}</li></ul>`);
-      continue;
-    }
-
-    htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
   }
 
   if (inCodeBlock && codeBuffer.length > 0) {
@@ -55,14 +35,39 @@ export function formatMarkdown(raw: string): string {
   return htmlParts.join("\n");
 }
 
+function toggleCodeBlock(
+  inCodeBlock: boolean,
+  codeBuffer: string[],
+  htmlParts: string[],
+): boolean {
+  if (inCodeBlock) {
+    htmlParts.push(`<pre>${escapeHtml(codeBuffer.join("\n"))}</pre>`);
+    return false;
+  }
+  return true;
+}
+
+function formatLine(trimmed: string): string {
+  if (trimmed.startsWith("### ")) {
+    return `<h3>${escapeHtml(trimmed.slice(4))}</h3>`;
+  }
+  if (trimmed.startsWith("## ")) {
+    return `<h2>${escapeHtml(trimmed.slice(3))}</h2>`;
+  }
+  if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+    return `<ul><li>${inlineFormat(trimmed.slice(2))}</li></ul>`;
+  }
+  return `<p>${inlineFormat(trimmed)}</p>`;
+}
+
 function escapeHtml(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function inlineFormat(text: string): string {
-  return escapeHtml(text).replace(/`([^`]+)`/g, "<code>$1</code>");
+  return escapeHtml(text).replaceAll(/`([^`]+)`/g, "<code>$1</code>");
 }

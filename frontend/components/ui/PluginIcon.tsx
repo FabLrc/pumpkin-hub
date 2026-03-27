@@ -1,8 +1,8 @@
 interface PluginIconProps {
-  pluginName: string;
-  iconUrl?: string | null;
-  featured?: boolean;
-  sizeClassName?: string;
+  readonly pluginName: string;
+  readonly iconUrl?: string | null;
+  readonly featured?: boolean;
+  readonly sizeClassName?: string;
 }
 
 function buildInitials(name: string): string {

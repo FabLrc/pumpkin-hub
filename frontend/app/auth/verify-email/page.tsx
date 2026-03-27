@@ -30,7 +30,7 @@ function VerifyEmailContent() {
         setStatus("error");
         const message =
           err instanceof Error ? err.message : "Verification failed";
-        const match = message.match(/"error":\s*"([^"]+)"/);
+        const match = /"error":\s*"([^"]+)"/.exec(message);
         setErrorMessage(
           match ? match[1] : "Invalid or expired verification link.",
         );

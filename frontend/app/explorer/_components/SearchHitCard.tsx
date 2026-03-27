@@ -8,9 +8,9 @@ import type { ViewMode } from "@/lib/useViewPreference";
 import { formatDownloads, formatTimeAgo } from "@/components/ui/PluginCard";
 
 interface SearchHitCardProps {
-  hit: SearchHit;
-  featured?: boolean;
-  viewMode?: ViewMode;
+  readonly hit: SearchHit;
+  readonly featured?: boolean;
+  readonly viewMode?: ViewMode;
 }
 
 export function SearchHitCard({ hit, featured = false, viewMode = "list" }: SearchHitCardProps) {
@@ -20,7 +20,7 @@ export function SearchHitCard({ hit, featured = false, viewMode = "list" }: Sear
 
 // ── List Card (horizontal) ────────────────────────────────────────────────
 
-function ListCard({ hit, featured }: { hit: SearchHit; featured: boolean }) {
+function ListCard({ hit, featured }: { readonly hit: SearchHit; readonly featured: boolean }) {
   const updatedAt = new Date(hit.updated_at_timestamp * 1000).toISOString();
 
   const cardClasses = featured
@@ -112,7 +112,7 @@ function ListCard({ hit, featured }: { hit: SearchHit; featured: boolean }) {
 
 // ── Grid Card (vertical) ──────────────────────────────────────────────────
 
-function GridCard({ hit, featured }: { hit: SearchHit; featured: boolean }) {
+function GridCard({ hit, featured }: { readonly hit: SearchHit; readonly featured: boolean }) {
   const updatedAt = new Date(hit.updated_at_timestamp * 1000).toISOString();
 
   const cardClasses = featured

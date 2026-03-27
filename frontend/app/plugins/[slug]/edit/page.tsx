@@ -13,7 +13,7 @@ import { mutate } from "swr";
 import type { PluginFormData } from "@/lib/validation";
 
 interface EditPluginPageProps {
-  params: Promise<{ slug: string }>;
+  readonly params: Promise<{ readonly slug: string }>;
 }
 
 export default function EditPluginPage({ params }: EditPluginPageProps) {
@@ -150,16 +150,17 @@ export default function EditPluginPage({ params }: EditPluginPageProps) {
         </div>
 
         {/* Loading state */}
-        {isLoading ? (
+        {isLoading && (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
-                key={i}
+                key={`skeleton-${i}`}
                 className="h-12 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}
           </div>
-        ) : plugin && initialData ? (
+        )}
+        {!isLoading && plugin && initialData && (
           <>
             <PluginForm
               initialData={initialData}
@@ -236,7 +237,8 @@ export default function EditPluginPage({ params }: EditPluginPageProps) {
               <GitHubIntegration slug={slug} />
             </div>
           </>
-        ) : (
+        )}
+        {!isLoading && !plugin && (
           <div className="text-center py-20">
             <p className="font-mono text-sm text-text-dim">
               Plugin not found.

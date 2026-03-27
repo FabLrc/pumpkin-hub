@@ -56,7 +56,7 @@ function formatNumber(n: number): string {
 
 // ── Stats Cards ─────────────────────────────────────────────────────────────
 
-function StatsOverview({ stats }: { stats: AdminStatsResponse }) {
+function StatsOverview({ stats }: { readonly stats: AdminStatsResponse }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -90,10 +90,10 @@ function StatCard({
   icon,
   accent,
 }: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  accent?: string;
+  readonly label: string;
+  readonly value: number;
+  readonly icon: React.ReactNode;
+  readonly accent?: string;
 }) {
   return (
     <div className="border border-border-default bg-bg-elevated/30 p-4">
@@ -336,8 +336,8 @@ function RoleSelector({
   currentRole,
   onChange,
 }: {
-  currentRole: string;
-  onChange: (role: string) => void;
+  readonly currentRole: string;
+  readonly onChange: (role: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const roles = ["author", "moderator", "admin"];
@@ -413,7 +413,7 @@ function AuditTab() {
   );
 }
 
-function AuditLogRow({ log }: { log: AuditLogEntry }) {
+function AuditLogRow({ log }: { readonly log: AuditLogEntry }) {
   const actionColors: Record<string, string> = {
     "plugin.deactivate": "text-red-400",
     "plugin.reactivate": "text-green-400",
@@ -455,9 +455,9 @@ function Pagination({
   page,
   onPageChange,
 }: {
-  pagination: PaginationMeta | null;
-  page: number;
-  onPageChange: (page: number) => void;
+  readonly pagination: PaginationMeta | null;
+  readonly page: number;
+  readonly onPageChange: (page: number) => void;
 }) {
   if (!pagination || pagination.total_pages <= 1) return null;
 
@@ -515,7 +515,7 @@ export default function AdminPage() {
             <div className="h-8 w-48 bg-bg-surface border border-border-default" />
             <div className="grid grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-24 bg-bg-surface border border-border-default" />
+                <div key={`skeleton-header-${i}`} className="h-24 bg-bg-surface border border-border-default" />
               ))}
             </div>
           </div>
@@ -579,7 +579,7 @@ export default function AdminPage() {
               <div className="animate-pulse space-y-4">
                 <div className="grid grid-cols-4 gap-4">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-24 bg-bg-surface border border-border-default" />
+                    <div key={`skeleton-tab-${i}`} className="h-24 bg-bg-surface border border-border-default" />
                   ))}
                 </div>
               </div>

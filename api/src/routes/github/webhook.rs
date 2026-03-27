@@ -166,6 +166,53 @@ pub async fn handle_github_webhook(
 
 // ── Release Handler ─────────────────────────────────────────────────────────
 
+/// Downloads and stores all recognized platform assets from a release.
+/// Returns the list of platform strings that were successfully stored.
+async fn store_release_assets(
+    state: &AppState,
+    linked: &LinkedPlugin,
+    version_id: Uuid,
+    version_str: &str,
+    release: &ReleasePayload,
+) -> Vec<String> {
+    let github_client = state.config.github_app.as_ref().map(GitHubAppClient::new);
+    let mut stored_platforms: Vec<String> = Vec::new();
+
+    let client = match github_client {
+        Some(c) => c,
+        None => return stored_platforms,
+    };
+
+    for asset in &release.assets {
+        let Some(platform) = detect_platform_from_filename(&asset.name) else {
+            continue;
+        };
+        match download_and_store_asset(
+            state,
+            &client,
+            linked,
+            version_id,
+            version_str,
+            &platform,
+            asset,
+        )
+        .await
+        {
+            Ok(_) => {
+                tracing::info!(asset = %asset.name, platform = %platform, "Stored release asset");
+                if !stored_platforms.contains(&platform) {
+                    stored_platforms.push(platform);
+                }
+            }
+            Err(e) => {
+                tracing::warn!(asset = %asset.name, error = %e, "Failed to store release asset");
+            }
+        }
+    }
+
+    stored_platforms
+}
+
 /// Handles a `release.published` event: creates a new version and downloads assets.
 async fn handle_release_published(
     state: &AppState,
@@ -233,45 +280,8 @@ async fn handle_release_published(
     );
 
     // Download and store release assets as binaries
-    let github_client = state.config.github_app.as_ref().map(GitHubAppClient::new);
-
-    let mut stored_platforms: Vec<String> = Vec::new();
-
-    if let Some(client) = github_client {
-        for asset in &release.assets {
-            if let Some(platform) = detect_platform_from_filename(&asset.name) {
-                match download_and_store_asset(
-                    state,
-                    &client,
-                    linked,
-                    version_id,
-                    &version_str,
-                    &platform,
-                    asset,
-                )
-                .await
-                {
-                    Ok(_) => {
-                        tracing::info!(
-                            asset = %asset.name,
-                            platform = %platform,
-                            "Stored release asset"
-                        );
-                        if !stored_platforms.contains(&platform) {
-                            stored_platforms.push(platform);
-                        }
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            asset = %asset.name,
-                            error = %e,
-                            "Failed to store release asset"
-                        );
-                    }
-                }
-            }
-        }
-    }
+    let stored_platforms =
+        store_release_assets(state, linked, version_id, &version_str, release).await;
 
     // Re-index in Meilisearch
     reindex_plugin(state, linked.plugin_id).await;

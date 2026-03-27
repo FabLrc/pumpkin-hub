@@ -37,7 +37,7 @@ function formatTimeAgo(dateString: string): string {
 // ── Props ─────────────────────────────────────────────────────────────────
 
 interface PluginHeaderProps {
-  plugin: PluginResponse;
+  readonly plugin: PluginResponse;
 }
 
 export function PluginHeader({ plugin }: PluginHeaderProps) {
@@ -93,7 +93,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
               <h1 className="font-raleway font-black text-3xl text-text-primary">
                 {plugin.name}
               </h1>
-              {new Date().getTime() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000 && (
+              {Date.now() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000 && (
                 <Badge variant="orange">NEW</Badge>
               )}
             </div>
@@ -173,8 +173,8 @@ function InstallPanel({
   pluginSlug,
   onClose,
 }: {
-  pluginSlug: string;
-  onClose: () => void;
+  readonly pluginSlug: string;
+  readonly onClose: () => void;
 }) {
   return (
     <div className="border border-accent/30 bg-bg-elevated p-4">
@@ -244,8 +244,8 @@ function CopyableCommand({
   command,
   display,
 }: {
-  command: string;
-  display?: React.ReactNode;
+  readonly command: string;
+  readonly display?: React.ReactNode;
 }) {
   const [copied, setCopied] = useState(false);
 

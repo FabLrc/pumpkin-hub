@@ -6,7 +6,7 @@ import { uploadMedia, getMediaPath } from "@/lib/api";
 import { mutate } from "swr";
 
 interface MediaUploadProps {
-  pluginSlug: string;
+  readonly pluginSlug: string;
 }
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,video/mp4,video/webm";
@@ -108,29 +108,7 @@ export function MediaUpload({ pluginSlug }: MediaUploadProps) {
       </div>
 
       {/* File input area */}
-      {!selectedFile ? (
-        <label
-          className="flex flex-col items-center justify-center gap-3 p-8 border border-dashed border-border-default hover:border-accent cursor-pointer transition-colors"
-        >
-          <div className="flex gap-3 text-text-dim">
-            <ImagePlus size={24} />
-            <Film size={24} />
-          </div>
-          <span className="text-text-muted text-sm">
-            Drop an image or video, or click to browse
-          </span>
-          <span className="text-text-dim font-mono text-xs">
-            JPEG · PNG · WebP · MP4 · WebM
-          </span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPTED_TYPES}
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </label>
-      ) : (
+      {selectedFile ? (
         <div className="space-y-3">
           {/* Preview */}
           <div className="relative inline-block">
@@ -196,6 +174,28 @@ export function MediaUpload({ pluginSlug }: MediaUploadProps) {
             </div>
           )}
         </div>
+      ) : (
+        <label
+          className="flex flex-col items-center justify-center gap-3 p-8 border border-dashed border-border-default hover:border-accent cursor-pointer transition-colors"
+        >
+          <div className="flex gap-3 text-text-dim">
+            <ImagePlus size={24} />
+            <Film size={24} />
+          </div>
+          <span className="text-text-muted text-sm">
+            Drop an image or video, or click to browse
+          </span>
+          <span className="text-text-dim font-mono text-xs">
+            JPEG · PNG · WebP · MP4 · WebM
+          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_TYPES}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </label>
       )}
 
       {/* Error */}

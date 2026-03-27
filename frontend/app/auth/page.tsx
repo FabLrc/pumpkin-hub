@@ -52,7 +52,7 @@ export default function AuthPage() {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
       // Extract the JSON error message if present.
-      const match = message.match(/"error":\s*"([^"]+)"/);
+      const match = /"error":\s*"([^"]+)"/.exec(message);
       const errorMsg = match ? match[1] : message;
       setError(errorMsg);
       toast.error(errorMsg);
@@ -211,11 +211,10 @@ export default function AuthPage() {
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-dark text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Mail className="w-4 h-4" />
-              {isSubmitting
-                ? "Processing..."
-                : mode === "login"
-                  ? "Sign In with Email"
-                  : "Create Account"}
+              {(() => {
+                if (isSubmitting) return "Processing...";
+                return mode === "login" ? "Sign In with Email" : "Create Account";
+              })()}
             </button>
           </form>
 

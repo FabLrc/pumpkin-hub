@@ -1058,6 +1058,42 @@ fn build_download_fallback_url(
 
 // ── Binary Handlers ─────────────────────────────────────────────────────
 
+/// Reads and validates the `file` field from a multipart upload.
+/// Returns `(file_name, content_type, bytes)`.
+async fn read_binary_file_field(
+    field: axum::extract::multipart::Field<'_>,
+    max_size: u64,
+) -> Result<(Option<String>, String, Vec<u8>), AppError> {
+    let file_name = field
+        .file_name()
+        .map(|n| n.to_string())
+        .or_else(|| Some("plugin.bin".to_string()));
+
+    let content_type = field
+        .content_type()
+        .map(|ct| ct.to_string())
+        .unwrap_or_else(|| "application/octet-stream".to_string());
+
+    let bytes = field
+        .bytes()
+        .await
+        .map_err(|e| AppError::UnprocessableEntity(format!("Failed to read file data: {e}")))?;
+
+    if bytes.len() as u64 > max_size {
+        return Err(AppError::UnprocessableEntity(format!(
+            "File size exceeds maximum allowed size of {} bytes",
+            max_size
+        )));
+    }
+    if bytes.is_empty() {
+        return Err(AppError::UnprocessableEntity(
+            "File must not be empty".to_string(),
+        ));
+    }
+
+    Ok((file_name, content_type, bytes.to_vec()))
+}
+
 /// POST /api/v1/plugins/:slug/versions/:version/binaries — upload a binary artifact.
 ///
 /// Expects a `multipart/form-data` body with:
@@ -1113,32 +1149,10 @@ pub async fn upload_binary(
                 );
             }
             "file" => {
-                file_name = field
-                    .file_name()
-                    .map(|n| n.to_string())
-                    .or_else(|| Some("plugin.bin".to_string()));
-
-                if let Some(ct) = field.content_type() {
-                    content_type = ct.to_string();
-                }
-
-                let bytes = field.bytes().await.map_err(|e| {
-                    AppError::UnprocessableEntity(format!("Failed to read file data: {e}"))
-                })?;
-
-                if bytes.len() as u64 > max_size {
-                    return Err(AppError::UnprocessableEntity(format!(
-                        "File size exceeds maximum allowed size of {} bytes",
-                        max_size
-                    )));
-                }
-                if bytes.is_empty() {
-                    return Err(AppError::UnprocessableEntity(
-                        "File must not be empty".to_string(),
-                    ));
-                }
-
-                file_data = Some(bytes.to_vec());
+                let (fname, ct, bytes) = read_binary_file_field(field, max_size).await?;
+                file_name = fname;
+                content_type = ct;
+                file_data = Some(bytes);
             }
             _ => {} // Ignore unknown fields
         }

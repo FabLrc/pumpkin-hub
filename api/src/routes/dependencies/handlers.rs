@@ -360,6 +360,128 @@ struct GraphState {
     visited: HashSet<Uuid>,
 }
 
+struct QueueItem {
+    plugin_id: Uuid,
+    version_id: Uuid,
+    slug: String,
+    version: String,
+    ancestors: HashSet<Uuid>,
+}
+
+/// Checks if a dependency plugin is active and records a conflict if not.
+async fn check_plugin_active(
+    pool: &PgPool,
+    dep: &DependencyRow,
+    conflicts: &mut Vec<DependencyConflict>,
+) -> Result<bool, AppError> {
+    let is_active: Option<bool> = sqlx::query_scalar("SELECT is_active FROM plugins WHERE id = $1")
+        .bind(dep.dependency_plugin_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(AppError::internal)?;
+
+    if is_active == Some(false) || is_active.is_none() {
+        conflicts.push(DependencyConflict {
+            dependency_plugin_id: dep.dependency_plugin_id,
+            dependency_plugin_name: dep.dependency_plugin_name.clone(),
+            dependency_plugin_slug: dep.dependency_plugin_slug.clone(),
+            conflict_type: ConflictType::InactivePlugin,
+            details: format!(
+                "Plugin '{}' is inactive or deleted",
+                dep.dependency_plugin_name
+            ),
+        });
+        Ok(false)
+    } else {
+        Ok(true)
+    }
+}
+
+/// Resolves a semver requirement against available versions, recording a conflict if unresolvable.
+async fn resolve_version_req(
+    pool: &PgPool,
+    dep: &DependencyRow,
+    conflicts: &mut Vec<DependencyConflict>,
+) -> Result<(Option<String>, Option<Uuid>), AppError> {
+    let available: Vec<VersionRow> = sqlx::query_as(
+        "SELECT id, version FROM versions
+         WHERE plugin_id = $1 AND is_yanked = false
+         ORDER BY published_at DESC",
+    )
+    .bind(dep.dependency_plugin_id)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let req = semver::VersionReq::parse(&dep.version_req).ok();
+    let mut resolved_version: Option<String> = None;
+    let mut resolved_version_id: Option<Uuid> = None;
+    let mut is_compatible = false;
+
+    if let Some(ref req) = req {
+        for v in &available {
+            if let Ok(semver_version) = semver::Version::parse(&v.version) {
+                if req.matches(&semver_version) {
+                    resolved_version = Some(v.version.clone());
+                    resolved_version_id = Some(v.id);
+                    is_compatible = true;
+                    break;
+                }
+            }
+        }
+
+        if !is_compatible {
+            conflicts.push(DependencyConflict {
+                dependency_plugin_id: dep.dependency_plugin_id,
+                dependency_plugin_name: dep.dependency_plugin_name.clone(),
+                dependency_plugin_slug: dep.dependency_plugin_slug.clone(),
+                conflict_type: ConflictType::NoMatchingVersion,
+                details: format!(
+                    "No version of '{}' satisfies requirement '{}'",
+                    dep.dependency_plugin_name, dep.version_req
+                ),
+            });
+        }
+    }
+
+    Ok((resolved_version, resolved_version_id))
+}
+
+/// Enqueues a resolved dependency for BFS traversal, or records a cycle conflict.
+fn enqueue_or_record_cycle(
+    dep: &DependencyRow,
+    resolved_vid: Uuid,
+    resolved_version: Option<String>,
+    item_ancestors: &HashSet<Uuid>,
+    visited: &HashSet<Uuid>,
+    conflicts: &mut Vec<DependencyConflict>,
+    queue: &mut Vec<QueueItem>,
+) {
+    if item_ancestors.contains(&dep.dependency_plugin_id) {
+        conflicts.push(DependencyConflict {
+            dependency_plugin_id: dep.dependency_plugin_id,
+            dependency_plugin_name: dep.dependency_plugin_name.clone(),
+            dependency_plugin_slug: dep.dependency_plugin_slug.clone(),
+            conflict_type: ConflictType::CircularDependency,
+            details: format!(
+                "Circular dependency detected involving '{}'",
+                dep.dependency_plugin_name
+            ),
+        });
+    } else if !visited.contains(&resolved_vid) {
+        let mut child_ancestors = item_ancestors.clone();
+        child_ancestors.insert(dep.dependency_plugin_id);
+        queue.push(QueueItem {
+            plugin_id: dep.dependency_plugin_id,
+            version_id: resolved_vid,
+            slug: dep.dependency_plugin_slug.clone(),
+            version: resolved_version.unwrap_or_default(),
+            ancestors: child_ancestors,
+        });
+    }
+    // Already visited via another path (diamond dep) → skip silently
+}
+
 async fn build_graph_recursive(
     pool: &PgPool,
     plugin_id: Uuid,
@@ -376,13 +498,6 @@ async fn build_graph_recursive(
     // Use an iterative BFS instead of async recursion.
     // `ancestors` tracks the plugin IDs on the current traversal path
     // to detect real circular dependencies (not diamond/shared deps).
-    struct QueueItem {
-        plugin_id: Uuid,
-        version_id: Uuid,
-        slug: String,
-        version: String,
-        ancestors: HashSet<Uuid>,
-    }
 
     let mut root_ancestors = HashSet::new();
     root_ancestors.insert(plugin_id);
@@ -417,66 +532,12 @@ async fn build_graph_recursive(
         let mut edges: Vec<DependencyGraphEdge> = Vec::new();
 
         for dep in &deps {
-            let available: Vec<VersionRow> = sqlx::query_as(
-                "SELECT id, version FROM versions
-                 WHERE plugin_id = $1 AND is_yanked = false
-                 ORDER BY published_at DESC",
-            )
-            .bind(dep.dependency_plugin_id)
-            .fetch_all(pool)
-            .await
-            .map_err(AppError::internal)?;
+            check_plugin_active(pool, dep, conflicts).await?;
 
-            let req = semver::VersionReq::parse(&dep.version_req).ok();
-            let mut resolved_version: Option<String> = None;
-            let mut resolved_version_id: Option<Uuid> = None;
-            let mut is_compatible = false;
+            let (resolved_version, resolved_version_id) =
+                resolve_version_req(pool, dep, conflicts).await?;
 
-            let is_active: Option<bool> =
-                sqlx::query_scalar("SELECT is_active FROM plugins WHERE id = $1")
-                    .bind(dep.dependency_plugin_id)
-                    .fetch_optional(pool)
-                    .await
-                    .map_err(AppError::internal)?;
-
-            if is_active == Some(false) || is_active.is_none() {
-                conflicts.push(DependencyConflict {
-                    dependency_plugin_id: dep.dependency_plugin_id,
-                    dependency_plugin_name: dep.dependency_plugin_name.clone(),
-                    dependency_plugin_slug: dep.dependency_plugin_slug.clone(),
-                    conflict_type: ConflictType::InactivePlugin,
-                    details: format!(
-                        "Plugin '{}' is inactive or deleted",
-                        dep.dependency_plugin_name
-                    ),
-                });
-            }
-
-            if let Some(ref req) = req {
-                for v in &available {
-                    if let Ok(semver_version) = semver::Version::parse(&v.version) {
-                        if req.matches(&semver_version) {
-                            resolved_version = Some(v.version.clone());
-                            resolved_version_id = Some(v.id);
-                            is_compatible = true;
-                            break;
-                        }
-                    }
-                }
-
-                if !is_compatible {
-                    conflicts.push(DependencyConflict {
-                        dependency_plugin_id: dep.dependency_plugin_id,
-                        dependency_plugin_name: dep.dependency_plugin_name.clone(),
-                        dependency_plugin_slug: dep.dependency_plugin_slug.clone(),
-                        conflict_type: ConflictType::NoMatchingVersion,
-                        details: format!(
-                            "No version of '{}' satisfies requirement '{}'",
-                            dep.dependency_plugin_name, dep.version_req
-                        ),
-                    });
-                }
-            }
+            let is_compatible = resolved_version.is_some();
 
             edges.push(DependencyGraphEdge {
                 dependency_plugin_id: dep.dependency_plugin_id,
@@ -488,33 +549,16 @@ async fn build_graph_recursive(
                 is_compatible,
             });
 
-            // Enqueue resolved dependency for further traversal
             if let Some(resolved_vid) = resolved_version_id {
-                if item.ancestors.contains(&dep.dependency_plugin_id) {
-                    // True cycle: this dep's plugin is an ancestor in the current path
-                    conflicts.push(DependencyConflict {
-                        dependency_plugin_id: dep.dependency_plugin_id,
-                        dependency_plugin_name: dep.dependency_plugin_name.clone(),
-                        dependency_plugin_slug: dep.dependency_plugin_slug.clone(),
-                        conflict_type: ConflictType::CircularDependency,
-                        details: format!(
-                            "Circular dependency detected involving '{}'",
-                            dep.dependency_plugin_name
-                        ),
-                    });
-                } else if !visited.contains(&resolved_vid) {
-                    // Not yet visited → enqueue with extended ancestry
-                    let mut child_ancestors = item.ancestors.clone();
-                    child_ancestors.insert(dep.dependency_plugin_id);
-                    queue.push(QueueItem {
-                        plugin_id: dep.dependency_plugin_id,
-                        version_id: resolved_vid,
-                        slug: dep.dependency_plugin_slug.clone(),
-                        version: resolved_version.unwrap_or_default(),
-                        ancestors: child_ancestors,
-                    });
-                }
-                // Already visited via another path (diamond dep) → skip silently
+                enqueue_or_record_cycle(
+                    dep,
+                    resolved_vid,
+                    resolved_version,
+                    &item.ancestors,
+                    visited,
+                    conflicts,
+                    &mut queue,
+                );
             }
         }
 

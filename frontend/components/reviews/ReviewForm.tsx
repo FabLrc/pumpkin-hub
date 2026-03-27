@@ -5,10 +5,10 @@ import { StarRating } from "./StarRating";
 import { Button } from "@/components/ui/Button";
 
 interface ReviewFormProps {
-  onSubmit: (data: { rating: number; title: string; body: string }) => Promise<void>;
-  onCancel?: () => void;
-  initialValues?: { rating: number; title: string; body: string };
-  submitLabel?: string;
+  readonly onSubmit: (data: { rating: number; title: string; body: string }) => Promise<void>;
+  readonly onCancel?: () => void;
+  readonly initialValues?: { rating: number; title: string; body: string };
+  readonly submitLabel?: string;
 }
 
 export function ReviewForm({
@@ -60,12 +60,12 @@ export function ReviewForm({
       )}
 
       {/* Star rating */}
-      <div className="space-y-1">
-        <label className="font-mono text-xs text-text-muted uppercase tracking-widest">
+      <fieldset className="space-y-1 border-0 p-0 m-0">
+        <legend className="font-mono text-xs text-text-muted uppercase tracking-widest">
           Rating *
-        </label>
+        </legend>
         <StarRating value={rating} onChange={setRating} size="lg" />
-      </div>
+      </fieldset>
 
       {/* Title */}
       <div className="space-y-1">

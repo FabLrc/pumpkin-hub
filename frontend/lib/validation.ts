@@ -12,12 +12,46 @@ export const PLUGIN_RULES = {
   NAME_PATTERN: /^[a-zA-Z0-9 \-_]+$/,
 } as const;
 
+/** Validates a single semver numeric identifier (no leading zeros except "0" itself). */
+const SEMVER_NUMERIC_ID = /^(0|[1-9]\d*)$/;
+/** Validates a single semver pre-release identifier (numeric or alphanumeric). */
+const SEMVER_PRE_ID = /^[0-9a-zA-Z-]+$/;
+/** Validates a single semver build metadata identifier. */
+const SEMVER_BUILD_ID = /^[0-9a-zA-Z-]+$/;
+
+/**
+ * Returns true if the string is a valid strict semver:
+ * MAJOR.MINOR.PATCH with optional pre-release and build metadata.
+ */
+function isValidSemver(value: string): boolean {
+  // Split off build metadata first
+  const [withoutBuild, ...buildParts] = value.split("+");
+  if (buildParts.length > 1) return false; // more than one '+' sign
+
+  if (buildParts.length === 1) {
+    const buildIdentifiers = buildParts[0].split(".");
+    if (buildIdentifiers.some((id) => !SEMVER_BUILD_ID.test(id) || id === ""))
+      return false;
+  }
+
+  // Split pre-release from core
+  const [core, ...preParts] = withoutBuild.split("-");
+  if (preParts.length > 0) {
+    const preRelease = preParts.join("-");
+    const preIdentifiers = preRelease.split(".");
+    if (preIdentifiers.some((id) => !SEMVER_PRE_ID.test(id) || id === ""))
+      return false;
+  }
+
+  // Validate MAJOR.MINOR.PATCH
+  const coreParts = core.split(".");
+  if (coreParts.length !== 3) return false;
+  return coreParts.every((part) => SEMVER_NUMERIC_ID.test(part));
+}
+
 export const VERSION_RULES = {
   VERSION_MAX_LENGTH: 50,
   CHANGELOG_MAX_LENGTH: 50_000,
-  /** Matches strict semver: MAJOR.MINOR.PATCH with optional pre-release and build metadata. */
-  SEMVER_PATTERN:
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/,
 } as const;
 
 export interface FieldError {
@@ -141,7 +175,7 @@ export function validateSemver(value: string, fieldLabel: string): string | null
   if (trimmed.length > VERSION_RULES.VERSION_MAX_LENGTH) {
     return `${fieldLabel} must be at most ${VERSION_RULES.VERSION_MAX_LENGTH} characters`;
   }
-  if (!VERSION_RULES.SEMVER_PATTERN.test(trimmed)) {
+  if (!isValidSemver(trimmed)) {
     return `${fieldLabel} must be a valid semantic version (e.g. 1.0.0)`;
   }
   return null;
@@ -167,10 +201,7 @@ export function validatePumpkinRange(
   if (!min || !max) return null;
   const minTrimmed = min.trim();
   const maxTrimmed = max.trim();
-  if (
-    !VERSION_RULES.SEMVER_PATTERN.test(minTrimmed) ||
-    !VERSION_RULES.SEMVER_PATTERN.test(maxTrimmed)
-  ) {
+  if (!isValidSemver(minTrimmed) || !isValidSemver(maxTrimmed)) {
     return null; // Individual field validators will catch this
   }
   if (compareSemver(minTrimmed, maxTrimmed) > 0) {

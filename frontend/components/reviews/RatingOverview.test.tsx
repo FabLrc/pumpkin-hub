@@ -37,14 +37,14 @@ describe("RatingOverview", () => {
 
   it("renders singular 'review' when total is 1", () => {
     render(
-      <RatingOverview averageRating={5.0} total={1} distribution={{ ...distribution, star_5: 1 }} />,
+      <RatingOverview averageRating={5} total={1} distribution={{ ...distribution, star_5: 1 }} />,
     );
     expect(screen.getByText("1 review")).toBeInTheDocument();
   });
 
   it("renders distribution bar labels", () => {
     render(
-      <RatingOverview averageRating={4.0} total={20} distribution={distribution} />,
+      <RatingOverview averageRating={4} total={20} distribution={distribution} />,
     );
     // Bar labels 5 down to 1
     ["5", "4", "3", "2", "1"].forEach((label) => {

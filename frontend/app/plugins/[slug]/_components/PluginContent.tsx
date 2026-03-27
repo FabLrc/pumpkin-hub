@@ -28,9 +28,9 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 interface PluginContentProps {
-  plugin: PluginResponse;
-  activeTab: TabId;
-  onTabChange: (tab: TabId) => void;
+  readonly plugin: PluginResponse;
+  readonly activeTab: TabId;
+  readonly onTabChange: (tab: TabId) => void;
 }
 
 export function PluginContent({
@@ -70,7 +70,7 @@ export function PluginContent({
 
 // ── Overview Tab ──────────────────────────────────────────────────────────
 
-function OverviewTab({ plugin }: { plugin: PluginResponse }) {
+function OverviewTab({ plugin }: { readonly plugin: PluginResponse }) {
   // If the API returns a description, render it as markdown-like content.
   // For now, use the description field or a placeholder.
   if (plugin.description) {
@@ -96,7 +96,7 @@ function OverviewTab({ plugin }: { plugin: PluginResponse }) {
 
 // ── Versions Tab — live API data ──────────────────────────────────────────
 
-function VersionsTab({ plugin }: { plugin: PluginResponse }) {
+function VersionsTab({ plugin }: { readonly plugin: PluginResponse }) {
   const { data: user } = useCurrentUser();
   const { data, isLoading, error } = usePluginVersions(plugin.slug);
   const [showPublishForm, setShowPublishForm] = useState(false);
@@ -184,7 +184,7 @@ function VersionsTab({ plugin }: { plugin: PluginResponse }) {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <span className="font-mono text-xs text-text-dim">
-          {total} release{total !== 1 ? "s" : ""}
+          {total} release{total === 1 ? "" : "s"}
           {latestVersion && (
             <>
               {" · "}
@@ -267,11 +267,11 @@ function VersionRow({
   slug,
   onMutated,
 }: {
-  version: VersionResponse;
-  isLatest: boolean;
-  canManage: boolean;
-  slug: string;
-  onMutated: () => void;
+  readonly version: VersionResponse;
+  readonly isLatest: boolean;
+  readonly canManage: boolean;
+  readonly slug: string;
+  readonly onMutated: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { data: binariesData, isLoading: binariesLoading } = useBinaries(
@@ -283,6 +283,11 @@ function VersionRow({
     version.pumpkin_version_min,
     version.pumpkin_version_max,
   );
+  const versionTextClass = version.is_yanked
+    ? "text-text-dim line-through"
+    : isLatest
+      ? "text-text-primary"
+      : "text-text-dim";
   const publishedDate = new Date(version.published_at).toLocaleDateString(
     "en-US",
     { year: "numeric", month: "short", day: "numeric" },
@@ -301,7 +306,10 @@ function VersionRow({
       {/* Main row — clickable to expand */}
       <div
         className="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 items-center cursor-pointer hover:bg-bg-elevated/30 transition-colors"
+        role="button"
+        tabIndex={0}
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setIsExpanded(!isExpanded); } }}
       >
         {/* Expand indicator + Version number + badges */}
         <div className="col-span-3 flex items-center gap-2 flex-wrap">
@@ -311,13 +319,7 @@ function VersionRow({
             <ChevronRight className="w-3 h-3 text-text-dim flex-shrink-0" />
           )}
           <span
-            className={`font-mono text-sm font-bold ${
-              version.is_yanked
-                ? "text-text-dim line-through"
-                : isLatest
-                  ? "text-text-primary"
-                  : "text-text-dim"
-            }`}
+            className={`font-mono text-sm font-bold ${versionTextClass}`}
           >
             {version.version}
           </span>
@@ -350,7 +352,13 @@ function VersionRow({
         </div>
 
         {/* Status indicator + actions */}
-        <div className="col-span-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="col-span-2 flex items-center gap-2"
+          role="button"
+          tabIndex={0}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); } }}
+        >
           {version.is_yanked ? (
             <span className="w-2 h-2 bg-red-400 inline-block" title="Yanked" />
           ) : (
@@ -424,9 +432,9 @@ function VersionsTabSkeleton() {
       <div className="h-3 bg-bg-surface w-48 mb-6" />
       <div className="border border-border-default">
         <div className="h-8 bg-bg-surface/50 border-b border-border-default" />
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 4 }, (_, i) => (
           <div
-            key={i}
+            key={`skeleton-ver-${i}`}
             className="h-12 border-b border-border-default last:border-b-0 flex items-center px-4"
           >
             <div className="h-3 bg-bg-surface w-full" />
@@ -441,7 +449,7 @@ function VersionsTabSkeleton() {
 
 type DependencyView = "list" | "graph" | "dependants";
 
-function DependenciesTab({ plugin }: { plugin: PluginResponse }) {
+function DependenciesTab({ plugin }: { readonly plugin: PluginResponse }) {
   const { data: versionsData } = usePluginVersions(plugin.slug);
   const { data: user } = useCurrentUser();
   const [activeView, setActiveView] = useState<DependencyView>("list");
@@ -515,9 +523,9 @@ function DependencyListView({
   version,
   isOwner,
 }: {
-  plugin: PluginResponse;
-  version: string;
-  isOwner: boolean;
+  readonly plugin: PluginResponse;
+  readonly version: string;
+  readonly isOwner: boolean;
 }) {
   const { data, isLoading } = useDependencies(plugin.slug, version);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -636,10 +644,10 @@ function AddDependencyForm({
   version,
   onClose,
 }: {
-  slug: string;
-  pluginId: string;
-  version: string;
-  onClose: () => void;
+  readonly slug: string;
+  readonly pluginId: string;
+  readonly version: string;
+  readonly onClose: () => void;
 }) {
   const [dependencyPluginId, setDependencyPluginId] = useState("");
   const [versionReq, setVersionReq] = useState("^1.0.0");
@@ -697,10 +705,11 @@ function AddDependencyForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block font-mono text-[10px] text-text-dim uppercase tracking-wider mb-1.5">
+          <label htmlFor="dep-plugin-id" className="block font-mono text-[10px] text-text-dim uppercase tracking-wider mb-1.5">
             Plugin ID (UUID)
           </label>
           <input
+            id="dep-plugin-id"
             type="text"
             value={dependencyPluginId}
             onChange={(e) => setDependencyPluginId(e.target.value)}
@@ -709,10 +718,11 @@ function AddDependencyForm({
           />
         </div>
         <div>
-          <label className="block font-mono text-[10px] text-text-dim uppercase tracking-wider mb-1.5">
+          <label htmlFor="dep-version-req" className="block font-mono text-[10px] text-text-dim uppercase tracking-wider mb-1.5">
             Version requirement
           </label>
           <input
+            id="dep-version-req"
             type="text"
             value={versionReq}
             onChange={(e) => setVersionReq(e.target.value)}
@@ -758,8 +768,8 @@ function DependencyGraphView({
   slug,
   version,
 }: {
-  slug: string;
-  version: string;
+  readonly slug: string;
+  readonly version: string;
 }) {
   const { data, isLoading } = useDependencyGraph(slug, version);
 
@@ -801,8 +811,8 @@ function DependencyTree({
   graph,
   rootSlug,
 }: {
-  graph: DependencyGraphNode[];
-  rootSlug: string;
+  readonly graph: DependencyGraphNode[];
+  readonly rootSlug: string;
 }) {
   const nodeMap = new Map(graph.map((n) => [n.plugin_slug, n]));
   const rootNode = nodeMap.get(rootSlug) ?? graph[0];
@@ -825,10 +835,10 @@ function TreeNode({
   depth,
   visited,
 }: {
-  node: DependencyGraphNode;
-  nodeMap: Map<string, DependencyGraphNode>;
-  depth: number;
-  visited: Set<string>;
+  readonly node: DependencyGraphNode;
+  readonly nodeMap: Map<string, DependencyGraphNode>;
+  readonly depth: number;
+  readonly visited: Set<string>;
 }) {
   const isCircular = visited.has(node.plugin_slug);
   const newVisited = new Set(visited);
@@ -921,7 +931,7 @@ function TreeNode({
 
 // ── Conflict Alerts ───────────────────────────────────────────────────────
 
-function ConflictAlerts({ conflicts }: { conflicts: DependencyConflict[] }) {
+function ConflictAlerts({ conflicts }: { readonly conflicts: DependencyConflict[] }) {
   const conflictStyles: Record<string, { label: string; borderClass: string; textClass: string }> = {
     no_matching_version: { label: "No Match", borderClass: "border-red-400/30", textClass: "text-red-400" },
     incompatible_ranges: { label: "Incompatible", borderClass: "border-orange-400/30", textClass: "text-orange-400" },
@@ -938,11 +948,11 @@ function ConflictAlerts({ conflicts }: { conflicts: DependencyConflict[] }) {
         </span>
       </div>
 
-      {conflicts.map((conflict, index) => {
+      {conflicts.map((conflict) => {
         const style = conflictStyles[conflict.conflict_type] ?? conflictStyles.no_matching_version;
         return (
           <div
-            key={index}
+            key={`${conflict.conflict_type}-${conflict.dependency_plugin_name}`}
             className={`border ${style.borderClass} bg-bg-elevated/30 p-4`}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -965,7 +975,7 @@ function ConflictAlerts({ conflicts }: { conflicts: DependencyConflict[] }) {
 
 // ── Dependants View ───────────────────────────────────────────────────────
 
-function DependantsView({ slug }: { slug: string }) {
+function DependantsView({ slug }: { readonly slug: string }) {
   const { data, isLoading } = useDependants(slug);
 
   if (isLoading) {
@@ -1031,9 +1041,9 @@ function DependantsView({ slug }: { slug: string }) {
 function DependencyListSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
-      {Array.from({ length: 3 }).map((_, i) => (
+      {Array.from({ length: 3 }, (_, i) => (
         <div
-          key={i}
+          key={`skeleton-dep-${i}`}
           className="border border-border-default bg-bg-elevated/30 p-4 flex items-center gap-4"
         >
           <div className="w-8 h-8 bg-bg-surface" />

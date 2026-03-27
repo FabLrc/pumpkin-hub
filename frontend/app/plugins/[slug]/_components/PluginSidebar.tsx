@@ -30,7 +30,7 @@ function formatDate(dateString: string): string {
 // ── Props ─────────────────────────────────────────────────────────────────
 
 interface PluginSidebarProps {
-  plugin: PluginResponse;
+  readonly plugin: PluginResponse;
 }
 
 export function PluginSidebar({ plugin }: PluginSidebarProps) {
@@ -54,7 +54,7 @@ export function PluginSidebar({ plugin }: PluginSidebarProps) {
 
 // ── GitHub Badge Card ─────────────────────────────────────────────────────
 
-function GitHubBadgeCard({ slug }: { slug: string }) {
+function GitHubBadgeCard({ slug }: { readonly slug: string }) {
   const { data: link, error } = useGithubLink(slug);
 
   if (error || !link) return null;
@@ -84,7 +84,7 @@ function GitHubBadgeCard({ slug }: { slug: string }) {
 
 // ── Statistics Card ───────────────────────────────────────────────────────
 
-function StatisticsCard({ slug, downloads }: { slug: string; downloads: number }) {
+function StatisticsCard({ slug, downloads }: { readonly slug: string; readonly downloads: number }) {
   const { data: stats } = usePluginDownloadStats(slug, "weekly", 8);
   const chartData = stats?.chart ?? [];
   const maxDownloads = Math.max(...chartData.map((d) => d.downloads), 1);
@@ -123,9 +123,9 @@ function StatisticsCard({ slug, downloads }: { slug: string; downloads: number }
                   title={`${point.period}: ${point.downloads}`}
                 />
               ))
-            : Array.from({ length: 8 }).map((_, i) => (
+            : Array.from({ length: 8 }, (_, i) => (
                 <div
-                  key={i}
+                  key={`empty-bar-${i}`}
                   className="chart-bar flex-1"
                   style={{ height: "2%" }}
                 />
@@ -161,7 +161,7 @@ function StatisticsCard({ slug, downloads }: { slug: string; downloads: number }
 
 // ── Links Card ────────────────────────────────────────────────────────────
 
-function LinksCard({ plugin }: { plugin: PluginResponse }) {
+function LinksCard({ plugin }: { readonly plugin: PluginResponse }) {
   const links = [
     plugin.repository_url
       ? { icon: Github, label: "Source Repository", href: plugin.repository_url }
@@ -208,8 +208,8 @@ function DetailsCard({
   plugin,
   latestVersion,
 }: {
-  plugin: PluginResponse;
-  latestVersion: string | null;
+  readonly plugin: PluginResponse;
+  readonly latestVersion: string | null;
 }) {
   const details = [
     { label: "Published", value: formatDate(plugin.created_at) },
@@ -253,7 +253,7 @@ function DetailsCard({
 
 // ── Author Card ───────────────────────────────────────────────────────────
 
-function AuthorCard({ plugin }: { plugin: PluginResponse }) {
+function AuthorCard({ plugin }: { readonly plugin: PluginResponse }) {
   const initials = plugin.author.username.slice(0, 2).toLowerCase();
 
   return (

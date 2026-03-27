@@ -4,9 +4,9 @@ import type { RatingDistribution } from "@/lib/types";
 import { StarRating } from "./StarRating";
 
 interface RatingOverviewProps {
-  averageRating: number;
-  total: number;
-  distribution: RatingDistribution;
+  readonly averageRating: number;
+  readonly total: number;
+  readonly distribution: RatingDistribution;
 }
 
 export function RatingOverview({

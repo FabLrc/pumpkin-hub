@@ -1,24 +1,22 @@
 "use client";
 
 import { List, LayoutGrid, SlidersHorizontal } from "lucide-react";
-import type { SearchHit, SearchSortOption } from "@/lib/types";
+import type { SearchHit } from "@/lib/types";
 import type { ViewMode } from "@/lib/useViewPreference";
 import { SearchHitCard } from "./SearchHitCard";
 
 interface ExplorerResultsProps {
-  hits: SearchHit[];
-  estimatedTotal: number | null;
-  processingTimeMs: number | null;
-  isLoading: boolean;
-  currentPage: number;
-  perPage: number;
-  onPageChange: (page: number) => void;
-  searchQuery: string;
-  sortBy: SearchSortOption;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
-  onMobileFilterOpen?: () => void;
-  activeFilterCount?: number;
+  readonly hits: SearchHit[];
+  readonly estimatedTotal: number | null;
+  readonly processingTimeMs: number | null;
+  readonly isLoading: boolean;
+  readonly currentPage: number;
+  readonly perPage: number;
+  readonly onPageChange: (page: number) => void;
+  readonly viewMode: ViewMode;
+  readonly onViewModeChange: (mode: ViewMode) => void;
+  readonly onMobileFilterOpen?: () => void;
+  readonly activeFilterCount?: number;
 }
 
 export function ExplorerResults({
@@ -36,6 +34,31 @@ export function ExplorerResults({
 }: ExplorerResultsProps) {
   const totalHits = estimatedTotal ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalHits / perPage));
+
+  function renderContent() {
+    if (isLoading) {
+      return <LoadingSkeleton viewMode={viewMode} />;
+    }
+    if (hits.length === 0) {
+      return (
+        <div className={viewMode === "grid" ? "col-span-full" : ""}>
+          <EmptyState />
+        </div>
+      );
+    }
+    return (
+      <>
+        {hits.map((hit, index) => (
+          <SearchHitCard
+            key={hit.id}
+            hit={hit}
+            featured={index === 0 && currentPage === 1}
+            viewMode={viewMode}
+          />
+        ))}
+      </>
+    );
+  }
 
   return (
     <main className="flex-1 min-w-0">
@@ -104,24 +127,7 @@ export function ExplorerResults({
         ? "p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
         : "p-6 space-y-3"
       }>
-        {isLoading ? (
-          <LoadingSkeleton viewMode={viewMode} />
-        ) : hits.length === 0 ? (
-          <div className={viewMode === "grid" ? "col-span-full" : ""}>
-            <EmptyState />
-          </div>
-        ) : (
-          <>
-            {hits.map((hit, index) => (
-              <SearchHitCard
-                key={hit.id}
-                hit={hit}
-                featured={index === 0 && currentPage === 1}
-                viewMode={viewMode}
-              />
-            ))}
-          </>
-        )}
+        {renderContent()}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -143,12 +149,12 @@ function Pagination({
   totalPages,
   onPageChange,
 }: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+  readonly currentPage: number;
+  readonly totalPages: number;
+  readonly onPageChange: (page: number) => void;
 }) {
-  function generatePageNumbers(): (number | "ellipsis")[] {
-    const pages: (number | "ellipsis")[] = [];
+  function generatePageNumbers(): (number | "ellipsis-start" | "ellipsis-end")[] {
+    const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
 
     if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
@@ -156,13 +162,13 @@ function Pagination({
     }
 
     pages.push(1);
-    if (currentPage > 3) pages.push("ellipsis");
+    if (currentPage > 3) pages.push("ellipsis-start");
 
     const start = Math.max(2, currentPage - 1);
     const end = Math.min(totalPages - 1, currentPage + 1);
     for (let i = start; i <= end; i++) pages.push(i);
 
-    if (currentPage < totalPages - 2) pages.push("ellipsis");
+    if (currentPage < totalPages - 2) pages.push("ellipsis-end");
     pages.push(totalPages);
 
     return pages;
@@ -181,10 +187,10 @@ function Pagination({
         >
           ←
         </button>
-        {generatePageNumbers().map((pageNum, index) =>
-          pageNum === "ellipsis" ? (
+        {generatePageNumbers().map((pageNum) =>
+          pageNum === "ellipsis-start" || pageNum === "ellipsis-end" ? (
             <span
-              key={`ellipsis-${index}`}
+              key={pageNum}
               className="font-mono text-xs text-text-dim px-1"
             >
               ···
@@ -217,13 +223,13 @@ function Pagination({
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────
 
-function LoadingSkeleton({ viewMode }: { viewMode: ViewMode }) {
+function LoadingSkeleton({ viewMode }: { readonly viewMode: ViewMode }) {
   if (viewMode === "grid") {
     return (
       <>
-        {Array.from({ length: 6 }).map((_, index) => (
+        {["sk-g1","sk-g2","sk-g3","sk-g4","sk-g5","sk-g6"].map((key) => (
           <div
-            key={index}
+            key={key}
             className="border border-border-default bg-bg-elevated/30 p-5 animate-pulse"
           >
             <div className="flex items-center gap-3 mb-4">
@@ -247,9 +253,9 @@ function LoadingSkeleton({ viewMode }: { viewMode: ViewMode }) {
 
   return (
     <div className="space-y-3">
-      {Array.from({ length: 5 }).map((_, index) => (
+      {["sk-l1","sk-l2","sk-l3","sk-l4","sk-l5"].map((key) => (
         <div
-          key={index}
+          key={key}
           className="border border-border-default bg-bg-elevated/30 p-5 flex items-start gap-5 animate-pulse"
         >
           <div className="w-11 h-11 bg-bg-surface flex-shrink-0" />

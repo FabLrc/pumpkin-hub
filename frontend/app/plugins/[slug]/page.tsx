@@ -4,7 +4,7 @@ import { PluginPageClient } from "./_components/PluginPageClient";
 import { PluginJsonLd } from "./_components/PluginJsonLd";
 
 interface PluginPageProps {
-  params: Promise<{ slug: string }>;
+  readonly params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({

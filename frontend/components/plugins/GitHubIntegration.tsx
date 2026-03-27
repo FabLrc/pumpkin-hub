@@ -25,7 +25,7 @@ import type { MyGithubRepository, LinkGitHubRequest } from "@/lib/types";
 // ── Props ─────────────────────────────────────────────────────────────────
 
 interface GitHubIntegrationProps {
-  slug: string;
+  readonly slug: string;
 }
 
 export function GitHubIntegration({ slug }: GitHubIntegrationProps) {
@@ -67,8 +67,8 @@ function LinkedState({
   slug,
   link,
 }: {
-  slug: string;
-  link: NonNullable<ReturnType<typeof useGithubLink>["data"]>;
+  readonly slug: string;
+  readonly link: NonNullable<ReturnType<typeof useGithubLink>["data"]>;
 }) {
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [badgeCopied, setBadgeCopied] = useState(false);
@@ -175,7 +175,7 @@ function LinkedState({
 
 // ── Feature Indicator ─────────────────────────────────────────────────────
 
-function FeatureIndicator({ label, enabled }: { label: string; enabled: boolean }) {
+function FeatureIndicator({ label, enabled }: { readonly label: string; readonly enabled: boolean }) {
   return (
     <div className="border border-border-default p-2.5 text-center">
       <div
@@ -193,7 +193,7 @@ function FeatureIndicator({ label, enabled }: { label: string; enabled: boolean 
 
 // ── Unlinked State (Link Form with Repo Picker) ────────────────────────────
 
-function UnlinkedState({ slug }: { slug: string }) {
+function UnlinkedState({ slug }: { readonly slug: string }) {
   const [repos, setRepos] = useState<MyGithubRepository[]>([]);
   const [repoSearch, setRepoSearch] = useState("");
   const [selectedRepo, setSelectedRepo] = useState<MyGithubRepository | null>(null);
@@ -272,7 +272,7 @@ function UnlinkedState({ slug }: { slug: string }) {
       </p>
 
       {/* Step 1 — Load repositories */}
-      {!hasLoaded ? (
+      {hasLoaded ? null : (
         <div>
           <button
             type="button"
@@ -300,7 +300,7 @@ function UnlinkedState({ slug }: { slug: string }) {
             is installed on your GitHub account.
           </p>
         </div>
-      ) : null}
+      )}
 
       {/* Empty state */}
       {hasLoaded && repos.length === 0 && (
@@ -333,9 +333,9 @@ function UnlinkedState({ slug }: { slug: string }) {
       {/* Repository picker */}
       {hasLoaded && repos.length > 0 && (
         <div>
-          <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
+          <span className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-1.5">
             Select Repository
-          </label>
+          </span>
 
           {repos.length > 5 && (
             <div className="relative mb-2">
@@ -345,6 +345,7 @@ function UnlinkedState({ slug }: { slug: string }) {
                 value={repoSearch}
                 onChange={(e) => setRepoSearch(e.target.value)}
                 placeholder="Filter repositories…"
+                aria-label="Filter repositories"
                 className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary pl-8 pr-3 py-2 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
               />
             </div>
@@ -398,9 +399,9 @@ function UnlinkedState({ slug }: { slug: string }) {
       {selectedRepo && (
         <>
           <div>
-            <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
+            <span className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
               Sync Features
-            </label>
+            </span>
             <div className="grid grid-cols-3 gap-3">
               <ToggleOption label="Auto-publish" checked={autoPublish} onChange={setAutoPublish} />
               <ToggleOption label="Sync README" checked={syncReadme} onChange={setSyncReadme} />
@@ -442,9 +443,9 @@ function ToggleOption({
   checked,
   onChange,
 }: {
-  label: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
+  readonly label: string;
+  readonly checked: boolean;
+  readonly onChange: (value: boolean) => void;
 }) {
   return (
     <button

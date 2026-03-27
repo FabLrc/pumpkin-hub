@@ -8,7 +8,7 @@ import { useChangelog, useCurrentUser } from "@/lib/hooks";
 import { updateChangelog, getChangelogPath } from "@/lib/api";
 
 interface ChangelogTabProps {
-  plugin: PluginResponse;
+  readonly plugin: PluginResponse;
 }
 
 export function ChangelogTab({ plugin }: ChangelogTabProps) {
@@ -67,31 +67,9 @@ export function ChangelogTab({ plugin }: ChangelogTabProps) {
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Header with source badge and edit button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="font-mono text-sm text-text-primary uppercase tracking-widest">
-            Changelog
-          </h3>
-          {hasContent && (
-            <SourceBadge source={changelog.source} />
-          )}
-        </div>
-        {isOwner && !isEditing && (
-          <button
-            onClick={handleStartEdit}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-border-default hover:border-accent text-text-muted hover:text-text-primary font-mono text-xs transition-colors cursor-pointer"
-          >
-            <Edit3 size={12} />
-            <span>{hasContent ? "Edit" : "Add Changelog"}</span>
-          </button>
-        )}
-      </div>
-
-      {/* Edit mode */}
-      {isEditing ? (
+  function renderContent() {
+    if (isEditing) {
+      return (
         <div className="space-y-3">
           <div className="border border-border-default bg-bg-elevated">
             <div className="flex items-center justify-between px-3 py-2 border-b border-border-default bg-bg-surface">
@@ -141,7 +119,11 @@ export function ChangelogTab({ plugin }: ChangelogTabProps) {
             </button>
           </div>
         </div>
-      ) : hasContent ? (
+      );
+    }
+
+    if (hasContent) {
+      return (
         /* Rendered markdown */
         <div className="md-content border border-border-default bg-bg-elevated p-6">
           <div
@@ -150,27 +132,56 @@ export function ChangelogTab({ plugin }: ChangelogTabProps) {
             }}
           />
         </div>
-      ) : (
-        /* Empty state */
-        <div className="text-center py-16 border border-border-default bg-bg-elevated">
-          <FileText size={32} className="mx-auto mb-3 text-text-dim" />
-          <p className="text-text-muted font-mono text-sm">
-            No changelog available
+      );
+    }
+
+    return (
+      /* Empty state */
+      <div className="text-center py-16 border border-border-default bg-bg-elevated">
+        <FileText size={32} className="mx-auto mb-3 text-text-dim" />
+        <p className="text-text-muted font-mono text-sm">
+          No changelog available
+        </p>
+        {isOwner && (
+          <p className="text-text-dim font-mono text-xs mt-1">
+            Add a changelog to track your plugin{"'"}s evolution
           </p>
-          {isOwner && (
-            <p className="text-text-dim font-mono text-xs mt-1">
-              Add a changelog to track your plugin{"'"}s evolution
-            </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header with source badge and edit button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="font-mono text-sm text-text-primary uppercase tracking-widest">
+            Changelog
+          </h3>
+          {hasContent && (
+            <SourceBadge source={changelog.source} />
           )}
         </div>
-      )}
+        {isOwner && !isEditing && (
+          <button
+            onClick={handleStartEdit}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-border-default hover:border-accent text-text-muted hover:text-text-primary font-mono text-xs transition-colors cursor-pointer"
+          >
+            <Edit3 size={12} />
+            <span>{hasContent ? "Edit" : "Add Changelog"}</span>
+          </button>
+        )}
+      </div>
+
+      {renderContent()}
     </div>
   );
 }
 
 // ── Source Badge ───────────────────────────────────────────────────────────
 
-function SourceBadge({ source }: { source: string }) {
+function SourceBadge({ source }: { readonly source: string }) {
   if (source === "github") {
     return (
       <span className="flex items-center gap-1 px-2 py-0.5 bg-bg-surface border border-border-default font-mono text-[10px] text-text-dim">
@@ -205,24 +216,13 @@ function formatChangelog(raw: string): string {
   let inList = false;
 
   for (const line of lines) {
-    // Code block toggle
     if (line.trim().startsWith("```")) {
-      if (inCodeBlock) {
-        const langClass = codeLanguage ? ` class="language-${escapeHtml(codeLanguage)}"` : "";
-        htmlParts.push(
-          `<pre><code${langClass}>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`,
-        );
-        codeBuffer = [];
-        codeLanguage = "";
-        inCodeBlock = false;
-      } else {
-        if (inList) {
-          htmlParts.push("</ul>");
-          inList = false;
-        }
-        codeLanguage = line.trim().slice(3).trim();
-        inCodeBlock = true;
-      }
+      const result = processCodeFence(line, inCodeBlock, codeBuffer, codeLanguage, inList);
+      htmlParts.push(...result.parts);
+      inCodeBlock = result.inCodeBlock;
+      codeBuffer = result.codeBuffer;
+      codeLanguage = result.codeLanguage;
+      inList = result.inList;
       continue;
     }
 
@@ -233,7 +233,6 @@ function formatChangelog(raw: string): string {
 
     const trimmed = line.trim();
 
-    // Blank line → close list if open
     if (trimmed === "") {
       if (inList) {
         htmlParts.push("</ul>");
@@ -242,23 +241,13 @@ function formatChangelog(raw: string): string {
       continue;
     }
 
-    // Headings (h1–h4)
-    const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)/);
-    if (headingMatch) {
-      if (inList) {
-        htmlParts.push("</ul>");
-        inList = false;
-      }
-      const level = headingMatch[1].length;
-      const text = headingMatch[2];
-      // Version headings get special styling
-      const versionPattern = /^\[[\d.]+\]/;
-      const extraClass = versionPattern.test(text) ? ' class="changelog-version"' : "";
-      htmlParts.push(`<h${level}${extraClass}>${inlineFormat(text)}</h${level}>`);
+    const headingResult = processHeading(trimmed, inList);
+    if (headingResult !== null) {
+      htmlParts.push(...headingResult.parts);
+      inList = headingResult.inList;
       continue;
     }
 
-    // List items
     if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
       if (!inList) {
         htmlParts.push("<ul>");
@@ -268,7 +257,6 @@ function formatChangelog(raw: string): string {
       continue;
     }
 
-    // Paragraph
     if (inList) {
       htmlParts.push("</ul>");
       inList = false;
@@ -276,12 +264,10 @@ function formatChangelog(raw: string): string {
     htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
   }
 
-  // Close any open list
   if (inList) {
     htmlParts.push("</ul>");
   }
 
-  // Close unclosed code block
   if (inCodeBlock && codeBuffer.length > 0) {
     htmlParts.push(
       `<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`,
@@ -291,12 +277,67 @@ function formatChangelog(raw: string): string {
   return htmlParts.join("\n");
 }
 
+interface CodeFenceResult {
+  parts: string[];
+  inCodeBlock: boolean;
+  codeBuffer: string[];
+  codeLanguage: string;
+  inList: boolean;
+}
+
+function processCodeFence(
+  line: string,
+  inCodeBlock: boolean,
+  codeBuffer: string[],
+  codeLanguage: string,
+  inList: boolean,
+): CodeFenceResult {
+  const parts: string[] = [];
+  if (inCodeBlock) {
+    const langClass = codeLanguage ? ` class="language-${escapeHtml(codeLanguage)}"` : "";
+    parts.push(`<pre><code${langClass}>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`);
+    return { parts, inCodeBlock: false, codeBuffer: [], codeLanguage: "", inList };
+  }
+  if (inList) {
+    parts.push("</ul>");
+  }
+  return {
+    parts,
+    inCodeBlock: true,
+    codeBuffer: [],
+    codeLanguage: line.trim().slice(3).trim(),
+    inList: false,
+  };
+}
+
+interface HeadingResult {
+  parts: string[];
+  inList: boolean;
+}
+
+function processHeading(trimmed: string, inList: boolean): HeadingResult | null {
+  const headingPattern = /^(#{1,4})\s+(.+)/;
+  const headingMatch = headingPattern.exec(trimmed);
+  if (!headingMatch) return null;
+
+  const parts: string[] = [];
+  if (inList) {
+    parts.push("</ul>");
+  }
+  const level = headingMatch[1].length;
+  const text = headingMatch[2];
+  const versionPattern = /^\[[\d.]+\]/;
+  const extraClass = versionPattern.test(text) ? ' class="changelog-version"' : "";
+  parts.push(`<h${level}${extraClass}>${inlineFormat(text)}</h${level}>`);
+  return { parts, inList: false };
+}
+
 function escapeHtml(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 /**
@@ -307,16 +348,16 @@ function inlineFormat(text: string): string {
   let result = escapeHtml(text);
 
   // Inline code
-  result = result.replace(/`([^`]+)`/g, "<code>$1</code>");
+  result = result.replaceAll(/`([^`]+)`/g, "<code>$1</code>");
 
   // Bold
-  result = result.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  result = result.replaceAll(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
   // Italic
-  result = result.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  result = result.replaceAll(/\*([^*]+)\*/g, "<em>$1</em>");
 
   // Links: [text](url) — only allow http(s) URLs
-  result = result.replace(
+  result = result.replaceAll(
     /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
     '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
   );

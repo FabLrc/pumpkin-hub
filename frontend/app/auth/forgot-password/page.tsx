@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = message.match(/"error":\s*"([^"]+)"/);
+      const match = /"error":\s*"([^"]+)"/.exec(message);
       setError(match ? match[1] : message);
     } finally {
       setIsSubmitting(false);

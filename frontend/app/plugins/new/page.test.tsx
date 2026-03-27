@@ -40,10 +40,9 @@ vi.mock("@/components/plugins/PluginForm", () => ({
   PluginForm: (props: {
     submitLabel?: string;
     onSubmit?: (data: Record<string, unknown>) => void;
-    isSubmitting?: boolean;
   }) => (
     <div data-testid="plugin-form" data-label={props.submitLabel}>
-      PluginForm
+      {"PluginForm"}
       <button
         type="button"
         data-testid="submit-form"

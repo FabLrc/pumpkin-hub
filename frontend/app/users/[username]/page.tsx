@@ -13,13 +13,12 @@ import {
   Shield,
 } from "lucide-react";
 import { Navbar, Footer } from "@/components/layout";
-import { PluginCard } from "@/components/ui/PluginCard";
+import { PluginCard, formatDownloads } from "@/components/ui/PluginCard";
 import {
   fetchAuthorProfile,
   fetchAuthorPlugins,
 } from "@/lib/api";
 import type { AuthorProfileResponse, PluginSummary, PaginationMeta } from "@/lib/types";
-import { formatDownloads } from "@/components/ui/PluginCard";
 
 const PER_PAGE = 12;
 
@@ -103,7 +102,7 @@ export default function AuthorProfilePage() {
               </div>
             </div>
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-28 bg-bg-surface border border-border-default" />
+              <div key={`skeleton-${i}`} className="h-28 bg-bg-surface border border-border-default" />
             ))}
           </div>
         </main>

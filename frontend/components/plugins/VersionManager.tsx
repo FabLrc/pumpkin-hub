@@ -7,9 +7,9 @@ import type { VersionResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 
 interface VersionManagerProps {
-  slug: string;
-  version: VersionResponse;
-  onMutated: () => void;
+  readonly slug: string;
+  readonly version: VersionResponse;
+  readonly onMutated: () => void;
 }
 
 export function VersionManager({
@@ -53,13 +53,14 @@ export function VersionManager({
 
       {showConfirm && (
         <div
+          role="button"
+          tabIndex={0}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
           onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false); }}
         >
-          <div
-            role="dialog"
-            aria-modal="true"
+          <dialog
+            open
             aria-labelledby="version-manager-title"
             className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
           >
@@ -111,14 +112,10 @@ export function VersionManager({
                     : "bg-green-500 hover:bg-green-500/80 text-black"
                 }`}
               >
-                {isLoading
-                  ? "Processing…"
-                  : nextYanked
-                    ? "Yank Version"
-                    : "Restore Version"}
+                {isLoading ? "Processing…" : actionLabel + " Version"}
               </button>
             </div>
-          </div>
+          </dialog>
         </div>
       )}
     </>

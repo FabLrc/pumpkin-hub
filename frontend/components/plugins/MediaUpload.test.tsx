@@ -36,8 +36,8 @@ function selectFile(file: File) {
 describe("MediaUpload", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.URL.createObjectURL = vi.fn(() => "blob:preview-url");
-    global.URL.revokeObjectURL = vi.fn();
+    globalThis.URL.createObjectURL = vi.fn(() => "blob:preview-url");
+    globalThis.URL.revokeObjectURL = vi.fn();
   });
 
   it("renders upload area initially", () => {

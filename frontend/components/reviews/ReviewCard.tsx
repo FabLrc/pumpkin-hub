@@ -9,14 +9,14 @@ import { StarRating } from "./StarRating";
 import { formatTimeAgo } from "@/components/ui/PluginCard";
 
 interface ReviewCardProps {
-  review: ReviewResponse;
-  currentUserId?: string | null;
-  isPluginAuthor: boolean;
-  isStaff: boolean;
-  onEdit?: () => void;
-  onDelete: () => void;
-  onReport: () => void;
-  onToggleVisibility?: () => void;
+  readonly review: ReviewResponse;
+  readonly currentUserId?: string | null;
+  readonly isPluginAuthor: boolean;
+  readonly isStaff: boolean;
+  readonly onEdit?: () => void;
+  readonly onDelete: () => void;
+  readonly onReport: () => void;
+  readonly onToggleVisibility?: () => void;
 }
 
 export function ReviewCard({
@@ -90,6 +90,9 @@ export function ReviewCard({
                   className="fixed inset-0 z-10"
                   onClick={() => setShowMenu(false)}
                   onKeyDown={(e) => { if (e.key === "Escape") setShowMenu(false); }}
+                  role="button"
+                  tabIndex={-1}
+                  aria-label="Close menu"
                 />
                 <div className="absolute right-0 top-full mt-1 z-20 border border-border-default bg-bg-elevated min-w-[160px]">
                   {isOwnReview && onEdit && (

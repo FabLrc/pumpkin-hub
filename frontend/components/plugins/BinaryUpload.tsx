@@ -7,10 +7,10 @@ import { PLATFORMS } from "@/lib/types";
 import { uploadBinary } from "@/lib/api";
 
 interface BinaryUploadProps {
-  slug: string;
-  version: string;
-  existingPlatforms: string[];
-  onUploaded: () => void;
+  readonly slug: string;
+  readonly version: string;
+  readonly existingPlatforms: string[];
+  readonly onUploaded: () => void;
 }
 
 const MAX_FILE_SIZE_MB = 100;
@@ -114,9 +114,9 @@ export function BinaryUpload({
 
       {/* Platform selector */}
       <div>
-        <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
+        <span className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
           Target Platform
-        </label>
+        </span>
         <div className="flex gap-2">
           {availablePlatforms.map((p) => (
             <button
@@ -138,11 +138,12 @@ export function BinaryUpload({
 
       {/* File input */}
       <div>
-        <label className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
+        <label htmlFor="binary-file-input" className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
           Binary File
         </label>
         <div className="relative">
           <input
+            id="binary-file-input"
             ref={fileInputRef}
             type="file"
             onChange={handleFileSelect}

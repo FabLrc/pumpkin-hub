@@ -6,14 +6,14 @@ import { Terminal } from "lucide-react";
 import Image from "next/image";
 
 interface HeroSectionProps {
-  totalPlugins: number;
-  totalAuthors: number;
-  totalDownloads: number;
+  readonly totalPlugins: number;
+  readonly totalAuthors: number;
+  readonly totalDownloads: number;
 }
 
 const noopSubscribe = () => () => {};
 function getIsMacSnapshot() {
-  return navigator.platform.toUpperCase().includes("MAC");
+  return navigator.userAgent.toUpperCase().includes("MAC");
 }
 function getIsMacServerSnapshot() {
   return true;

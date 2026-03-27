@@ -23,9 +23,9 @@ function createMockResponse({
 }
 
 class MockXMLHttpRequest {
-  static nextStatus = 200;
-  static nextResponseText = '{"binary":{"checksum_sha256":"abc"}}';
-  static shouldError = false;
+  static readonly nextStatus = 200;
+  static readonly nextResponseText = '{"binary":{"checksum_sha256":"abc"}}';
+  static readonly shouldError = false;
 
   method = "";
   url = "";
@@ -40,7 +40,7 @@ class MockXMLHttpRequest {
     }),
   };
 
-  private listeners = new Map<string, () => void>();
+  private readonly listeners = new Map<string, () => void>();
 
   open(method: string, url: string) {
     this.method = method;
@@ -60,7 +60,6 @@ class MockXMLHttpRequest {
   }
 
   send(_body: FormData) {
-    void _body;
     this.status = MockXMLHttpRequest.nextStatus;
     this.responseText = MockXMLHttpRequest.nextResponseText;
 
@@ -78,9 +77,9 @@ describe("lib/api", () => {
     vi.restoreAllMocks();
     vi.stubGlobal("XMLHttpRequest", MockXMLHttpRequest as unknown as typeof XMLHttpRequest);
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(createMockResponse()));
-    MockXMLHttpRequest.nextStatus = 200;
-    MockXMLHttpRequest.nextResponseText = '{"binary":{"checksum_sha256":"abc"}}';
-    MockXMLHttpRequest.shouldError = false;
+    (MockXMLHttpRequest as { nextStatus: number }).nextStatus = 200;
+    (MockXMLHttpRequest as { nextResponseText: string }).nextResponseText = '{"binary":{"checksum_sha256":"abc"}}';
+    (MockXMLHttpRequest as { shouldError: boolean }).shouldError = false;
   });
 
   it("builds plugin, search and helper paths", () => {
@@ -103,6 +102,7 @@ describe("lib/api", () => {
     expect(api.getNotificationsPath(2, 15, true)).toBe("/notifications?page=2&per_page=15&unread_only=true");
     expect(api.getUnreadCountPath()).toBe("/notifications/unread-count");
 
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     expect(api.getGithubLoginUrl()).toContain("/api/v1/auth/github");
     expect(api.getOAuthLoginUrl("google")).toContain("/api/v1/auth/google");
     expect(api.getPluginBadgeUrl("my plugin")).toContain("/plugins/my%20plugin/badge.svg");
@@ -257,22 +257,22 @@ describe("lib/api", () => {
   });
 
   it("rejects binary upload on XHR error status", async () => {
-    MockXMLHttpRequest.nextStatus = 400;
-    MockXMLHttpRequest.nextResponseText = "bad request";
+    (MockXMLHttpRequest as { nextStatus: number }).nextStatus = 400;
+    (MockXMLHttpRequest as { nextResponseText: string }).nextResponseText = "bad request";
 
     const file = new File(["bin"], "plugin.so");
     await expect(api.uploadBinary("slug", "1.0.0", file, "linux")).rejects.toThrow("API 400: bad request");
   });
 
   it("rejects binary upload on network error", async () => {
-    MockXMLHttpRequest.shouldError = true;
+    (MockXMLHttpRequest as { shouldError: boolean }).shouldError = true;
 
     const file = new File(["bin"], "plugin.so");
     await expect(api.uploadBinary("slug", "1.0.0", file, "linux")).rejects.toThrow("Network error during binary upload");
   });
 
   it("uploads media with xhr and credentials enabled", async () => {
-    MockXMLHttpRequest.nextResponseText = '{"media":{"id":"m1"}}';
+    (MockXMLHttpRequest as { nextResponseText: string }).nextResponseText = '{"media":{"id":"m1"}}';
 
     const onProgress = vi.fn();
     const file = new File(["img"], "preview.png");
@@ -283,15 +283,15 @@ describe("lib/api", () => {
   });
 
   it("rejects media upload on status error", async () => {
-    MockXMLHttpRequest.nextStatus = 413;
-    MockXMLHttpRequest.nextResponseText = "too large";
+    (MockXMLHttpRequest as { nextStatus: number }).nextStatus = 413;
+    (MockXMLHttpRequest as { nextResponseText: string }).nextResponseText = "too large";
 
     const file = new File(["img"], "preview.png");
     await expect(api.uploadMedia("slug", file)).rejects.toThrow("Upload failed: 413 too large");
   });
 
   it("rejects media upload on network error", async () => {
-    MockXMLHttpRequest.shouldError = true;
+    (MockXMLHttpRequest as { shouldError: boolean }).shouldError = true;
 
     const file = new File(["img"], "preview.png");
     await expect(api.uploadMedia("slug", file)).rejects.toThrow("Network error during upload");

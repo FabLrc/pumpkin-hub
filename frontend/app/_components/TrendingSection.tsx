@@ -4,7 +4,7 @@ import type { PluginSummary } from "@/lib/types";
 import { PluginIcon } from "@/components/ui";
 
 interface TrendingSectionProps {
-  plugins: PluginSummary[];
+  readonly plugins: PluginSummary[];
 }
 
 function formatDownloads(count: number): string {
@@ -108,8 +108,8 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
               ? rest.map((plugin) => (
                   <SmallBentoCard key={plugin.id} plugin={plugin} />
                 ))
-              : Array.from({ length: 4 }).map((_, index) => (
-                  <SmallPlaceholder key={index} />
+              : ["ph-1","ph-2","ph-3","ph-4"].map((key) => (
+                  <SmallPlaceholder key={key} />
                 ))}
           </div>
         </div>
@@ -120,7 +120,7 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
 
 // ── Small Bento Card ──────────────────────────────────────────────────────
 
-function SmallBentoCard({ plugin }: { plugin: PluginSummary }) {
+function SmallBentoCard({ plugin }: { readonly plugin: PluginSummary }) {
   return (
     <Link
       href={`/plugins/${plugin.slug}`}

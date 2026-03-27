@@ -11,10 +11,10 @@ import { Button } from "@/components/ui/Button";
 import { formatMarkdown } from "@/lib/markdown";
 
 interface PluginFormProps {
-  initialData?: PluginFormData;
-  onSubmit: (data: PluginFormData) => Promise<void>;
-  submitLabel: string;
-  isSubmitting: boolean;
+  readonly initialData?: PluginFormData;
+  readonly onSubmit: (data: PluginFormData) => Promise<void>;
+  readonly submitLabel: string;
+  readonly isSubmitting: boolean;
 }
 
 const EMPTY_FORM: PluginFormData = {
@@ -78,7 +78,7 @@ export function PluginForm({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = message.match(/"error":\s*"([^"]+)"/);
+      const match = /"error":\s*"([^"]+)"/.exec(message);
       setServerError(match ? match[1] : message);
     }
   }
@@ -145,9 +145,9 @@ export function PluginForm({
               type="button"
               onClick={() => setDescPreview(false)}
               className={`font-mono text-xs px-2.5 py-0.5 border transition-colors cursor-pointer ${
-                !descPreview
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border-default text-text-dim hover:text-text-primary"
+                descPreview
+                  ? "border-border-default text-text-dim hover:text-text-primary"
+                  : "border-accent bg-accent/10 text-accent"
               }`}
             >
               Edit
@@ -283,12 +283,12 @@ function FormField({
   required,
   children,
 }: {
-  label: string;
-  htmlFor: string;
-  error: string | null;
-  hint?: string;
-  required?: boolean;
-  children: React.ReactNode;
+  readonly label: string;
+  readonly htmlFor: string;
+  readonly error: string | null;
+  readonly hint?: string;
+  readonly required?: boolean;
+  readonly children: React.ReactNode;
 }) {
   return (
     <div>
@@ -323,10 +323,10 @@ function CategoryPicker({
   onToggle,
   maxReached,
 }: {
-  categories: CategoryResponse[];
-  selectedIds: string[];
-  onToggle: (id: string) => void;
-  maxReached: boolean;
+  readonly categories: CategoryResponse[];
+  readonly selectedIds: string[];
+  readonly onToggle: (id: string) => void;
+  readonly maxReached: boolean;
 }) {
   if (categories.length === 0) {
     return (
@@ -342,6 +342,14 @@ function CategoryPicker({
         const isSelected = selectedIds.includes(cat.id);
         const isDisabled = !isSelected && maxReached;
         const Icon = getCategoryIcon(cat.icon);
+        let categoryStateClasses: string;
+        if (isSelected) {
+          categoryStateClasses = "border-accent bg-accent/10 text-accent";
+        } else if (isDisabled) {
+          categoryStateClasses = "border-border-default text-text-dim opacity-50 cursor-not-allowed";
+        } else {
+          categoryStateClasses = "border-border-default text-text-muted hover:border-border-hover hover:text-text-primary";
+        }
         return (
           <button
             key={cat.id}
@@ -352,13 +360,7 @@ function CategoryPicker({
             className={`
               inline-flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs transition-colors cursor-pointer
               border
-              ${
-                isSelected
-                  ? "border-accent bg-accent/10 text-accent"
-                  : isDisabled
-                    ? "border-border-default text-text-dim opacity-50 cursor-not-allowed"
-                    : "border-border-default text-text-muted hover:border-border-hover hover:text-text-primary"
-              }
+              ${categoryStateClasses}
             `}
           >
             <Icon className="w-3 h-3" />

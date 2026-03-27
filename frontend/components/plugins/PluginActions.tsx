@@ -11,7 +11,7 @@ import type { PluginResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 
 interface PluginActionsProps {
-  plugin: PluginResponse;
+  readonly plugin: PluginResponse;
 }
 
 export function PluginActions({ plugin }: PluginActionsProps) {
@@ -61,13 +61,15 @@ export function PluginActions({ plugin }: PluginActionsProps) {
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close dialog"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
           onKeyDown={(e) => { if (e.key === "Escape") setShowDeleteConfirm(false); }}
         >
-          <div
-            role="dialog"
-            aria-modal="true"
+          <dialog
+            open
             aria-labelledby="delete-plugin-title"
             className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
           >
@@ -108,7 +110,7 @@ export function PluginActions({ plugin }: PluginActionsProps) {
                 {isDeleting ? "Deleting…" : "Delete Plugin"}
               </button>
             </div>
-          </div>
+          </dialog>
         </div>
       )}
     </>

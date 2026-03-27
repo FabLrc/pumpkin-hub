@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 type BadgeVariant = "default" | "orange" | "green" | "blue";
 
 interface BadgeProps {
-  children: ReactNode;
-  variant?: BadgeVariant;
-  className?: string;
+  readonly children: ReactNode;
+  readonly variant?: BadgeVariant;
+  readonly className?: string;
 }
 
 const VARIANT_STYLES: Record<BadgeVariant, string> = {

@@ -10,7 +10,7 @@ import { MediaUpload } from "@/components/plugins/MediaUpload";
 import { Lightbox } from "@/components/plugins/Lightbox";
 
 interface GalleryTabProps {
-  plugin: PluginResponse;
+  readonly plugin: PluginResponse;
 }
 
 function formatFileSize(bytes: number): string {
@@ -107,11 +107,11 @@ export function GalleryTab({ plugin }: GalleryTabProps) {
 // ── Gallery Card ──────────────────────────────────────────────────────────
 
 interface GalleryCardProps {
-  item: MediaResponse;
-  isOwner: boolean;
-  isDeleting: boolean;
-  onView: () => void;
-  onDelete: () => void;
+  readonly item: MediaResponse;
+  readonly isOwner: boolean;
+  readonly isDeleting: boolean;
+  readonly onView: () => void;
+  readonly onDelete: () => void;
 }
 
 function GalleryCard({

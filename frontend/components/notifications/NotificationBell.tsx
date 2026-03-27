@@ -61,12 +61,15 @@ export function NotificationBell() {
     mutate("/notifications/unread-count");
   }
 
+  const unreadSuffix = unreadCount > 0 ? ` (${unreadCount} unread)` : "";
+  const bellAriaLabel = `Notifications${unreadSuffix}`;
+
   return (
     <div ref={panelRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-1.5 border border-border-default hover:border-border-hover transition-colors cursor-pointer"
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+        aria-label={bellAriaLabel}
       >
         <Bell className="w-4 h-4 text-text-dim" />
         {unreadCount > 0 && (

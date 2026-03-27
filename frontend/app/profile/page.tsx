@@ -34,7 +34,7 @@ const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 function AvatarSection({
   currentAvatarUrl,
 }: {
-  currentAvatarUrl: string | null;
+  readonly currentAvatarUrl: string | null;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -89,7 +89,7 @@ function AvatarSection({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = message.match(/"error":\s*"([^"]+)"/);
+      const match = /"error":\s*"([^"]+)"/.exec(message);
       const errorMsg = match ? match[1] : message;
       setError(errorMsg);
       toast.error(errorMsg);
@@ -245,7 +245,7 @@ export default function ProfilePage() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = message.match(/"error":\s*"([^"]+)"/);
+      const match = /"error":\s*"([^"]+)"/.exec(message);
       const errorMsg = match ? match[1] : message;
       setError(errorMsg);
       toast.error(errorMsg);
@@ -284,16 +284,17 @@ export default function ProfilePage() {
         </div>
 
         {/* Loading state */}
-        {isLoading ? (
+        {isLoading && (
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
-                key={i}
+                key={`skeleton-${i}`}
                 className="h-12 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}
           </div>
-        ) : user ? (
+        )}
+        {!isLoading && user && (
           <div className="space-y-8">
             {/* Avatar upload */}
             <AvatarSection currentAvatarUrl={user.avatar_url ?? null} />
@@ -328,7 +329,8 @@ export default function ProfilePage() {
                 {/* Display Name */}
                 <div>
                   <label className="block font-mono text-xs text-text-muted mb-1.5">
-                    Display Name
+                    {"Display Name"}
+                    {" "}
                     <span className="text-text-dim ml-2">
                       ({displayName.length}/{DISPLAY_NAME_MAX})
                     </span>
@@ -346,7 +348,8 @@ export default function ProfilePage() {
                 {/* Bio */}
                 <div>
                   <label className="block font-mono text-xs text-text-muted mb-1.5">
-                    Bio
+                    {"Bio"}
+                    {" "}
                     <span className="text-text-dim ml-2">
                       ({bio.length}/{BIO_MAX})
                     </span>
@@ -393,14 +396,14 @@ export default function ProfilePage() {
               </button>
             </form>
           </div>
-        ) : null}
+        )}
       </main>
       <Footer />
     </>
   );
 }
 
-function InfoField({ label, value }: { label: string; value: string }) {
+function InfoField({ label, value }: { readonly label: string; readonly value: string }) {
   return (
     <dl>
       <dt className="font-mono text-[10px] text-text-dim uppercase tracking-wider">

@@ -7,6 +7,11 @@ import { useCurrentUser } from "@/lib/hooks";
 import { logout } from "@/lib/api";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
+async function handleLogout() {
+  await logout();
+  globalThis.location.href = "/";
+}
+
 export function Navbar() {
   const { data: user, isLoading } = useCurrentUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,11 +27,6 @@ export function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  async function handleLogout() {
-    await logout();
-    window.location.href = "/";
-  }
 
   return (
     <nav className="border-b border-border-default sticky top-0 z-50 bg-bg-base/95 backdrop-blur-sm">
@@ -80,9 +80,10 @@ export function Navbar() {
           </button>
 
           {/* Auth */}
-          {isLoading ? (
+          {isLoading && (
             <div className="w-20 h-8 bg-bg-surface border border-border-default animate-pulse" />
-          ) : user ? (
+          )}
+          {!isLoading && user && (
             <>
               <NotificationBell />
               <div ref={menuRef} className="relative">
@@ -161,7 +162,8 @@ export function Navbar() {
                 )}
               </div>
             </>
-          ) : (
+          )}
+          {!isLoading && !user && (
             <Link
               href="/auth"
               className="text-xs font-mono text-text-subtle hover:text-text-primary transition-colors px-3 py-1.5 border border-border-default hover:border-border-hover"

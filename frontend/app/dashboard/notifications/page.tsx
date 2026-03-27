@@ -40,8 +40,8 @@ function NotificationRow({
   notification,
   onMarkRead,
 }: {
-  notification: NotificationItem;
-  onMarkRead: (id: string) => void;
+  readonly notification: NotificationItem;
+  readonly onMarkRead: (id: string) => void;
 }) {
   return (
     <div
@@ -51,10 +51,10 @@ function NotificationRow({
     >
       {/* Unread indicator */}
       <div className="pt-1.5 shrink-0">
-        {!notification.is_read ? (
-          <div className="w-2 h-2 bg-accent" />
-        ) : (
+        {notification.is_read ? (
           <div className="w-2 h-2" />
+        ) : (
+          <div className="w-2 h-2 bg-accent" />
         )}
       </div>
 
@@ -160,9 +160,9 @@ export default function NotificationsPage() {
               setPage(1);
             }}
             className={`font-mono text-xs px-2 py-1 transition-colors cursor-pointer ${
-              !filterUnread
-                ? "text-text-primary bg-bg-surface border border-border-default"
-                : "text-text-dim hover:text-text-primary"
+              filterUnread
+                ? "text-text-dim hover:text-text-primary"
+                : "text-text-primary bg-bg-surface border border-border-default"
             }`}
           >
             All
@@ -194,42 +194,48 @@ export default function NotificationsPage() {
 
       {/* Notification list */}
       <div className="border border-border-default bg-bg-elevated">
-        {isLoading ? (
-          <div className="space-y-0">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="px-4 py-3 border-b border-border-default last:border-b-0"
-              >
-                <div className="h-3 w-20 bg-bg-surface animate-pulse mb-2" />
-                <div className="h-4 w-3/4 bg-bg-surface animate-pulse mb-1" />
-                <div className="h-3 w-1/2 bg-bg-surface animate-pulse" />
+        {(() => {
+          if (isLoading) {
+            return (
+              <div className="space-y-0">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={`skeleton-notif-${i}`}
+                    className="px-4 py-3 border-b border-border-default last:border-b-0"
+                  >
+                    <div className="h-3 w-20 bg-bg-surface animate-pulse mb-2" />
+                    <div className="h-4 w-3/4 bg-bg-surface animate-pulse mb-1" />
+                    <div className="h-3 w-1/2 bg-bg-surface animate-pulse" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="px-4 py-12 text-center">
-            <Bell className="w-8 h-8 text-text-dim mx-auto mb-3" />
-            <p className="font-mono text-sm text-text-dim">
-              {filterUnread
-                ? "No unread notifications"
-                : "No notifications yet"}
-            </p>
-            <p className="font-mono text-xs text-text-subtle mt-1">
-              {filterUnread
-                ? "You're all caught up!"
-                : "Notifications about your plugins will appear here."}
-            </p>
-          </div>
-        ) : (
-          notifications.map((notification) => (
+            );
+          }
+          if (notifications.length === 0) {
+            return (
+              <div className="px-4 py-12 text-center">
+                <Bell className="w-8 h-8 text-text-dim mx-auto mb-3" />
+                <p className="font-mono text-sm text-text-dim">
+                  {filterUnread
+                    ? "No unread notifications"
+                    : "No notifications yet"}
+                </p>
+                <p className="font-mono text-xs text-text-subtle mt-1">
+                  {filterUnread
+                    ? "You're all caught up!"
+                    : "Notifications about your plugins will appear here."}
+                </p>
+              </div>
+            );
+          }
+          return notifications.map((notification) => (
             <NotificationRow
               key={notification.id}
               notification={notification}
               onMarkRead={handleMarkRead}
             />
-          ))
-        )}
+          ));
+        })()}
       </div>
 
       {/* Pagination */}

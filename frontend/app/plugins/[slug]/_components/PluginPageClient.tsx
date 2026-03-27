@@ -8,7 +8,7 @@ import { PluginContent } from "./PluginContent";
 import { PluginSidebar } from "./PluginSidebar";
 
 interface PluginPageClientProps {
-  slug: string;
+  readonly slug: string;
 }
 
 export function PluginPageClient({ slug }: PluginPageClientProps) {
@@ -88,7 +88,7 @@ function LoadingSkeleton() {
 
 // ── Error State ───────────────────────────────────────────────────────────
 
-function ErrorState({ slug }: { slug: string }) {
+function ErrorState({ slug }: { readonly slug: string }) {
   return (
     <div className="max-w-7xl mx-auto px-6 py-20 flex flex-col items-center justify-center">
       <div className="w-16 h-16 border border-border-default bg-bg-surface flex items-center justify-center mb-6">

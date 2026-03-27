@@ -6,9 +6,9 @@ import type { BinaryResponse, BinaryDownloadResponse } from "@/lib/types";
 import { fetchBinaryDownload } from "@/lib/api";
 
 interface BinaryListProps {
-  slug: string;
-  version: string;
-  binaries: BinaryResponse[];
+  readonly slug: string;
+  readonly version: string;
+  readonly binaries: BinaryResponse[];
 }
 
 export function BinaryList({ slug, version, binaries }: BinaryListProps) {
@@ -39,9 +39,9 @@ function BinaryCard({
   version,
   binary,
 }: {
-  slug: string;
-  version: string;
-  binary: BinaryResponse;
+  readonly slug: string;
+  readonly version: string;
+  readonly binary: BinaryResponse;
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [checksumCopied, setChecksumCopied] = useState(false);
@@ -55,7 +55,7 @@ function BinaryCard({
         binary.platform,
       );
       // Open the pre-signed URL in a new tab to trigger download
-      window.open(response.download_url, "_blank", "noopener,noreferrer");
+      globalThis.open(response.download_url, "_blank", "noopener,noreferrer");
     } catch {
       // Silently fail — the user will see the download didn't start
     } finally {
@@ -134,7 +134,7 @@ function platformLabel(platform: string): string {
   }
 }
 
-function PlatformIcon({ platform }: { platform: string }) {
+function PlatformIcon({ platform }: { readonly platform: string }) {
   switch (platform) {
     case "windows":
       return (

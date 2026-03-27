@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Star } from "lucide-react";
 
 interface StarRatingProps {
-  value: number;
-  onChange?: (rating: number) => void;
-  readonly?: boolean;
-  size?: "sm" | "md" | "lg";
+  readonly value: number;
+  readonly onChange?: (rating: number) => void;
+  readonly readonly?: boolean;
+  readonly size?: "sm" | "md" | "lg";
 }
 
 const SIZE_CLASSES = {

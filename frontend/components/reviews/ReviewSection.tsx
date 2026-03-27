@@ -20,7 +20,7 @@ import { ReportModal } from "./ReportModal";
 import { Button } from "@/components/ui/Button";
 
 interface ReviewSectionProps {
-  plugin: PluginResponse;
+  readonly plugin: PluginResponse;
 }
 
 const PER_PAGE = 10;
@@ -201,13 +201,13 @@ function ReviewsSkeleton() {
       <div className="flex gap-8">
         <div className="h-20 w-24 bg-bg-surface" />
         <div className="flex-1 space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-2 bg-bg-surface" />
+          {(["s1", "s2", "s3", "s4", "s5"] as const).map((k) => (
+            <div key={k} className="h-2 bg-bg-surface" />
           ))}
         </div>
       </div>
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-24 bg-bg-surface border border-border-default" />
+      {(["r1", "r2", "r3"] as const).map((k) => (
+        <div key={k} className="h-24 bg-bg-surface border border-border-default" />
       ))}
     </div>
   );

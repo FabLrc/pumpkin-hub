@@ -3,7 +3,7 @@ import type { PluginResponse } from "@/lib/types";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pumpkinhub.com";
 
 interface PluginJsonLdProps {
-  plugin: PluginResponse;
+  readonly plugin: PluginResponse;
 }
 
 /**
@@ -43,7 +43,7 @@ export function PluginJsonLd({ plugin }: PluginJsonLdProps) {
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        __html: JSON.stringify(jsonLd).replaceAll("<", "\\u003c"),
       }}
     />
   );

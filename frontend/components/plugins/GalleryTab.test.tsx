@@ -100,7 +100,7 @@ describe("GalleryTab", () => {
   });
 
   it("deletes media when confirmed", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(globalThis, "confirm").mockReturnValue(true);
     render(<GalleryTab plugin={plugin} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Delete media" }));
@@ -112,7 +112,7 @@ describe("GalleryTab", () => {
   });
 
   it("does not delete media when confirmation is cancelled", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+    vi.spyOn(globalThis, "confirm").mockReturnValue(false);
     render(<GalleryTab plugin={plugin} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Delete media" }));

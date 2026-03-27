@@ -36,13 +36,13 @@ vi.mock("lucide-react", () => ({
 
 const makeHit = (id: string, name: string): SearchHit => ({
   id,
-  slug: name.toLowerCase().replace(/\s/g, "-"),
+  slug: name.toLowerCase().replaceAll(" ", "-"),
   name,
   short_description: `Description for ${name}`,
   icon_url: null,
   author_username: "author",
   downloads_total: 100,
-  average_rating: 4.0,
+  average_rating: 4,
   review_count: 5,
   categories: [],
   category_slugs: ["performance"],

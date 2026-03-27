@@ -131,32 +131,40 @@ export default function ApiKeysPage() {
             </span>
           </div>
 
-          {isLoadingKeys || isLoadingUser ? (
-            <div className="p-6 space-y-3">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-20 bg-bg-surface border border-border-default animate-pulse"
-                />
-              ))}
-            </div>
-          ) : !keys || keys.length === 0 ? (
-            <div className="p-12 text-center">
-              <Key className="w-10 h-10 text-text-dim mx-auto mb-4" />
-              <p className="font-mono text-sm text-text-muted mb-2">
-                No API keys yet
-              </p>
-              <p className="font-mono text-xs text-text-dim mb-6 max-w-sm mx-auto">
-                Create an API key to integrate with CI/CD pipelines or automate plugin publishing.
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border-default">
-              {keys.map((key) => (
-                <ApiKeyRow key={key.id} apiKey={key} />
-              ))}
-            </div>
-          )}
+          {(() => {
+            if (isLoadingKeys || isLoadingUser) {
+              return (
+                <div className="p-6 space-y-3">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div
+                      key={`skeleton-key-${i}`}
+                      className="h-20 bg-bg-surface border border-border-default animate-pulse"
+                    />
+                  ))}
+                </div>
+              );
+            }
+            if (!keys || keys.length === 0) {
+              return (
+                <div className="p-12 text-center">
+                  <Key className="w-10 h-10 text-text-dim mx-auto mb-4" />
+                  <p className="font-mono text-sm text-text-muted mb-2">
+                    No API keys yet
+                  </p>
+                  <p className="font-mono text-xs text-text-dim mb-6 max-w-sm mx-auto">
+                    Create an API key to integrate with CI/CD pipelines or automate plugin publishing.
+                  </p>
+                </div>
+              );
+            }
+            return (
+              <div className="divide-y divide-border-default">
+                {keys.map((key) => (
+                  <ApiKeyRow key={key.id} apiKey={key} />
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Usage guide */}
@@ -190,8 +198,8 @@ function CreateApiKeyForm({
   onCreated,
   onCancel,
 }: {
-  onCreated: (key: CreateApiKeyResponse) => void;
-  onCancel: () => void;
+  readonly onCreated: (key: CreateApiKeyResponse) => void;
+  readonly onCancel: () => void;
 }) {
   const [name, setName] = useState("");
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -334,8 +342,8 @@ function NewKeyBanner({
   apiKey,
   onDismiss,
 }: {
-  apiKey: CreateApiKeyResponse;
-  onDismiss: () => void;
+  readonly apiKey: CreateApiKeyResponse;
+  readonly onDismiss: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -391,7 +399,7 @@ function NewKeyBanner({
   );
 }
 
-function ApiKeyRow({ apiKey }: { apiKey: ApiKeySummary }) {
+function ApiKeyRow({ apiKey }: { readonly apiKey: ApiKeySummary }) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
 

@@ -5,9 +5,9 @@ import { X, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import type { MediaResponse } from "@/lib/types";
 
 interface LightboxProps {
-  media: MediaResponse[];
-  initialIndex: number;
-  onClose: () => void;
+  readonly media: MediaResponse[];
+  readonly initialIndex: number;
+  readonly onClose: () => void;
 }
 
 /**
@@ -54,14 +54,20 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
   if (!item) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      open
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 border-0 max-w-none max-h-none w-full h-full"
       aria-label="Media lightbox"
+      onClick={onClose}
     >
+      {/* Backdrop button for closing on outside click */}
+      <button
+        type="button"
+        className="absolute inset-0 w-full h-full cursor-default"
+        aria-label="Close lightbox"
+        onClick={onClose}
+      />
+
       {/* Close button */}
       <button
         onClick={onClose}
@@ -92,7 +98,7 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
 
       {/* Media content */}
       <div
-        className="max-w-[90vw] max-h-[85vh] flex items-center justify-center"
+        className="relative z-10 max-w-[90vw] max-h-[85vh] flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
@@ -171,6 +177,6 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
           ))}
         </div>
       )}
-    </div>
+    </dialog>
   );
 }

@@ -28,7 +28,7 @@ vi.mock("@/components/layout", () => ({
 
 vi.mock("@/components/ui/PluginCard", () => ({
   PluginCard: ({ plugin }: { plugin: { name: string } }) => <div>Plugin:{plugin.name}</div>,
-  formatDownloads: (n: number) => String(n),
+  formatDownloads: String,
 }));
 
 vi.mock("@/lib/api", async () => {

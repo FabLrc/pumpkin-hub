@@ -14,10 +14,10 @@ const REASONS: { value: ReportReason; label: string }[] = [
 ];
 
 interface ReportModalProps {
-  pluginSlug: string;
-  reviewId: string;
-  onClose: () => void;
-  onSubmitted: () => void;
+  readonly pluginSlug: string;
+  readonly reviewId: string;
+  readonly onClose: () => void;
+  readonly onSubmitted: () => void;
 }
 
 export function ReportModal({
@@ -52,18 +52,22 @@ export function ReportModal({
   }
 
   return (
-    <div
-      role="dialog"
+    <dialog
+      open
       aria-modal="true"
       aria-labelledby="report-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-0 max-w-none w-full h-full border-0"
       onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
     >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
-        aria-hidden="true"
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClose(); }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close modal"
+        data-testid="report-modal-backdrop"
       />
 
       {/* Dialog */}
@@ -143,6 +147,6 @@ export function ReportModal({
           </div>
         </form>
       </div>
-    </div>
+    </dialog>
   );
 }

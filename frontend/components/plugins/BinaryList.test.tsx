@@ -23,7 +23,7 @@ describe("BinaryList", () => {
     });
     writeTextMock.mockResolvedValue(undefined);
     fetchBinaryDownloadMock.mockResolvedValue({ download_url: "https://files.example.com/bin" });
-    vi.spyOn(window, "open").mockImplementation(openMock as never);
+    vi.spyOn(globalThis, "open").mockImplementation(openMock as never);
   });
 
   it("renders empty state when no binaries", () => {

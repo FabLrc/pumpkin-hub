@@ -12,8 +12,8 @@ const MIN_QUERY_LENGTH = 2;
 const MAX_SUGGESTIONS = 6;
 
 interface SearchBarProps {
-  value: string;
-  onChange: (query: string) => void;
+  readonly value: string;
+  readonly onChange: (query: string) => void;
 }
 
 export function SearchBar({ value, onChange }: SearchBarProps) {
