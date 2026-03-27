@@ -1053,10 +1053,13 @@ async fn upsert_oauth_user(
             r#"
             UPDATE users SET
                 display_name = COALESCE($2, display_name),
-                email = COALESCE($3, email),
-                avatar_url = COALESCE($4, avatar_url),
-                bio = COALESCE($5, bio),
-                updated_at = now()
+                email        = COALESCE($3, email),
+                avatar_url   = CASE
+                                   WHEN avatar_url LIKE '%/api/v1/users/%/avatar' THEN avatar_url
+                                   ELSE COALESCE($4, avatar_url)
+                               END,
+                bio          = COALESCE($5, bio),
+                updated_at   = now()
             WHERE id = $1
             RETURNING *
             "#,
@@ -1069,6 +1072,22 @@ async fn upsert_oauth_user(
         .fetch_one(&state.db)
         .await
         .map_err(AppError::internal)?;
+
+        // Cache the provider avatar locally if it is still an external URL.
+        if let Some(url) = user.avatar_url.clone() {
+            if !url.contains("/api/v1/users/") {
+                if let Some(internal) = cache_oauth_avatar(
+                    &state.db,
+                    &state.config.server.api_public_url,
+                    user.id,
+                    &url,
+                )
+                .await
+                {
+                    user.avatar_url = Some(internal);
+                }
+            }
+        }
 
         return Ok(user);
     }
@@ -1092,7 +1111,7 @@ async fn upsert_oauth_user(
     // 3. Create a new user with a unique username.
     let unique_username = ensure_unique_username(&state.db, username).await?;
 
-    let user = sqlx::query_as::<_, crate::models::user::User>(
+    let mut user = sqlx::query_as::<_, crate::models::user::User>(
         r#"
         INSERT INTO users (username, display_name, email, avatar_url, bio)
         VALUES ($1, $2, $3, $4, $5)
@@ -1109,6 +1128,20 @@ async fn upsert_oauth_user(
     .map_err(AppError::internal)?;
 
     link_provider(&state.db, user.id, provider, provider_id).await?;
+
+    // Cache the provider avatar locally for new users.
+    if let Some(url) = user.avatar_url.clone() {
+        if let Some(internal) = cache_oauth_avatar(
+            &state.db,
+            &state.config.server.api_public_url,
+            user.id,
+            &url,
+        )
+        .await
+        {
+            user.avatar_url = Some(internal);
+        }
+    }
 
     Ok(user)
 }
@@ -1135,6 +1168,69 @@ async fn link_provider(
     .map_err(AppError::internal)?;
 
     Ok(())
+}
+
+/// Downloads an OAuth provider avatar, stores it in `user_avatars`, updates
+/// `users.avatar_url` to the internal endpoint, and returns the internal URL.
+/// Returns `None` silently on any error so login is never blocked.
+async fn cache_oauth_avatar(
+    db: &sqlx::PgPool,
+    api_public_url: &str,
+    user_id: Uuid,
+    provider_url: &str,
+) -> Option<String> {
+    let response = reqwest::get(provider_url).await.ok()?;
+
+    let content_type = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.split(';').next().unwrap_or(s).trim().to_owned())
+        .unwrap_or_else(|| "image/png".to_owned());
+
+    if !ALLOWED_AVATAR_TYPES.contains(&content_type.as_str()) {
+        tracing::warn!(
+            user_id = %user_id,
+            content_type,
+            "OAuth avatar skipped: unsupported content type"
+        );
+        return None;
+    }
+
+    let bytes = response.bytes().await.ok()?;
+    if bytes.is_empty() || bytes.len() > MAX_AVATAR_BYTES {
+        return None;
+    }
+
+    sqlx::query(
+        r#"
+        INSERT INTO user_avatars (user_id, data, content_type, size_bytes, updated_at)
+        VALUES ($1, $2, $3, $4, now())
+        ON CONFLICT (user_id) DO UPDATE
+            SET data         = EXCLUDED.data,
+                content_type = EXCLUDED.content_type,
+                size_bytes   = EXCLUDED.size_bytes,
+                updated_at   = now()
+        "#,
+    )
+    .bind(user_id)
+    .bind(bytes.as_ref())
+    .bind(&content_type)
+    .bind(bytes.len() as i32)
+    .execute(db)
+    .await
+    .ok()?;
+
+    let internal_url = format!("{}/api/v1/users/{}/avatar", api_public_url, user_id);
+
+    sqlx::query("UPDATE users SET avatar_url = $2, updated_at = now() WHERE id = $1")
+        .bind(user_id)
+        .bind(&internal_url)
+        .execute(db)
+        .await
+        .ok()?;
+
+    Some(internal_url)
 }
 
 /// Generates a unique username by appending a numeric suffix if the base is taken.
