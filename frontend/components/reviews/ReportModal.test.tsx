@@ -45,7 +45,7 @@ describe("ReportModal", () => {
   it("calls onClose when backdrop is clicked", () => {
     const { container } = render(<ReportModal {...defaultProps} />);
     const backdrop = container.querySelector('[data-testid="report-modal-backdrop"]');
-    fireEvent.click(backdrop!);
+    fireEvent.click(backdrop as Element);
     expect(defaultProps.onClose).toHaveBeenCalledOnce();
   });
 

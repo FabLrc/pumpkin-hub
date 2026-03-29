@@ -135,9 +135,9 @@ export default function ApiKeysPage() {
             if (isLoadingKeys || isLoadingUser) {
               return (
                 <div className="p-6 space-y-3">
-                  {Array.from({ length: 2 }).map((_, i) => (
+                  {["sk-key-a", "sk-key-b"].map((k) => (
                     <div
-                      key={`skeleton-key-${i}`}
+                      key={k}
                       className="h-20 bg-bg-surface border border-border-default animate-pulse"
                     />
                   ))}

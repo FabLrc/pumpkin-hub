@@ -514,8 +514,8 @@ export default function AdminPage() {
           <div className="max-w-6xl mx-auto animate-pulse space-y-6">
             <div className="h-8 w-48 bg-bg-surface border border-border-default" />
             <div className="grid grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={`skeleton-header-${i}`} className="h-24 bg-bg-surface border border-border-default" />
+              {["sk-h-a", "sk-h-b", "sk-h-c", "sk-h-d"].map((k) => (
+                <div key={k} className="h-24 bg-bg-surface border border-border-default" />
               ))}
             </div>
           </div>
@@ -578,8 +578,8 @@ export default function AdminPage() {
             {activeTab === "overview" && !stats && (
               <div className="animate-pulse space-y-4">
                 <div className="grid grid-cols-4 gap-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={`skeleton-tab-${i}`} className="h-24 bg-bg-surface border border-border-default" />
+                  {["sk-t-a", "sk-t-b", "sk-t-c", "sk-t-d"].map((k) => (
+                    <div key={k} className="h-24 bg-bg-surface border border-border-default" />
                   ))}
                 </div>
               </div>

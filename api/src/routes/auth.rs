@@ -1074,18 +1074,20 @@ async fn upsert_oauth_user(
         .map_err(AppError::internal)?;
 
         // Cache the provider avatar locally if it is still an external URL.
-        if let Some(url) = user.avatar_url.clone() {
-            if !url.contains("/api/v1/users/") {
-                if let Some(internal) = cache_oauth_avatar(
-                    &state.db,
-                    &state.config.server.api_public_url,
-                    user.id,
-                    &url,
-                )
-                .await
-                {
-                    user.avatar_url = Some(internal);
-                }
+        if let Some(url) = user
+            .avatar_url
+            .clone()
+            .filter(|u| !u.contains("/api/v1/users/"))
+        {
+            if let Some(internal) = cache_oauth_avatar(
+                &state.db,
+                &state.config.server.api_public_url,
+                user.id,
+                &url,
+            )
+            .await
+            {
+                user.avatar_url = Some(internal);
             }
         }
 

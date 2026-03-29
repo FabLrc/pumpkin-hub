@@ -53,16 +53,14 @@ export function VersionManager({
 
       {showConfirm && (
         <div
-          role="button"
-          tabIndex={0}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false); }}
-          onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false); }}
         >
           <dialog
             open
             aria-labelledby="version-manager-title"
             className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
+            onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false); }}
           >
             <div className="flex items-center gap-3 mb-4">
               <div

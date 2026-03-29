@@ -152,9 +152,9 @@ export default function EditPluginPage({ params }: EditPluginPageProps) {
         {/* Loading state */}
         {isLoading && (
           <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {["sk-a", "sk-b", "sk-c", "sk-d", "sk-e"].map((k) => (
               <div
-                key={`skeleton-${i}`}
+                key={k}
                 className="h-12 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}

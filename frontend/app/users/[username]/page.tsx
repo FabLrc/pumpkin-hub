@@ -101,8 +101,8 @@ export default function AuthorProfilePage() {
                 <div className="h-4 w-96 bg-bg-surface border border-border-default" />
               </div>
             </div>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={`skeleton-${i}`} className="h-28 bg-bg-surface border border-border-default" />
+            {["sk-a", "sk-b", "sk-c"].map((k) => (
+              <div key={k} className="h-28 bg-bg-surface border border-border-default" />
             ))}
           </div>
         </main>

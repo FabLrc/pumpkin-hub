@@ -58,7 +58,7 @@ describe("Lightbox", () => {
     const onClose = vi.fn();
     render(<Lightbox media={media as never} initialIndex={0} onClose={onClose} />);
 
-    fireEvent.click(screen.getByRole("dialog", { name: "Media lightbox" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Close lightbox" })[0]);
     expect(onClose).toHaveBeenCalled();
   });
 

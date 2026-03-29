@@ -86,13 +86,13 @@ export function ReviewCard({
 
             {showMenu && (
               <>
-                <div
-                  className="fixed inset-0 z-10"
+                <button
+                  type="button"
+                  className="fixed inset-0 z-10 cursor-default border-0 bg-transparent"
                   onClick={() => setShowMenu(false)}
                   onKeyDown={(e) => { if (e.key === "Escape") setShowMenu(false); }}
-                  role="button"
-                  tabIndex={-1}
                   aria-label="Close menu"
+                  tabIndex={-1}
                 />
                 <div className="absolute right-0 top-full mt-1 z-20 border border-border-default bg-bg-elevated min-w-[160px]">
                   {isOwnReview && onEdit && (

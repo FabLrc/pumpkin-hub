@@ -58,7 +58,6 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
       open
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 border-0 max-w-none max-h-none w-full h-full"
       aria-label="Media lightbox"
-      onClick={onClose}
     >
       {/* Backdrop button for closing on outside click */}
       <button
@@ -99,8 +98,6 @@ export function Lightbox({ media, initialIndex, onClose }: LightboxProps) {
       {/* Media content */}
       <div
         className="relative z-10 max-w-[90vw] max-h-[85vh] flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
       >
         {item.media_type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element -- lightbox media from external storage
