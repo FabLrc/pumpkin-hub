@@ -155,9 +155,9 @@ export default function DashboardPage() {
         {/* Advanced KPI Cards */}
         {isLoadingStats ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {["sk-1", "sk-2", "sk-3", "sk-4"].map((key) => (
+            {["sk-kpi-a", "sk-kpi-b", "sk-kpi-c", "sk-kpi-d"].map((k) => (
               <div
-                key={key}
+                key={k}
                 className="h-28 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}
@@ -305,9 +305,9 @@ export default function DashboardPage() {
             if (isLoading) {
               return (
                 <div className="p-6 space-y-3">
-                  {["sk-1", "sk-2", "sk-3"].map((key) => (
+                  {["sk-pl-a", "sk-pl-b", "sk-pl-c"].map((k) => (
                     <div
-                      key={key}
+                      key={k}
                       className="h-16 bg-bg-surface border border-border-default animate-pulse"
                     />
                   ))}

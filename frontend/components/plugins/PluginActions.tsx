@@ -61,17 +61,14 @@ export function PluginActions({ plugin }: PluginActionsProps) {
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div
-          role="button"
-          tabIndex={0}
-          aria-label="Close dialog"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
-          onKeyDown={(e) => { if (e.key === "Escape") setShowDeleteConfirm(false); }}
         >
           <dialog
             open
             aria-labelledby="delete-plugin-title"
             className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
+            onKeyDown={(e) => { if (e.key === "Escape") setShowDeleteConfirm(false); }}
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-error/10 border border-error/30 flex items-center justify-center">

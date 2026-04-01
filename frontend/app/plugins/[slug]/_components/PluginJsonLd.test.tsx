@@ -24,7 +24,7 @@ const mockPlugin: PluginResponse = {
 
 function getJsonLd(container: HTMLElement) {
   const script = container.querySelector('script[type="application/ld+json"]');
-  return JSON.parse(script!.textContent!);
+  return JSON.parse((script as HTMLScriptElement).textContent ?? "{}");
 }
 
 describe("PluginJsonLd", () => {

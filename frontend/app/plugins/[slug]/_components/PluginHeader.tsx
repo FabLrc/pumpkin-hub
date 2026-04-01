@@ -44,7 +44,8 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
   const [installOpen, setInstallOpen] = useState(false);
 
   const primaryCategory = plugin.categories[0];
-  const isNew = new Date().getTime() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
+  // eslint-disable-next-line react-hooks/purity -- Date.now() preferred by SonarCloud (S6749)
+  const isNew = Date.now() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
 
   return (
     <div className="border-b border-border-default py-6">

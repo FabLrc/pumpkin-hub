@@ -198,9 +198,9 @@ export default function NotificationsPage() {
           if (isLoading) {
             return (
               <div className="space-y-0">
-                {["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"].map((key) => (
+                {["sk-n-a", "sk-n-b", "sk-n-c", "sk-n-d", "sk-n-e"].map((k) => (
                   <div
-                    key={key}
+                    key={k}
                     className="px-4 py-3 border-b border-border-default last:border-b-0"
                   >
                     <div className="h-3 w-20 bg-bg-surface animate-pulse mb-2" />

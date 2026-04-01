@@ -102,7 +102,7 @@ describe("lib/api", () => {
     expect(api.getNotificationsPath(2, 15, true)).toBe("/notifications?page=2&per_page=15&unread_only=true");
     expect(api.getUnreadCountPath()).toBe("/notifications/unread-count");
 
-    expect(api.getGithubLoginUrl()).toContain("/api/v1/auth/github");
+    expect(api.getOAuthLoginUrl("github")).toContain("/api/v1/auth/github");
     expect(api.getOAuthLoginUrl("google")).toContain("/api/v1/auth/google");
     expect(api.getPluginBadgeUrl("my plugin")).toContain("/plugins/my%20plugin/badge.svg");
     expect(api.getMediaPath("my plugin")).toBe("/plugins/my%20plugin/media");

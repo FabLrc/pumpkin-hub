@@ -286,9 +286,9 @@ export default function ProfilePage() {
         {/* Loading state */}
         {isLoading && (
           <div className="space-y-4">
-            {["sk-1", "sk-2", "sk-3", "sk-4"].map((key) => (
+            {["sk-a", "sk-b", "sk-c", "sk-d"].map((k) => (
               <div
-                key={key}
+                key={k}
                 className="h-12 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}

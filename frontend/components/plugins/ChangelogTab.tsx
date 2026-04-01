@@ -248,20 +248,7 @@ function formatChangelog(raw: string): string {
       continue;
     }
 
-    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-      if (!inList) {
-        htmlParts.push("<ul>");
-        inList = true;
-      }
-      htmlParts.push(`<li>${inlineFormat(trimmed.slice(2))}</li>`);
-      continue;
-    }
-
-    if (inList) {
-      htmlParts.push("</ul>");
-      inList = false;
-    }
-    htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
+    inList = processInlineLine(trimmed, inList, htmlParts);
   }
 
   if (inList) {
@@ -275,6 +262,18 @@ function formatChangelog(raw: string): string {
   }
 
   return htmlParts.join("\n");
+}
+
+/** Handles a non-empty, non-heading, non-code-fence line. Returns the updated inList flag. */
+function processInlineLine(trimmed: string, inList: boolean, htmlParts: string[]): boolean {
+  if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+    if (!inList) htmlParts.push("<ul>");
+    htmlParts.push(`<li>${inlineFormat(trimmed.slice(2))}</li>`);
+    return true;
+  }
+  if (inList) htmlParts.push("</ul>");
+  htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
+  return false;
 }
 
 interface CodeFenceResult {
@@ -348,17 +347,17 @@ function inlineFormat(text: string): string {
   let result = escapeHtml(text);
 
   // Inline code
-  result = result.replaceAll(/`([^`]+)`/g, "<code>$1</code>");
+  result = result.replaceAll(/`([^`]{1,500})`/g, "<code>$1</code>");
 
   // Bold
-  result = result.replaceAll(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  result = result.replaceAll(/\*\*([^*]{1,500})\*\*/g, "<strong>$1</strong>");
 
   // Italic
-  result = result.replaceAll(/\*([^*]+)\*/g, "<em>$1</em>");
+  result = result.replaceAll(/\*([^*]{1,500})\*/g, "<em>$1</em>");
 
   // Links: [text](url) — only allow http(s) URLs
   result = result.replaceAll(
-    /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+    /\[([^\]]{1,500})\]\((https?:\/\/[^)]{1,2000})\)/g,
     '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
   );
 

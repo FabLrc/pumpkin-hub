@@ -123,92 +123,7 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
           Step 1 — Select a GitHub Repository
         </p>
 
-        {hasLoaded ? (
-          repos.length === 0 ? (
-            <div className="border border-border-default p-4 text-center space-y-2">
-              <p className="font-mono text-xs text-text-dim">
-                No repositories found.
-              </p>
-              <p className="font-mono text-[10px] text-text-dim/70">
-                Install the{" "}
-                <a
-                  href="https://github.com/apps/pumpkin-hub-app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent hover:underline"
-                >
-                  Pumpkin Hub GitHub App
-                </a>{" "}
-                on your GitHub account, then{" "}
-                <button
-                  type="button"
-                  onClick={handleLoadRepos}
-                  className="text-accent hover:underline cursor-pointer"
-                >
-                  retry
-                </button>.
-              </p>
-            </div>
-          ) : (
-            <>
-              {repos.length > 5 && (
-                <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-text-dim/50" />
-                  <input
-                    type="text"
-                    value={repoSearch}
-                    onChange={(e) => setRepoSearch(e.target.value)}
-                    placeholder="Filter repositories..."
-                    className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary pl-8 pr-3 py-2 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
-                  />
-                </div>
-              )}
-
-              <div className="border border-border-default max-h-52 overflow-y-auto">
-                {filteredRepos.length === 0 ? (
-                  <p className="font-mono text-[10px] text-text-dim p-3 text-center">
-                    No repositories match your filter.
-                  </p>
-                ) : (
-                  filteredRepos.map((repo) => (
-                    <button
-                      key={repo.full_name}
-                      type="button"
-                      onClick={() => handleSelectRepo(repo)}
-                      className={`w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 transition-colors cursor-pointer ${
-                        selectedRepo?.full_name === repo.full_name
-                          ? "bg-accent/10 border-l-2 border-l-accent"
-                          : "hover:bg-bg-surface"
-                      }`}
-                    >
-                      <div className="font-mono text-xs text-text-primary font-bold">
-                        {repo.full_name}
-                      </div>
-                      {repo.description && (
-                        <div className="font-mono text-[10px] text-text-dim mt-0.5 truncate">
-                          {repo.description}
-                        </div>
-                      )}
-                      <div className="font-mono text-[10px] text-text-dim/60 mt-0.5">
-                        Branch: {repo.default_branch}
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleLoadRepos}
-                disabled={isLoadingRepos}
-                className="font-mono text-[10px] text-text-dim hover:text-accent transition-colors mt-1.5 cursor-pointer flex items-center gap-1"
-              >
-                <RefreshCw className={`w-2.5 h-2.5 ${isLoadingRepos ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            </>
-          )
-        ) : (
+        {!hasLoaded && (
           <>
             <button
               type="button"
@@ -236,6 +151,91 @@ export function PublishFromGithubForm({ onSuccess, autoLoad }: PublishFromGithub
               </a>{" "}
               is installed on your GitHub account.
             </p>
+          </>
+        )}
+        {hasLoaded && repos.length === 0 && (
+          <div className="border border-border-default p-4 text-center space-y-2">
+            <p className="font-mono text-xs text-text-dim">
+              No repositories found.
+            </p>
+            <p className="font-mono text-[10px] text-text-dim/70">
+              Install the{" "}
+              <a
+                href="https://github.com/apps/pumpkin-hub-app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                Pumpkin Hub GitHub App
+              </a>{" "}
+              on your GitHub account, then{" "}
+              <button
+                type="button"
+                onClick={handleLoadRepos}
+                className="text-accent hover:underline cursor-pointer"
+              >
+                retry
+              </button>.
+            </p>
+          </div>
+        )}
+        {hasLoaded && repos.length > 0 && (
+          <>
+            {repos.length > 5 && (
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-text-dim/50" />
+                <input
+                  type="text"
+                  value={repoSearch}
+                  onChange={(e) => setRepoSearch(e.target.value)}
+                  placeholder="Filter repositories..."
+                  className="w-full font-mono text-xs bg-bg-base border border-border-default text-text-primary pl-8 pr-3 py-2 placeholder:text-text-dim/50 focus:border-accent focus:outline-none transition-colors"
+                />
+              </div>
+            )}
+
+            <div className="border border-border-default max-h-52 overflow-y-auto">
+              {filteredRepos.length === 0 ? (
+                <p className="font-mono text-[10px] text-text-dim p-3 text-center">
+                  No repositories match your filter.
+                </p>
+              ) : (
+                filteredRepos.map((repo) => (
+                  <button
+                    key={repo.full_name}
+                    type="button"
+                    onClick={() => handleSelectRepo(repo)}
+                    className={`w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 transition-colors cursor-pointer ${
+                      selectedRepo?.full_name === repo.full_name
+                        ? "bg-accent/10 border-l-2 border-l-accent"
+                        : "hover:bg-bg-surface"
+                    }`}
+                  >
+                    <div className="font-mono text-xs text-text-primary font-bold">
+                      {repo.full_name}
+                    </div>
+                    {repo.description && (
+                      <div className="font-mono text-[10px] text-text-dim mt-0.5 truncate">
+                        {repo.description}
+                      </div>
+                    )}
+                    <div className="font-mono text-[10px] text-text-dim/60 mt-0.5">
+                      Branch: {repo.default_branch}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLoadRepos}
+              disabled={isLoadingRepos}
+              className="font-mono text-[10px] text-text-dim hover:text-accent transition-colors mt-1.5 cursor-pointer flex items-center gap-1"
+            >
+              <RefreshCw className={`w-2.5 h-2.5 ${isLoadingRepos ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
           </>
         )}
       </div>

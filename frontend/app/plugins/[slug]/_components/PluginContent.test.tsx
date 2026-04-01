@@ -321,7 +321,7 @@ describe("PluginContent", () => {
     useBinariesMock.mockReturnValue({ data: { binaries: [] }, isLoading: false });
     const user = userEvent.setup();
     render(<PluginContent plugin={mockPlugin} activeTab="versions" onTabChange={onTabChange} />);
-    await user.click(screen.getByText("1.0.0").closest(".ver-row")!);
+    await user.click(screen.getByText("1.0.0").closest<HTMLElement>(".ver-row") as HTMLElement);
     expect(screen.getByText("Binaries")).toBeInTheDocument();
     expect(screen.getByTestId("binary-list")).toBeInTheDocument();
     expect(screen.getByTestId("binary-upload")).toBeInTheDocument();
@@ -331,10 +331,10 @@ describe("PluginContent", () => {
     useBinariesMock.mockReturnValue({ data: null, isLoading: true });
     const user = userEvent.setup();
     render(<PluginContent plugin={mockPlugin} activeTab="versions" onTabChange={onTabChange} />);
-    await user.click(screen.getByText("1.0.0").closest(".ver-row")!);
+    await user.click(screen.getByText("1.0.0").closest<HTMLElement>(".ver-row") as HTMLElement);
     // Should have pulse skeleton inside expanded panel
     const panel = screen.getByText("Binaries").closest("div");
-    expect(panel!.querySelector(".animate-pulse")).toBeInTheDocument();
+    expect(panel?.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
   it("publish form opens and submits", async () => {
@@ -617,8 +617,9 @@ describe("PluginContent", () => {
     const user = userEvent.setup();
     render(<PluginContent plugin={mockPlugin} activeTab="dependencies" onTabChange={onTabChange} />);
     // Click the X button to remove
-    const removeBtn = screen.getByText("Dep A").closest(".dep-card")!.querySelector("button");
-    await user.click(removeBtn!);
+    const depCard = screen.getByText("Dep A").closest<HTMLElement>(".dep-card") as HTMLElement;
+    const removeBtn = depCard.querySelector("button") as HTMLElement;
+    await user.click(removeBtn);
     await waitFor(() => {
       expect(removeDependencyMock).toHaveBeenCalledWith("test-plugin", "1.0.0", "d1");
     });

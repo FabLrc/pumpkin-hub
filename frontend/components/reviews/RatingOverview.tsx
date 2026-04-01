@@ -37,7 +37,7 @@ export function RatingOverview({
           size="sm"
         />
         <div className="font-mono text-[10px] text-text-dim">
-          {total} review{total !== 1 ? "s" : ""}
+          {total} review{total === 1 ? "" : "s"}
         </div>
       </div>
 

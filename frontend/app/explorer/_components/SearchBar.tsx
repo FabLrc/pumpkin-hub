@@ -19,7 +19,7 @@ interface SearchBarProps {
 export function SearchBar({ value, onChange }: SearchBarProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLUListElement>(null);
 
   const [localValue, setLocalValue] = useState(value);
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -168,35 +168,33 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
       </div>
 
       {showDropdown && (
-        <div
+        <ul
           ref={dropdownRef}
           id="search-suggestions"
-          role="listbox"
-          className="absolute z-50 top-full left-0 right-0 mt-px border border-border-default bg-bg-elevated shadow-lg"
+          className="absolute z-50 top-full left-0 right-0 mt-px border border-border-default bg-bg-elevated shadow-lg list-none p-0 m-0"
         >
           {suggestionsLoading ? (
-            <div className="px-3 py-3 font-mono text-xs text-text-dim">
+            <li className="px-3 py-3 font-mono text-xs text-text-dim">
               Searching…
-            </div>
+            </li>
           ) : (
             suggestions?.map((suggestion: SearchSuggestion, index: number) => (
-              <button
-                key={suggestion.slug}
-                id={`suggestion-${index}`}
-                role="option"
-                aria-selected={index === activeIndex ? "true" : "false"}
-                onClick={() => navigateToPlugin(suggestion.slug)}
-                className={`w-full text-left px-3 py-2.5 font-mono text-xs transition-colors cursor-pointer ${
-                  index === activeIndex
-                    ? "bg-accent/10 text-accent"
-                    : "text-text-secondary hover:bg-bg-surface"
-                }`}
-              >
-                {suggestion.name}
-              </button>
+              <li key={suggestion.slug}>
+                <button
+                  id={`suggestion-${index}`}
+                  onClick={() => navigateToPlugin(suggestion.slug)}
+                  className={`w-full text-left px-3 py-2.5 font-mono text-xs transition-colors cursor-pointer ${
+                    index === activeIndex
+                      ? "bg-accent/10 text-accent"
+                      : "text-text-secondary hover:bg-bg-surface"
+                  }`}
+                >
+                  {suggestion.name}
+                </button>
+              </li>
             ))
           )}
-        </div>
+        </ul>
       )}
     </div>
   );

@@ -140,9 +140,9 @@ export default function NewPluginPage() {
         {/* Form */}
         {isLoadingUser && (
           <div className="space-y-4">
-            {["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"].map((key) => (
+            {["sk-a", "sk-b", "sk-c", "sk-d", "sk-e"].map((k) => (
               <div
-                key={key}
+                key={k}
                 className="h-12 bg-bg-surface border border-border-default animate-pulse"
               />
             ))}

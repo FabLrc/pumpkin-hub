@@ -43,7 +43,7 @@ export function PluginJsonLd({ plugin }: PluginJsonLdProps) {
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(jsonLd).replaceAll("<", "\\u003c"),
+        __html: JSON.stringify(jsonLd).replaceAll("<", String.raw`\u003c`),
       }}
     />
   );

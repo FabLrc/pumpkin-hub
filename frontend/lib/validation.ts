@@ -9,15 +9,15 @@ export const PLUGIN_RULES = {
   LICENSE_MAX_LENGTH: 50,
   URL_MAX_LENGTH: 500,
   MAX_CATEGORIES: 5,
-  NAME_PATTERN: /^[a-zA-Z0-9 \-_]+$/,
+  NAME_PATTERN: /^[a-zA-Z0-9 \-_]{3,100}$/,
 } as const;
 
 /** Validates a single semver numeric identifier (no leading zeros except "0" itself). */
-const SEMVER_NUMERIC_ID = /^(0|[1-9]\d*)$/;
+const SEMVER_NUMERIC_ID = /^(0|[1-9]\d{0,10})$/;
 /** Validates a single semver pre-release identifier (numeric or alphanumeric). */
-const SEMVER_PRE_ID = /^[0-9a-zA-Z-]+$/;
+const SEMVER_PRE_ID = /^[0-9a-zA-Z-]{1,100}$/;
 /** Validates a single semver build metadata identifier. */
-const SEMVER_BUILD_ID = /^[0-9a-zA-Z-]+$/;
+const SEMVER_BUILD_ID = /^[0-9a-zA-Z-]{1,100}$/;
 
 /**
  * Returns true if the string is a valid strict semver:

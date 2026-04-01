@@ -108,7 +108,7 @@ describe("SearchBar", () => {
     await user.type(screen.getByRole("combobox"), "plug");
 
     await waitFor(() => {
-      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      expect(screen.getByRole("list")).toBeInTheDocument();
     });
   });
 
@@ -133,8 +133,8 @@ describe("SearchBar", () => {
     });
 
     await user.keyboard("{ArrowDown}");
-    const firstOption = screen.getByRole("option", { name: "PluginAlpha" });
-    expect(firstOption).toHaveAttribute("aria-selected", "true");
+    const firstOption = screen.getByRole("button", { name: "PluginAlpha" });
+    expect(firstOption).toHaveClass("bg-accent/10");
   });
 
   it("ArrowUp moves selection up", async () => {
@@ -157,8 +157,8 @@ describe("SearchBar", () => {
 
     // Move down twice then up once
     await user.keyboard("{ArrowDown}{ArrowDown}{ArrowUp}");
-    const firstOption = screen.getByRole("option", { name: "PluginAlpha" });
-    expect(firstOption).toHaveAttribute("aria-selected", "true");
+    const firstOption = screen.getByRole("button", { name: "PluginAlpha" });
+    expect(firstOption).toHaveClass("bg-accent/10");
   });
 
   it("Enter with active suggestion navigates to plugin", async () => {
@@ -197,11 +197,11 @@ describe("SearchBar", () => {
     await user.type(input, "plug");
 
     await waitFor(() => {
-      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      expect(screen.getByRole("list")).toBeInTheDocument();
     });
 
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 
   // ── Loading state ─────────────────────────────────────────────────────
