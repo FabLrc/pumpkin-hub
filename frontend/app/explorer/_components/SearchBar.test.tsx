@@ -108,7 +108,7 @@ describe("SearchBar", () => {
     await user.type(screen.getByRole("combobox"), "plug");
 
     await waitFor(() => {
-      expect(screen.getByRole("list")).toBeInTheDocument();
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
     });
   });
 
@@ -197,11 +197,11 @@ describe("SearchBar", () => {
     await user.type(input, "plug");
 
     await waitFor(() => {
-      expect(screen.getByRole("list")).toBeInTheDocument();
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
     });
 
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   });
 
   // ── Loading state ─────────────────────────────────────────────────────
