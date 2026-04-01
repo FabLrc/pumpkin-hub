@@ -88,7 +88,7 @@ export function ReviewCard({
               <>
                 <button
                   type="button"
-                  className="fixed inset-0 z-10 cursor-default border-0 bg-transparent"
+                  className="fixed inset-0 z-10 w-full h-full cursor-default"
                   onClick={() => setShowMenu(false)}
                   onKeyDown={(e) => { if (e.key === "Escape") setShowMenu(false); }}
                   aria-label="Close menu"

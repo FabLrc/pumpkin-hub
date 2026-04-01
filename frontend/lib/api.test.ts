@@ -277,7 +277,7 @@ describe("lib/api", () => {
     const file = new File(["img"], "preview.png");
     const result = await api.uploadMedia("slug", file, "caption", onProgress);
 
-    expect((result as { media: { id: string } }).media.id).toBe("m1");
+    expect(result.media.id).toBe("m1");
     expect(onProgress).toHaveBeenCalledWith(50);
   });
 

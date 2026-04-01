@@ -283,14 +283,11 @@ function VersionRow({
     version.pumpkin_version_min,
     version.pumpkin_version_max,
   );
-  let versionTextClass: string;
-  if (version.is_yanked) {
-    versionTextClass = "text-text-dim line-through";
-  } else if (isLatest) {
-    versionTextClass = "text-text-primary";
-  } else {
-    versionTextClass = "text-text-dim";
-  }
+  const versionTextClass = version.is_yanked
+    ? "text-text-dim line-through"
+    : isLatest
+      ? "text-text-primary"
+      : "text-text-dim";
   const publishedDate = new Date(version.published_at).toLocaleDateString(
     "en-US",
     { year: "numeric", month: "short", day: "numeric" },
@@ -306,57 +303,57 @@ function VersionRow({
         version.is_yanked ? "opacity-60" : ""
       }`}
     >
-      {/* Main row */}
-      <div className="grid grid-cols-12 gap-4 px-4 py-3.5 items-center hover:bg-bg-elevated/30 transition-colors">
-        {/* Clickable area — expands the row */}
-        <button
-          type="button"
-          className="ver-row col-span-10 grid grid-cols-10 gap-4 items-center cursor-pointer text-left bg-transparent border-0 p-0"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {/* Expand indicator + Version number + badges */}
-          <div className="col-span-3 flex items-center gap-2 flex-wrap">
-            {isExpanded ? (
-              <ChevronDown className="w-3 h-3 text-text-dim flex-shrink-0" />
-            ) : (
-              <ChevronRight className="w-3 h-3 text-text-dim flex-shrink-0" />
-            )}
-            <span
-              className={`font-mono text-sm font-bold ${versionTextClass}`}
-            >
-              {version.version}
+      {/* Main row — clickable to expand */}
+      <button
+        type="button"
+        className="ver-row grid grid-cols-12 gap-4 px-4 py-3.5 items-center cursor-pointer hover:bg-bg-elevated/30 transition-colors w-full text-left"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {/* Expand indicator + Version number + badges */}
+        <div className="col-span-3 flex items-center gap-2 flex-wrap">
+          {isExpanded ? (
+            <ChevronDown className="w-3 h-3 text-text-dim flex-shrink-0" />
+          ) : (
+            <ChevronRight className="w-3 h-3 text-text-dim flex-shrink-0" />
+          )}
+          <span
+            className={`font-mono text-sm font-bold ${versionTextClass}`}
+          >
+            {version.version}
+          </span>
+          {isLatest && !version.is_yanked && (
+            <span className="font-mono text-[9px] bg-accent/10 text-accent border border-accent/30 px-1.5 py-0.5">
+              LATEST
             </span>
-            {isLatest && !version.is_yanked && (
-              <span className="font-mono text-[9px] bg-accent/10 text-accent border border-accent/30 px-1.5 py-0.5">
-                LATEST
-              </span>
-            )}
-            {version.is_yanked && (
-              <span className="font-mono text-[9px] bg-red-500/10 text-red-400 border border-red-500/30 px-1.5 py-0.5 inline-flex items-center gap-1">
-                <AlertTriangle className="w-2.5 h-2.5" />
-                YANKED
-              </span>
-            )}
-          </div>
+          )}
+          {version.is_yanked && (
+            <span className="font-mono text-[9px] bg-red-500/10 text-red-400 border border-red-500/30 px-1.5 py-0.5 inline-flex items-center gap-1">
+              <AlertTriangle className="w-2.5 h-2.5" />
+              YANKED
+            </span>
+          )}
+        </div>
 
-          {/* Pumpkin compatibility range */}
-          <div className="col-span-3 font-mono text-xs text-text-dim">
-            {compatRange}
-          </div>
+        {/* Pumpkin compatibility range */}
+        <div className="col-span-3 font-mono text-xs text-text-dim">
+          {compatRange}
+        </div>
 
-          {/* Published date */}
-          <div className="col-span-2 font-mono text-xs text-text-dim">
-            {publishedDate}
-          </div>
+        {/* Published date */}
+        <div className="col-span-2 font-mono text-xs text-text-dim">
+          {publishedDate}
+        </div>
 
-          {/* Downloads */}
-          <div className="col-span-2 font-mono text-xs text-text-dim">
-            {version.downloads.toLocaleString()}
-          </div>
-        </button>
+        {/* Downloads */}
+        <div className="col-span-2 font-mono text-xs text-text-dim">
+          {version.downloads.toLocaleString()}
+        </div>
 
         {/* Status indicator + actions */}
-        <div className="col-span-2 flex items-center gap-2">
+        <div
+          className="col-span-2 flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           {version.is_yanked ? (
             <span className="w-2 h-2 bg-red-400 inline-block" title="Yanked" />
           ) : (
@@ -370,7 +367,7 @@ function VersionRow({
             />
           )}
         </div>
-      </div>
+      </button>
 
       {/* Expanded panel — binaries */}
       {isExpanded && (

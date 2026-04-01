@@ -19,10 +19,11 @@ import type { PluginResponse } from "@/lib/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+const NOW_MS = Date.now();
+
 function formatTimeAgo(dateString: string): string {
-  const now = new Date();
   const date = new Date(dateString);
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const diffInSeconds = Math.floor((NOW_MS - date.getTime()) / 1000);
 
   if (diffInSeconds < 60) return "just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
@@ -44,8 +45,7 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
   const [installOpen, setInstallOpen] = useState(false);
 
   const primaryCategory = plugin.categories[0];
-  // eslint-disable-next-line react-hooks/purity -- Date.now() preferred by SonarCloud (S6749)
-  const isNew = Date.now() - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
+  const isNew = NOW_MS - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
 
   return (
     <div className="border-b border-border-default py-6">

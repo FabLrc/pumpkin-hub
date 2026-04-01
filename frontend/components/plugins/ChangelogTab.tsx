@@ -11,6 +11,110 @@ interface ChangelogTabProps {
   readonly plugin: PluginResponse;
 }
 
+interface ChangelogEditorProps {
+  readonly editContent: string;
+  readonly error: string | null;
+  readonly isSaving: boolean;
+  readonly onContentChange: (value: string) => void;
+  readonly onSave: () => void;
+  readonly onCancel: () => void;
+}
+
+function ChangelogEditor({
+  editContent,
+  error,
+  isSaving,
+  onContentChange,
+  onSave,
+  onCancel,
+}: ChangelogEditorProps) {
+  return (
+    <div className="space-y-3">
+      <div className="border border-border-default bg-bg-elevated">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border-default bg-bg-surface">
+          <span className="font-mono text-xs text-text-dim uppercase tracking-widest">
+            Markdown Editor
+          </span>
+          <span className="font-mono text-[10px] text-text-dim">
+            {editContent.length.toLocaleString()} chars
+          </span>
+        </div>
+        <textarea
+          value={editContent}
+          onChange={(e) => onContentChange(e.target.value)}
+          className="w-full min-h-[400px] p-4 bg-bg-elevated text-text-secondary font-mono text-sm resize-y focus:outline-none"
+          placeholder="# Changelog&#10;&#10;## [1.0.0] - 2026-03-11&#10;&#10;### Added&#10;- Initial release&#10;&#10;### Fixed&#10;- Bug fixes"
+          spellCheck={false}
+        />
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 px-3 py-2 bg-error/10 border border-error/30 text-error text-xs font-mono">
+          <X size={14} className="flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={onSave}
+          disabled={isSaving}
+          className="flex items-center gap-1.5 px-4 py-2 bg-accent text-bg-base font-mono text-xs uppercase tracking-widest hover:bg-accent-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        >
+          {isSaving ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Save size={14} />
+          )}
+          <span>Save</span>
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={isSaving}
+          className="flex items-center gap-1.5 px-4 py-2 border border-border-default text-text-muted hover:text-text-primary font-mono text-xs uppercase tracking-widest transition-colors cursor-pointer"
+        >
+          <X size={14} />
+          <span>Cancel</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface ChangelogViewProps {
+  readonly content: string;
+}
+
+function ChangelogView({ content }: ChangelogViewProps) {
+  return (
+    <div className="md-content border border-border-default bg-bg-elevated p-6">
+      <div
+        dangerouslySetInnerHTML={{
+          __html: formatChangelog(content),
+        }}
+      />
+    </div>
+  );
+}
+
+interface EmptyChangelogProps {
+  readonly isOwner: boolean;
+}
+
+function EmptyChangelog({ isOwner }: EmptyChangelogProps) {
+  return (
+    <div className="text-center py-16 border border-border-default bg-bg-elevated">
+      <FileText size={32} className="mx-auto mb-3 text-text-dim" />
+      <p className="text-text-muted font-mono text-sm">No changelog available</p>
+      {isOwner && (
+        <p className="text-text-dim font-mono text-xs mt-1">
+          Add a changelog to track your plugin{"'"}s evolution
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ChangelogTab({ plugin }: ChangelogTabProps) {
   const { data, isLoading } = useChangelog(plugin.slug);
   const { data: currentUser } = useCurrentUser();
@@ -67,90 +171,6 @@ export function ChangelogTab({ plugin }: ChangelogTabProps) {
     );
   }
 
-  function renderContent() {
-    if (isEditing) {
-      return (
-        <div className="space-y-3">
-          <div className="border border-border-default bg-bg-elevated">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border-default bg-bg-surface">
-              <span className="font-mono text-xs text-text-dim uppercase tracking-widest">
-                Markdown Editor
-              </span>
-              <span className="font-mono text-[10px] text-text-dim">
-                {editContent.length.toLocaleString()} chars
-              </span>
-            </div>
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="w-full min-h-[400px] p-4 bg-bg-elevated text-text-secondary font-mono text-sm resize-y focus:outline-none"
-              placeholder="# Changelog&#10;&#10;## [1.0.0] - 2026-03-11&#10;&#10;### Added&#10;- Initial release&#10;&#10;### Fixed&#10;- Bug fixes"
-              spellCheck={false}
-            />
-          </div>
-
-          {error && (
-            <div className="flex items-start gap-2 px-3 py-2 bg-error/10 border border-error/30 text-error text-xs font-mono">
-              <X size={14} className="flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-1.5 px-4 py-2 bg-accent text-bg-base font-mono text-xs uppercase tracking-widest hover:bg-accent-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              {isSaving ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Save size={14} />
-              )}
-              <span>Save</span>
-            </button>
-            <button
-              onClick={handleCancelEdit}
-              disabled={isSaving}
-              className="flex items-center gap-1.5 px-4 py-2 border border-border-default text-text-muted hover:text-text-primary font-mono text-xs uppercase tracking-widest transition-colors cursor-pointer"
-            >
-              <X size={14} />
-              <span>Cancel</span>
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    if (hasContent) {
-      return (
-        /* Rendered markdown */
-        <div className="md-content border border-border-default bg-bg-elevated p-6">
-          <div
-            dangerouslySetInnerHTML={{
-              __html: formatChangelog(changelog.content),
-            }}
-          />
-        </div>
-      );
-    }
-
-    return (
-      /* Empty state */
-      <div className="text-center py-16 border border-border-default bg-bg-elevated">
-        <FileText size={32} className="mx-auto mb-3 text-text-dim" />
-        <p className="text-text-muted font-mono text-sm">
-          No changelog available
-        </p>
-        {isOwner && (
-          <p className="text-text-dim font-mono text-xs mt-1">
-            Add a changelog to track your plugin{"'"}s evolution
-          </p>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* Header with source badge and edit button */}
@@ -174,7 +194,20 @@ export function ChangelogTab({ plugin }: ChangelogTabProps) {
         )}
       </div>
 
-      {renderContent()}
+      {isEditing ? (
+        <ChangelogEditor
+          editContent={editContent}
+          error={error}
+          isSaving={isSaving}
+          onContentChange={setEditContent}
+          onSave={handleSave}
+          onCancel={handleCancelEdit}
+        />
+      ) : hasContent ? (
+        <ChangelogView content={changelog.content} />
+      ) : (
+        <EmptyChangelog isOwner={isOwner} />
+      )}
     </div>
   );
 }
@@ -207,73 +240,92 @@ function SourceBadge({ source }: { readonly source: string }) {
  *
  * Security: All user content is escaped before rendering.
  */
+interface FormatState {
+  htmlParts: string[];
+  inCodeBlock: boolean;
+  codeBuffer: string[];
+  codeLanguage: string;
+  inList: boolean;
+}
+
+function processListItem(trimmed: string, state: FormatState): void {
+  if (!state.inList) {
+    state.htmlParts.push("<ul>");
+    state.inList = true;
+  }
+  state.htmlParts.push(`<li>${inlineFormat(trimmed.slice(2))}</li>`);
+}
+
+function processParagraph(trimmed: string, state: FormatState): void {
+  if (state.inList) {
+    state.htmlParts.push("</ul>");
+    state.inList = false;
+  }
+  state.htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
+}
+
 function formatChangelog(raw: string): string {
   const lines = raw.split("\n");
-  const htmlParts: string[] = [];
-  let inCodeBlock = false;
-  let codeBuffer: string[] = [];
-  let codeLanguage = "";
-  let inList = false;
+  const state: FormatState = {
+    htmlParts: [],
+    inCodeBlock: false,
+    codeBuffer: [],
+    codeLanguage: "",
+    inList: false,
+  };
 
   for (const line of lines) {
     if (line.trim().startsWith("```")) {
-      const result = processCodeFence(line, inCodeBlock, codeBuffer, codeLanguage, inList);
-      htmlParts.push(...result.parts);
-      inCodeBlock = result.inCodeBlock;
-      codeBuffer = result.codeBuffer;
-      codeLanguage = result.codeLanguage;
-      inList = result.inList;
+      const result = processCodeFence(line, state.inCodeBlock, state.codeBuffer, state.codeLanguage, state.inList);
+      state.htmlParts.push(...result.parts);
+      state.inCodeBlock = result.inCodeBlock;
+      state.codeBuffer = result.codeBuffer;
+      state.codeLanguage = result.codeLanguage;
+      state.inList = result.inList;
       continue;
     }
 
-    if (inCodeBlock) {
-      codeBuffer.push(line);
+    if (state.inCodeBlock) {
+      state.codeBuffer.push(line);
       continue;
     }
 
     const trimmed = line.trim();
 
     if (trimmed === "") {
-      if (inList) {
-        htmlParts.push("</ul>");
-        inList = false;
+      if (state.inList) {
+        state.htmlParts.push("</ul>");
+        state.inList = false;
       }
       continue;
     }
 
-    const headingResult = processHeading(trimmed, inList);
+    const headingResult = processHeading(trimmed, state.inList);
     if (headingResult !== null) {
-      htmlParts.push(...headingResult.parts);
-      inList = headingResult.inList;
+      state.htmlParts.push(...headingResult.parts);
+      state.inList = headingResult.inList;
       continue;
     }
 
-    inList = processInlineLine(trimmed, inList, htmlParts);
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      processListItem(trimmed, state);
+      continue;
+    }
+
+    processParagraph(trimmed, state);
   }
 
-  if (inList) {
-    htmlParts.push("</ul>");
+  if (state.inList) {
+    state.htmlParts.push("</ul>");
   }
 
-  if (inCodeBlock && codeBuffer.length > 0) {
-    htmlParts.push(
-      `<pre><code>${escapeHtml(codeBuffer.join("\n"))}</code></pre>`,
+  if (state.inCodeBlock && state.codeBuffer.length > 0) {
+    state.htmlParts.push(
+      `<pre><code>${escapeHtml(state.codeBuffer.join("\n"))}</code></pre>`,
     );
   }
 
-  return htmlParts.join("\n");
-}
-
-/** Handles a non-empty, non-heading, non-code-fence line. Returns the updated inList flag. */
-function processInlineLine(trimmed: string, inList: boolean, htmlParts: string[]): boolean {
-  if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-    if (!inList) htmlParts.push("<ul>");
-    htmlParts.push(`<li>${inlineFormat(trimmed.slice(2))}</li>`);
-    return true;
-  }
-  if (inList) htmlParts.push("</ul>");
-  htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
-  return false;
+  return state.htmlParts.join("\n");
 }
 
 interface CodeFenceResult {
@@ -347,17 +399,17 @@ function inlineFormat(text: string): string {
   let result = escapeHtml(text);
 
   // Inline code
-  result = result.replaceAll(/`([^`]{1,500})`/g, "<code>$1</code>");
+  result = result.replaceAll(/`([^`]+)`/g, "<code>$1</code>");
 
   // Bold
-  result = result.replaceAll(/\*\*([^*]{1,500})\*\*/g, "<strong>$1</strong>");
+  result = result.replaceAll(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
   // Italic
-  result = result.replaceAll(/\*([^*]{1,500})\*/g, "<em>$1</em>");
+  result = result.replaceAll(/\*([^*]+)\*/g, "<em>$1</em>");
 
   // Links: [text](url) — only allow http(s) URLs
   result = result.replaceAll(
-    /\[([^\]]{1,500})\]\((https?:\/\/[^)]{1,2000})\)/g,
+    /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
     '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
   );
 

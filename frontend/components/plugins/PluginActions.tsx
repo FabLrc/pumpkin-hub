@@ -60,14 +60,19 @@ export function PluginActions({ plugin }: PluginActionsProps) {
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
-        >
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <button
+            type="button"
+            className="absolute inset-0 w-full h-full bg-black/60 cursor-default"
+            aria-label="Close dialog"
+            onClick={() => setShowDeleteConfirm(false)}
+          />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <dialog
             open
             aria-labelledby="delete-plugin-title"
-            className="w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
+            className="pointer-events-auto w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
             onKeyDown={(e) => { if (e.key === "Escape") setShowDeleteConfirm(false); }}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -108,6 +113,7 @@ export function PluginActions({ plugin }: PluginActionsProps) {
               </button>
             </div>
           </dialog>
+          </div>
         </div>
       )}
     </>

@@ -171,7 +171,8 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
         <ul
           ref={dropdownRef}
           id="search-suggestions"
-          className="absolute z-50 top-full left-0 right-0 mt-px border border-border-default bg-bg-elevated shadow-lg list-none p-0 m-0"
+          role="listbox"
+          className="absolute z-50 top-full left-0 right-0 mt-px border border-border-default bg-bg-elevated shadow-lg list-none m-0 p-0"
         >
           {suggestionsLoading ? (
             <li className="px-3 py-3 font-mono text-xs text-text-dim">
@@ -179,7 +180,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
             </li>
           ) : (
             suggestions?.map((suggestion: SearchSuggestion, index: number) => (
-              <li key={suggestion.slug}>
+              <li key={suggestion.slug} role="option" aria-selected={index === activeIndex}>
                 <button
                   id={`suggestion-${index}`}
                   onClick={() => navigateToPlugin(suggestion.slug)}
