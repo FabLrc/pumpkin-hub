@@ -56,6 +56,14 @@ export function Navbar() {
           >
             Explorer
           </Link>
+          <a
+            href="https://fablrc.github.io/pumpkin-hub/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-text-primary transition-colors"
+          >
+            Docs
+          </a>
           <Link
             href="/plugins/new"
             className="text-accent hover:text-accent-light transition-colors"
@@ -185,6 +193,15 @@ export function Navbar() {
             >
               Explorer
             </Link>
+            <a
+              href="https://fablrc.github.io/pumpkin-hub/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block py-3 text-text-subtle hover:text-text-primary transition-colors border-b border-border-default"
+            >
+              Docs
+            </a>
             <Link
               href="/plugins/new"
               onClick={() => setIsMobileMenuOpen(false)}
