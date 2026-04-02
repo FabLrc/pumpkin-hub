@@ -4,7 +4,15 @@
 
 [![Status: Active Development](https://img.shields.io/badge/Status-Active_Development-orange?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
 [![Built with: Rust & Next.js](https://img.shields.io/badge/Stack-Rust_%2F_Next.js-black?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
-[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=FabLrc_pumpkin-hub)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=bugs)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=coverage)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
 
 ---
 
