@@ -8,8 +8,7 @@ use crate::error::AppError;
 
 use super::ObjectStorage;
 
-const GITHUB_RELEASES_URL: &str =
-    "https://api.github.com/repos/Pumpkin-MC/Pumpkin/releases/latest";
+const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/Pumpkin-MC/Pumpkin/releases/latest";
 
 /// S3 user-metadata key used to track which GitHub asset version is cached.
 /// The SDK prefixes it with `x-amz-meta-` automatically.
@@ -110,10 +109,7 @@ impl PumpkinBinaryCache {
 
         // ── Step 3: S3 cache hit (survives restarts) ──────────────────────────
         let s3_key = Self::s3_key(platform);
-        let s3_meta = storage
-            .head_object_metadata(&s3_key)
-            .await
-            .unwrap_or(None);
+        let s3_meta = storage.head_object_metadata(&s3_key).await.unwrap_or(None);
 
         if let Some(metadata) = s3_meta {
             if metadata
@@ -210,9 +206,7 @@ impl PumpkinBinaryCache {
             .assets
             .iter()
             .find(|a| a.name.contains(platform))
-            .ok_or_else(|| {
-                format!("No Pumpkin binary asset found for platform '{platform}'")
-            })?;
+            .ok_or_else(|| format!("No Pumpkin binary asset found for platform '{platform}'"))?;
 
         Ok((asset.updated_at.clone(), asset.browser_download_url.clone()))
     }

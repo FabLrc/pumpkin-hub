@@ -124,9 +124,7 @@ pub struct ServerConfigSummary {
 fn validate_name(name: &str) -> Result<(), AppError> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
-        return Err(AppError::UnprocessableEntity(
-            "name cannot be empty".into(),
-        ));
+        return Err(AppError::UnprocessableEntity("name cannot be empty".into()));
     }
     if trimmed.len() > NAME_MAX_LENGTH {
         return Err(AppError::UnprocessableEntity(format!(

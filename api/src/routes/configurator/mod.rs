@@ -20,10 +20,7 @@ pub fn routes() -> Router<AppState> {
             "/server-configs/download-preview",
             post(handlers::download_preview),
         )
-        .route(
-            "/server-configs/validate",
-            post(handlers::validate_config),
-        )
+        .route("/server-configs/validate", post(handlers::validate_config))
         // ── Public share view (literal "share" takes priority over {id} wildcard)
         .route(
             "/server-configs/share/{token}",

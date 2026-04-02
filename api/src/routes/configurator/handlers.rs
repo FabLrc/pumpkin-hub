@@ -308,13 +308,12 @@ pub(crate) async fn resolve_required_plugins(
             let resolved_version_id = resolved.id;
 
             // Verify the resolved version has a .wasm binary.
-            let has_binary: bool = sqlx::query_scalar(
-                "SELECT EXISTS(SELECT 1 FROM binaries WHERE version_id = $1)",
-            )
-            .bind(resolved_version_id)
-            .fetch_one(pool)
-            .await
-            .map_err(AppError::internal)?;
+            let has_binary: bool =
+                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM binaries WHERE version_id = $1)")
+                    .bind(resolved_version_id)
+                    .fetch_one(pool)
+                    .await
+                    .map_err(AppError::internal)?;
 
             if has_binary {
                 // Enqueue so we also resolve *its* required deps transitively.
@@ -350,12 +349,11 @@ pub async fn create_server_config(
     body.validate()?;
 
     // Enforce per-user limit
-    let count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM server_configs WHERE user_id = $1")
-            .bind(auth.user_id)
-            .fetch_one(&state.db)
-            .await
-            .map_err(AppError::internal)?;
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM server_configs WHERE user_id = $1")
+        .bind(auth.user_id)
+        .fetch_one(&state.db)
+        .await
+        .map_err(AppError::internal)?;
 
     if count >= super::dto::max_configs_per_user() {
         return Err(AppError::UnprocessableEntity(format!(
@@ -552,13 +550,12 @@ pub async fn delete_server_config(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, AppError> {
-    let result =
-        sqlx::query("DELETE FROM server_configs WHERE id = $1 AND user_id = $2")
-            .bind(id)
-            .bind(auth.user_id)
-            .execute(&state.db)
-            .await
-            .map_err(AppError::internal)?;
+    let result = sqlx::query("DELETE FROM server_configs WHERE id = $1 AND user_id = $2")
+        .bind(id)
+        .bind(auth.user_id)
+        .execute(&state.db)
+        .await
+        .map_err(AppError::internal)?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound);
@@ -732,18 +729,16 @@ async fn record_downloads(pool: PgPool, plugins: Vec<(Uuid, Uuid)>) {
             .bind(version_id)
             .execute(&pool)
             .await;
-        let _ = sqlx::query(
-            "UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1",
-        )
-        .bind(plugin_id)
-        .execute(&pool)
-        .await;
         let _ =
-            sqlx::query("INSERT INTO download_events (plugin_id, version_id) VALUES ($1, $2)")
+            sqlx::query("UPDATE plugins SET downloads_total = downloads_total + 1 WHERE id = $1")
                 .bind(plugin_id)
-                .bind(version_id)
                 .execute(&pool)
                 .await;
+        let _ = sqlx::query("INSERT INTO download_events (plugin_id, version_id) VALUES ($1, $2)")
+            .bind(plugin_id)
+            .bind(version_id)
+            .execute(&pool)
+            .await;
     }
 }
 
