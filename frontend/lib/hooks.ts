@@ -4,7 +4,34 @@
 // Typed React hooks for data fetching with SWR (stale-while-revalidate).
 
 import useSWR from "swr";
-import { swrFetcher, getPluginsPath, getPluginPath, getPluginVersionsPath, getCategoriesPath, getAuthMePath, getBinariesPath, getSearchPath, getPumpkinVersionsPath, getDependenciesPath, getDependencyGraphPath, getDependantsPath, getDashboardStatsPath, getDashboardDownloadsPath, getPluginDownloadStatsPath, getApiKeysPath, getNotificationsPath, getUnreadCountPath, getGithubLinkPath, getReviewsPath, getMediaPath, getChangelogPath, getPublicStatsPath } from "./api";
+import {
+  getApiKeysPath,
+  getAuthMePath,
+  getBinariesPath,
+  getCategoriesPath,
+  getChangelogPath,
+  getDashboardDownloadsPath,
+  getDashboardStatsPath,
+  getDependantsPath,
+  getDependenciesPath,
+  getDependencyGraphPath,
+  getGithubLinkPath,
+  getMediaPath,
+  getNotificationsPath,
+  getPluginDownloadStatsPath,
+  getPluginPath,
+  getPluginsPath,
+  getPluginVersionsPath,
+  getPublicStatsPath,
+  getPumpkinVersionsPath,
+  getReviewsPath,
+  getSearchPath,
+  getServerConfigPath,
+  getServerConfigsPath,
+  getServerConfigSharePath,
+  getUnreadCountPath,
+  swrFetcher,
+} from "./api";
 import type {
   ApiKeySummary,
   AuthorDashboardStats,
@@ -29,6 +56,8 @@ import type {
   ReviewListResponse,
   SearchParams,
   SearchResponse,
+  ServerConfigListResponse,
+  ServerConfigResponse,
   UnreadCountResponse,
   UserProfile,
   VersionsListResponse,
@@ -76,6 +105,61 @@ export function useCurrentUser() {
     dedupingInterval: 10_000,
     shouldRetryOnError: false,
   });
+}
+
+export function useServerConfigs() {
+  const { data, isLoading, error, mutate } = useSWR<ServerConfigListResponse>(
+    getServerConfigsPath(),
+    swrFetcher,
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+    },
+  );
+
+  return {
+    configs: data?.configs ?? [],
+    isLoading,
+    error,
+    mutate,
+  };
+}
+
+export function useServerConfig(id: string | null) {
+  const path = id ? getServerConfigPath(id) : null;
+  const { data, isLoading, error, mutate } = useSWR<ServerConfigResponse>(
+    path,
+    swrFetcher,
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+    },
+  );
+
+  return {
+    config: data,
+    isLoading,
+    error,
+    mutate,
+  };
+}
+
+export function useServerConfigByShare(token: string | null) {
+  const path = token ? getServerConfigSharePath(token) : null;
+  const { data, isLoading, error } = useSWR<ServerConfigResponse>(
+    path,
+    swrFetcher,
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+    },
+  );
+
+  return {
+    config: data,
+    isLoading,
+    error,
+  };
 }
 
 /** Fetch all plugins published by the given author username. */

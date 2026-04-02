@@ -196,6 +196,70 @@ export interface BinaryDownloadResponse {
   expires_in_seconds: number;
 }
 
+// ── Server Configurator Types ───────────────────────────────────────────
+
+export type ServerConfigPlatform = "windows" | "linux" | "macos";
+
+export interface PluginSelection {
+  plugin_id: string;
+  version_id: string;
+}
+
+export interface ServerConfigPluginEntry {
+  plugin_id: string;
+  plugin_name: string;
+  plugin_slug: string;
+  version_id: string;
+  version: string;
+  is_auto_dep: boolean;
+}
+
+export interface ServerConfigResponse {
+  id: string;
+  name: string;
+  platform: ServerConfigPlatform;
+  share_token: string;
+  plugins: ServerConfigPluginEntry[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServerConfigSummary {
+  id: string;
+  name: string;
+  platform: ServerConfigPlatform;
+  share_token: string;
+  plugin_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServerConfigListResponse {
+  configs: ServerConfigSummary[];
+}
+
+export interface CreateServerConfigRequest {
+  name: string;
+  platform: ServerConfigPlatform;
+  plugins: PluginSelection[];
+}
+
+export interface UpdateServerConfigRequest {
+  name?: string;
+  platform?: ServerConfigPlatform;
+  plugins?: PluginSelection[];
+}
+
+export interface DownloadPreviewRequest {
+  platform: ServerConfigPlatform;
+  plugins: PluginSelection[];
+}
+
+export interface ValidateServerConfigResponse {
+  platform: ServerConfigPlatform;
+  plugins: ServerConfigPluginEntry[];
+}
+
 // ── Dependency Types ──────────────────────────────────────────────────────
 
 export interface DependencyPluginSummary {

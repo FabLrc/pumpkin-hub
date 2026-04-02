@@ -11,44 +11,51 @@ import type {
   BinaryDownloadResponse,
   BinaryUploadResponse,
   CategoryResponse,
+  ChangelogResponse,
+  CreateReportRequest,
+  CreateReviewRequest,
+  CreateServerConfigRequest,
   CreatePluginRequest,
   CreateVersionRequest,
   DeclareDependencyRequest,
   DependencyGraphResponse,
   DependencyListResponse,
   DependencyResponse,
+  DownloadPreviewRequest,
   ListPluginsParams,
   LoginRequest,
+  MediaListResponse,
+  MediaResponse,
+  MediaUploadResponse,
   OAuthProvider,
   PaginatedResponse,
   PluginResponse,
   PluginSummary,
   PumpkinVersion,
+  ReorderMediaRequest,
   RegisterRequest,
+  ReportResponse,
+  ReviewListResponse,
+  ReviewResponse,
   ReverseDependencyResponse,
   SearchParams,
   SearchResponse,
   SearchSuggestion,
+  ServerConfigListResponse,
+  ServerConfigResponse,
+  ServerConfigSummary,
   UpdateDependencyRequest,
+  UpdateChangelogRequest,
+  UpdateMediaRequest,
   UpdatePluginRequest,
   UpdateProfileRequest,
+  UpdateReviewRequest,
+  UpdateServerConfigRequest,
   UserProfile,
+  ValidateServerConfigResponse,
   VersionResponse,
   VersionsListResponse,
   YankVersionRequest,
-  CreateReportRequest,
-  CreateReviewRequest,
-  ReportResponse,
-  ReviewListResponse,
-  ReviewResponse,
-  UpdateReviewRequest,
-  ChangelogResponse,
-  MediaListResponse,
-  MediaResponse,
-  MediaUploadResponse,
-  ReorderMediaRequest,
-  UpdateChangelogRequest,
-  UpdateMediaRequest,
 } from "./types";
 
 const API_BASE_URL =
@@ -71,6 +78,71 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+async function apiFetchBlob(
+  path: string,
+  init?: RequestInit,
+): Promise<{ blob: Blob; headers: Headers }> {
+  const response = await fetch(`${API_PREFIX}${path}`, {
+    credentials: "include",
+    ...init,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "Unknown error");
+    throw new Error(`API ${response.status}: ${errorBody}`);
+  }
+
+  return { blob: await response.blob(), headers: response.headers };
+}
+
+function extractFilenameFromDisposition(
+  contentDisposition: string | null,
+): string | null {
+  if (!contentDisposition) return null;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim());
+    } catch {
+      // Continue with plain filename fallback.
+    }
+  }
+
+  const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return filenameMatch?.[1]?.trim() ?? null;
+}
+
+function triggerBrowserDownload(blob: Blob, filename: string): void {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    throw new Error("Browser download can only run in a client environment.");
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+async function downloadFromApi(
+  path: string,
+  init: RequestInit | undefined,
+  fallbackFilename: string,
+): Promise<void> {
+  const { blob, headers } = await apiFetchBlob(path, init);
+  const filename =
+    extractFilenameFromDisposition(headers.get("Content-Disposition")) ??
+    fallbackFilename;
+
+  triggerBrowserDownload(blob, filename);
 }
 
 // ── SWR-compatible fetcher ────────────────────────────────────────────────
@@ -531,6 +603,113 @@ export async function fetchDependants(
   slug: string,
 ): Promise<ReverseDependencyResponse> {
   return apiFetch<ReverseDependencyResponse>(getDependantsPath(slug));
+}
+
+// ── Server Configurator Endpoints ───────────────────────────────────────
+
+export function getServerConfigsPath(): string {
+  return "/server-configs";
+}
+
+export function getServerConfigPath(id: string): string {
+  return `/server-configs/${encodeURIComponent(id)}`;
+}
+
+export function getServerConfigSharePath(token: string): string {
+  return `/server-configs/share/${encodeURIComponent(token)}`;
+}
+
+export function getRotateShareTokenPath(id: string): string {
+  return `/server-configs/${encodeURIComponent(id)}/rotate-share-token`;
+}
+
+export function getServerConfigDownloadPath(id: string): string {
+  return `/server-configs/${encodeURIComponent(id)}/download`;
+}
+
+export function getServerConfigDownloadPreviewPath(): string {
+  return "/server-configs/download-preview";
+}
+
+export function getServerConfigValidatePath(): string {
+  return "/server-configs/validate";
+}
+
+export async function createServerConfig(
+  body: CreateServerConfigRequest,
+): Promise<ServerConfigResponse> {
+  return apiFetch<ServerConfigResponse>(getServerConfigsPath(), {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listServerConfigs(): Promise<ServerConfigSummary[]> {
+  const response = await apiFetch<ServerConfigListResponse>(
+    getServerConfigsPath(),
+  );
+  return response.configs;
+}
+
+export async function getServerConfig(id: string): Promise<ServerConfigResponse> {
+  return apiFetch<ServerConfigResponse>(getServerConfigPath(id));
+}
+
+export async function updateServerConfig(
+  id: string,
+  body: UpdateServerConfigRequest,
+): Promise<ServerConfigResponse> {
+  return apiFetch<ServerConfigResponse>(getServerConfigPath(id), {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteServerConfig(id: string): Promise<void> {
+  await apiFetch<void>(getServerConfigPath(id), {
+    method: "DELETE",
+  });
+}
+
+export async function getServerConfigByShareToken(
+  token: string,
+): Promise<ServerConfigResponse> {
+  return apiFetch<ServerConfigResponse>(getServerConfigSharePath(token));
+}
+
+export async function rotateShareToken(id: string): Promise<ServerConfigResponse> {
+  return apiFetch<ServerConfigResponse>(getRotateShareTokenPath(id), {
+    method: "POST",
+  });
+}
+
+export async function validateServerConfig(
+  body: DownloadPreviewRequest,
+): Promise<ValidateServerConfigResponse> {
+  return apiFetch<ValidateServerConfigResponse>(getServerConfigValidatePath(), {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function downloadServerConfig(id: string): Promise<void> {
+  await downloadFromApi(
+    getServerConfigDownloadPath(id),
+    { method: "POST" },
+    "pumpkin-server.zip",
+  );
+}
+
+export async function downloadPreview(body: DownloadPreviewRequest): Promise<void> {
+  await downloadFromApi(
+    getServerConfigDownloadPreviewPath(),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+    `pumpkin-server-${body.platform}.zip`,
+  );
 }
 
 // ── Author Profile Endpoints ──────────────────────────────────────────────
