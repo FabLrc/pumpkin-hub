@@ -19,6 +19,7 @@ import {
   BarChart3,
   Key,
   Bell,
+  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar, Footer } from "@/components/layout";
@@ -285,6 +286,24 @@ export default function DashboardPage() {
             </span>
             <span className="block font-mono text-xs text-text-muted">
               Download milestones and plugin activity updates
+            </span>
+          </div>
+          <ExternalLink className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors shrink-0" />
+        </Link>
+
+        <Link
+          href="/dashboard/configurator"
+          className="flex items-center gap-3 border border-border-default bg-bg-elevated p-4 mb-8 hover:border-accent/40 transition-colors group"
+        >
+          <div className="w-9 h-9 bg-bg-surface border border-border-default flex items-center justify-center shrink-0 group-hover:border-accent/40 transition-colors">
+            <Wrench className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-raleway font-bold text-sm text-text-primary group-hover:text-accent transition-colors">
+              Server Configurator
+            </span>
+            <span className="block font-mono text-xs text-text-muted">
+              Access saved server bundles and manage share links
             </span>
           </div>
           <ExternalLink className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors shrink-0" />

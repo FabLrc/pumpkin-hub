@@ -235,4 +235,11 @@ describe("dashboard page", () => {
     // unread count badge showing 3
     expect(screen.getByText("3")).toBeInTheDocument();
   });
+
+  it("renders Server Configurator quick link", () => {
+    render(<DashboardPage />);
+    expect(screen.getByText("Server Configurator")).toBeInTheDocument();
+    const configuratorLink = screen.getByText("Server Configurator").closest("a");
+    expect(configuratorLink).toHaveAttribute("href", "/dashboard/configurator");
+  });
 });
