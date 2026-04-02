@@ -267,8 +267,7 @@ impl SearchService {
         }
 
         // Request facet distribution
-        search_request
-            .with_facets(Selectors::Some(&["category_slugs", "pumpkin_versions"]));
+        search_request.with_facets(Selectors::Some(&["category_slugs", "pumpkin_versions"]));
 
         let results: SearchResults<SearchHit> = search_request.execute().await.map_err(|e| {
             AppError::internal(std::io::Error::other(format!(

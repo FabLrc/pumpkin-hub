@@ -304,8 +304,7 @@ const FILE_NAME_MAX_LENGTH: usize = 255;
 
 /// Allowed Content-Types for .wasm binary uploads.
 /// Note: browsers may report application/octet-stream for .wasm files.
-const ALLOWED_BINARY_CONTENT_TYPES: &[&str] =
-    &["application/wasm", "application/octet-stream"];
+const ALLOWED_BINARY_CONTENT_TYPES: &[&str] = &["application/wasm", "application/octet-stream"];
 
 /// Response DTO for a single binary artifact.
 #[derive(Debug, Serialize)]

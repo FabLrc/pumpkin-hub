@@ -268,8 +268,7 @@ async fn handle_release_published(
     );
 
     // Download and store the .wasm release asset
-    let wasm_stored =
-        store_release_assets(state, linked, version_id, &version_str, release).await;
+    let wasm_stored = store_release_assets(state, linked, version_id, &version_str, release).await;
 
     // Re-index in Meilisearch
     reindex_plugin(state, linked.plugin_id).await;
