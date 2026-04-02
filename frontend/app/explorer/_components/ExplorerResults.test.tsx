@@ -46,7 +46,6 @@ const makeHit = (id: string, name: string): SearchHit => ({
   review_count: 5,
   categories: [],
   category_slugs: ["performance"],
-  platforms: ["linux"],
   pumpkin_versions: [],
   license: "MIT",
   created_at_timestamp: Math.floor(Date.now() / 1000),

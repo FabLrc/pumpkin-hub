@@ -1124,14 +1124,11 @@ pub async fn upload_binary(
     })? {
         let field_name = field.name().unwrap_or_default().to_string();
 
-        match field_name.as_str() {
-            "file" => {
-                let (fname, ct, bytes) = read_binary_file_field(field, max_size).await?;
-                file_name = fname;
-                content_type = ct;
-                file_data = Some(bytes);
-            }
-            _ => {} // Ignore unknown fields
+        if field_name.as_str() == "file" {
+            let (fname, ct, bytes) = read_binary_file_field(field, max_size).await?;
+            file_name = fname;
+            content_type = ct;
+            file_data = Some(bytes);
         }
     }
 

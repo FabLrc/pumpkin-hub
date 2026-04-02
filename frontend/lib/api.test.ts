@@ -136,7 +136,7 @@ describe("lib/api", () => {
     await api.resendVerification();
 
     await api.fetchBinaries("slug", "1.0.0");
-    await api.fetchBinaryDownload("slug", "1.0.0", "linux");
+    await api.fetchBinaryDownload("slug", "1.0.0");
 
     await api.fetchSearch({ q: "auth" });
     await api.fetchSuggestions("query", 7);
