@@ -42,7 +42,6 @@ const makeHit = (overrides: Partial<SearchHit> = {}): SearchHit => ({
   categories: [],
   category_slugs: ["performance", "security"],
   pumpkin_versions: [],
-  platforms: ["windows", "linux"],
   license: "MIT",
   created_at_timestamp: Math.floor(new Date("2024-01-01T00:00:00Z").getTime() / 1000),
   updated_at_timestamp: Math.floor(new Date("2025-06-30T12:00:00Z").getTime() / 1000),
@@ -106,10 +105,9 @@ describe("SearchHitCard", () => {
     expect(screen.getByText("#security")).toBeInTheDocument();
   });
 
-  it("renders platform badges", () => {
+  it("renders WASM badge", () => {
     render(<SearchHitCard hit={makeHit()} />);
-    expect(screen.getByText("windows")).toBeInTheDocument();
-    expect(screen.getByText("linux")).toBeInTheDocument();
+    expect(screen.getByText("WASM")).toBeInTheDocument();
   });
 
   it("renders license when present", () => {

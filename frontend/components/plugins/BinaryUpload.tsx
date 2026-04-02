@@ -2,14 +2,13 @@
 
 import { useState, useRef } from "react";
 import { Upload, CheckCircle, AlertTriangle, X } from "lucide-react";
-import type { Platform, BinaryUploadResponse } from "@/lib/types";
-import { PLATFORMS } from "@/lib/types";
+import type { BinaryUploadResponse } from "@/lib/types";
 import { uploadBinary } from "@/lib/api";
 
 interface BinaryUploadProps {
   readonly slug: string;
   readonly version: string;
-  readonly existingPlatforms: string[];
+  readonly hasBinary: boolean;
   readonly onUploaded: () => void;
 }
 
@@ -19,20 +18,15 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 export function BinaryUpload({
   slug,
   version,
-  existingPlatforms,
+  hasBinary,
   onUploaded,
 }: BinaryUploadProps) {
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform | "">("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BinaryUploadResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const availablePlatforms = PLATFORMS.filter(
-    (p) => !existingPlatforms.includes(p),
-  );
 
   function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -61,7 +55,6 @@ export function BinaryUpload({
 
   function handleReset() {
     setSelectedFile(null);
-    setSelectedPlatform("");
     setUploadProgress(0);
     setError(null);
     setResult(null);
@@ -69,7 +62,7 @@ export function BinaryUpload({
   }
 
   async function handleUpload() {
-    if (!selectedFile || !selectedPlatform) return;
+    if (!selectedFile) return;
 
     setIsUploading(true);
     setError(null);
@@ -80,7 +73,6 @@ export function BinaryUpload({
         slug,
         version,
         selectedFile,
-        selectedPlatform,
         setUploadProgress,
       );
       setResult(response);
@@ -95,12 +87,12 @@ export function BinaryUpload({
     }
   }
 
-  if (availablePlatforms.length === 0) {
+  if (hasBinary) {
     return (
       <div className="border border-border-default bg-bg-elevated/30 p-4">
         <p className="font-mono text-xs text-text-dim flex items-center gap-2">
           <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-          All supported platforms have binaries uploaded.
+          A binary has already been uploaded for this version.
         </p>
       </div>
     );
@@ -112,43 +104,20 @@ export function BinaryUpload({
         Upload Binary
       </h4>
 
-      {/* Platform selector */}
-      <div>
-        <span className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
-          Target Platform
-        </span>
-        <div className="flex gap-2">
-          {availablePlatforms.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setSelectedPlatform(p)}
-              disabled={isUploading}
-              className={`font-mono text-xs px-4 py-2 border transition-colors cursor-pointer ${
-                selectedPlatform === p
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border-default text-text-dim hover:border-border-hover hover:text-text-subtle"
-              } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              {platformLabel(p)}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* File input */}
       <div>
         <label htmlFor="binary-file-input" className="font-mono text-xs text-text-muted uppercase tracking-widest block mb-2">
-          Binary File
+          WebAssembly File (.wasm)
         </label>
         <div className="relative">
           <input
             id="binary-file-input"
             ref={fileInputRef}
             type="file"
+            accept=".wasm"
             onChange={handleFileSelect}
             disabled={isUploading}
-            aria-label="Select binary file"
+            aria-label="Select .wasm binary file"
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
           <div
@@ -160,7 +129,7 @@ export function BinaryUpload({
             <span className="font-mono text-xs text-text-dim">
               {selectedFile
                 ? `${selectedFile.name} (${formatFileSize(selectedFile.size)})`
-                : "Choose a file or drag it here"}
+                : "Choose a .wasm file or drag it here"}
             </span>
             {selectedFile && !isUploading && (
               <button
@@ -178,7 +147,7 @@ export function BinaryUpload({
           </div>
         </div>
         <p className="font-mono text-[10px] text-text-dim mt-1">
-          Max {MAX_FILE_SIZE_MB} MB · .so, .dll, .dylib, .wasm, or binary
+          Max {MAX_FILE_SIZE_MB} MB · .wasm
         </p>
       </div>
 
@@ -222,7 +191,7 @@ export function BinaryUpload({
       <button
         type="button"
         onClick={handleUpload}
-        disabled={!selectedFile || !selectedPlatform || isUploading}
+        disabled={!selectedFile || isUploading}
         className="font-mono text-xs bg-accent hover:bg-accent-dark text-black font-bold px-5 py-2.5 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Upload className="w-3.5 h-3.5" />
@@ -238,14 +207,4 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-/** Human-readable label for a platform value. */
-function platformLabel(platform: string): string {
-  switch (platform) {
-    case "windows": return "Windows (.dll)";
-    case "macos": return "macOS (.dylib)";
-    case "linux": return "Linux (.so)";
-    default: return platform;
-  }
 }

@@ -2,7 +2,7 @@
 
 ## Projet
 
-Pumpkin Hub est le registre communautaire de plugins pour le serveur Minecraft **Pumpkin MC** (écrit en Rust). Il permet aux développeurs de publier, versionner et distribuer des plugins compilés (.dll/.so/.dylib) avec vérification SHA-256, recherche instantanée et intégration GitHub.
+Pumpkin Hub est le registre communautaire de plugins pour le serveur Minecraft **Pumpkin MC** (écrit en Rust). Il permet aux développeurs de publier, versionner et distribuer des plugins compilés (.wasm) avec vérification SHA-256, recherche instantanée et intégration GitHub.
 
 ## Architecture
 

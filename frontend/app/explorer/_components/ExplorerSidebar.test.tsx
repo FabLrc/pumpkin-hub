@@ -37,13 +37,10 @@ const defaultProps = {
   onSortChange: vi.fn(),
   activeCategory: undefined as string | undefined,
   onCategoryChange: vi.fn(),
-  activePlatform: undefined as string | undefined,
-  onPlatformChange: vi.fn(),
   activePumpkinVersion: undefined as string | undefined,
   onPumpkinVersionChange: vi.fn(),
   facets: {
     categories: { performance: 10, security: 5 } as Record<string, number>,
-    platforms: { windows: 15, linux: 8 } as Record<string, number>,
     pumpkin_versions: { "0.1.0": 3 } as Record<string, number>,
   },
   onClearFilters: vi.fn(),
@@ -88,7 +85,6 @@ describe("ExplorerSidebar", () => {
 
   it("renders All category button", () => {
     render(<ExplorerSidebar {...defaultProps} />);
-    // There are multiple "All" buttons (category, platform, version), just verify at least one exists
     const allButtons = screen.getAllByText("All");
     expect(allButtons.length).toBeGreaterThanOrEqual(1);
   });
@@ -121,28 +117,6 @@ describe("ExplorerSidebar", () => {
     render(<ExplorerSidebar {...defaultProps} />);
     await user.click(screen.getByText("Performance"));
     expect(defaultProps.onCategoryChange).toHaveBeenCalledWith("performance");
-  });
-
-  // ── Platform filter ───────────────────────────────────────────────────
-
-  it("renders platform filter buttons", () => {
-    render(<ExplorerSidebar {...defaultProps} />);
-    expect(screen.getByText("windows")).toBeInTheDocument();
-    expect(screen.getByText("macos")).toBeInTheDocument();
-    expect(screen.getByText("linux")).toBeInTheDocument();
-  });
-
-  it("calls onPlatformChange when platform is clicked", async () => {
-    const user = userEvent.setup();
-    render(<ExplorerSidebar {...defaultProps} />);
-    await user.click(screen.getByText("linux"));
-    expect(defaultProps.onPlatformChange).toHaveBeenCalledWith("linux");
-  });
-
-  it("shows facet counts for platforms", () => {
-    render(<ExplorerSidebar {...defaultProps} />);
-    expect(screen.getByText("15")).toBeInTheDocument();
-    expect(screen.getByText("8")).toBeInTheDocument();
   });
 
   // ── Pumpkin version filter ────────────────────────────────────────────
@@ -184,7 +158,7 @@ describe("ExplorerSidebar", () => {
   it("calls onClearFilters when clear button is clicked", async () => {
     const user = userEvent.setup();
     render(
-      <ExplorerSidebar {...defaultProps} activePlatform="linux" />,
+      <ExplorerSidebar {...defaultProps} activeCategory="performance" />,
     );
     await user.click(screen.getByText("Clear all filters"));
     expect(defaultProps.onClearFilters).toHaveBeenCalledOnce();

@@ -7,7 +7,6 @@ use uuid::Uuid;
 pub struct Binary {
     pub id: Uuid,
     pub version_id: Uuid,
-    pub platform: String,
     pub file_name: String,
     pub file_size: i64,
     pub checksum_sha256: String,

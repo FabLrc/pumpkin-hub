@@ -4,7 +4,6 @@ import { X } from "lucide-react";
 import { getCategoryIcon } from "@/lib/category-icons";
 import type { SearchSortOption, FacetDistribution } from "@/lib/types";
 import { useCategories, usePumpkinVersions } from "@/lib/hooks";
-import { PLATFORMS } from "@/lib/types";
 import { SearchBar } from "./SearchBar";
 
 // ── Sort Options ──────────────────────────────────────────────────────────
@@ -28,8 +27,6 @@ interface ExplorerSidebarProps {
   readonly onSortChange: (sort: SearchSortOption) => void;
   readonly activeCategory: string | undefined;
   readonly onCategoryChange: (category: string | undefined) => void;
-  readonly activePlatform: string | undefined;
-  readonly onPlatformChange: (platform: string | undefined) => void;
   readonly activePumpkinVersion: string | undefined;
   readonly onPumpkinVersionChange: (version: string | undefined) => void;
   readonly facets: FacetDistribution | null;
@@ -45,8 +42,6 @@ export function ExplorerSidebar({
   onSortChange,
   activeCategory,
   onCategoryChange,
-  activePlatform,
-  onPlatformChange,
   activePumpkinVersion,
   onPumpkinVersionChange,
   facets,
@@ -57,8 +52,7 @@ export function ExplorerSidebar({
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: pumpkinVersions } = usePumpkinVersions();
 
-  const hasActiveFilters =
-    activeCategory || activePlatform || activePumpkinVersion;
+  const hasActiveFilters = activeCategory || activePumpkinVersion;
 
   const sidebarContent = (
     <div className="p-5 space-y-8">
@@ -151,44 +145,6 @@ export function ExplorerSidebar({
               );
             })
           )}
-        </div>
-      </div>
-
-      {/* Platform Filter */}
-      <div>
-        <div className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
-          Platform
-        </div>
-        <div className="space-y-1.5">
-          <button
-            onClick={() => onPlatformChange(undefined)}
-            className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer ${
-              activePlatform
-                ? "text-text-subtle border-border-default hover:border-border-hover"
-                : "text-accent border-accent/40 bg-accent/5"
-            }`}
-          >
-            <span>All</span>
-          </button>
-          {PLATFORMS.map((platform) => {
-            const count = facets?.platforms[platform];
-            return (
-              <button
-                key={platform}
-                onClick={() => onPlatformChange(platform)}
-                className={`w-full flex items-center justify-between font-mono text-xs border px-3 py-2 transition-colors cursor-pointer capitalize ${
-                  activePlatform === platform
-                    ? "text-accent border-accent/40 bg-accent/5"
-                    : "text-text-dim border-border-default hover:border-border-hover"
-                }`}
-              >
-                <span>{platform}</span>
-                {count !== undefined && (
-                  <span className="text-text-dim text-[10px]">{count}</span>
-                )}
-              </button>
-            );
-          })}
         </div>
       </div>
 

@@ -167,14 +167,8 @@ export interface YankVersionRequest {
 
 // ── Binary Types ──────────────────────────────────────────────────────────
 
-/** Supported target OS platforms for plugin binaries. */
-export type Platform = "windows" | "macos" | "linux";
-
-export const PLATFORMS: Platform[] = ["windows", "macos", "linux"];
-
 export interface BinaryResponse {
   id: string;
-  platform: string;
   file_name: string;
   file_size: number;
   checksum_sha256: string;
@@ -199,7 +193,6 @@ export interface BinaryDownloadResponse {
   file_name: string;
   file_size: number;
   checksum_sha256: string;
-  platform: string;
   expires_in_seconds: number;
 }
 
@@ -328,7 +321,6 @@ export interface SearchHit {
   downloads_total: number;
   categories: string[];
   category_slugs: string[];
-  platforms: string[];
   pumpkin_versions: string[];
   created_at_timestamp: number;
   updated_at_timestamp: number;
@@ -338,7 +330,6 @@ export interface SearchHit {
 
 export interface FacetDistribution {
   categories: Record<string, number>;
-  platforms: Record<string, number>;
   pumpkin_versions: Record<string, number>;
 }
 
@@ -355,7 +346,6 @@ export interface SearchResponse {
 export interface SearchParams {
   q?: string;
   category?: string;
-  platform?: string;
   pumpkin_version?: string;
   sort?: string;
   page?: number;

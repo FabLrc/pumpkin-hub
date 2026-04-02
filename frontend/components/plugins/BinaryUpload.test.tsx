@@ -10,20 +10,20 @@ vi.mock("@/lib/api", () => ({
 }));
 
 describe("BinaryUpload", () => {
-  it("shows all uploaded state when no platform is available", () => {
+  it("shows binary already uploaded message when hasBinary is true", () => {
     render(
       <BinaryUpload
         slug="plugin"
         version="1.0.0"
-        existingPlatforms={["windows", "linux", "macos"]}
+        hasBinary={true}
         onUploaded={vi.fn()}
       />,
     );
 
-    expect(screen.getByText(/All supported platforms/i)).toBeInTheDocument();
+    expect(screen.getByText(/A binary has already been uploaded/i)).toBeInTheDocument();
   });
 
-  it("uploads selected file and platform", async () => {
+  it("uploads selected .wasm file", async () => {
     const user = userEvent.setup();
     const onUploaded = vi.fn();
     uploadBinaryMock.mockResolvedValue({ binary: { checksum_sha256: "abc123" } });
@@ -32,15 +32,13 @@ describe("BinaryUpload", () => {
       <BinaryUpload
         slug="plugin"
         version="1.0.0"
-        existingPlatforms={[]}
+        hasBinary={false}
         onUploaded={onUploaded}
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /Linux/i }));
-
-    const file = new File(["binary"], "plugin.so", { type: "application/octet-stream" });
-    const input = screen.getByLabelText("Select binary file");
+    const file = new File(["binary"], "plugin.wasm", { type: "application/wasm" });
+    const input = screen.getByLabelText("Select .wasm binary file");
     await user.upload(input, file);
 
     await user.click(screen.getByRole("button", { name: "Upload Binary" }));
@@ -49,7 +47,6 @@ describe("BinaryUpload", () => {
       "plugin",
       "1.0.0",
       expect.any(File),
-      "linux",
       expect.any(Function),
     );
     expect(onUploaded).toHaveBeenCalledTimes(1);
@@ -63,15 +60,14 @@ describe("BinaryUpload", () => {
       <BinaryUpload
         slug="plugin"
         version="1.0.0"
-        existingPlatforms={[]}
+        hasBinary={false}
         onUploaded={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /Windows/i }));
     await user.upload(
-      screen.getByLabelText("Select binary file"),
-      new File(["binary"], "plugin.dll", { type: "application/octet-stream" }),
+      screen.getByLabelText("Select .wasm binary file"),
+      new File(["binary"], "plugin.wasm", { type: "application/wasm" }),
     );
     await user.click(screen.getByRole("button", { name: "Upload Binary" }));
 
@@ -85,14 +81,14 @@ describe("BinaryUpload", () => {
       <BinaryUpload
         slug="plugin"
         version="1.0.0"
-        existingPlatforms={[]}
+        hasBinary={false}
         onUploaded={vi.fn()}
       />,
     );
 
     await user.upload(
-      screen.getByLabelText("Select binary file"),
-      new File([], "empty.so", { type: "application/octet-stream" }),
+      screen.getByLabelText("Select .wasm binary file"),
+      new File([], "empty.wasm", { type: "application/wasm" }),
     );
 
     expect(screen.getByText(/must not be empty/i)).toBeInTheDocument();

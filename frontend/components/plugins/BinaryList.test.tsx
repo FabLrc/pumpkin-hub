@@ -35,20 +35,22 @@ describe("BinaryList", () => {
     const binaries = [
       {
         id: "b1",
-        platform: "linux",
-        file_name: "plugin.so",
+        file_name: "plugin.wasm",
         file_size: 2048,
         checksum_sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        content_type: "application/wasm",
+        uploaded_at: "2025-01-01T00:00:00Z",
       },
     ];
 
-    render(<BinaryList slug="plug" version="1.0.0" binaries={binaries as never} />);
+    render(<BinaryList slug="plug" version="1.0.0" binaries={binaries} />);
 
-    expect(screen.getByText("Linux")).toBeInTheDocument();
+    expect(screen.getByText("plugin.wasm")).toBeInTheDocument();
+    expect(screen.getByText("WASM")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /download/i }));
 
     await waitFor(() => {
-      expect(fetchBinaryDownloadMock).toHaveBeenCalledWith("plug", "1.0.0", "linux");
+      expect(fetchBinaryDownloadMock).toHaveBeenCalledWith("plug", "1.0.0");
       expect(openMock).toHaveBeenCalledWith(
         "https://files.example.com/bin",
         "_blank",
@@ -61,14 +63,15 @@ describe("BinaryList", () => {
     const binaries = [
       {
         id: "b1",
-        platform: "windows",
-        file_name: "plugin.dll",
+        file_name: "plugin.wasm",
         file_size: 1024,
         checksum_sha256: "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        content_type: "application/wasm",
+        uploaded_at: "2025-01-01T00:00:00Z",
       },
     ];
 
-    render(<BinaryList slug="plug" version="1.0.0" binaries={binaries as never} />);
+    render(<BinaryList slug="plug" version="1.0.0" binaries={binaries} />);
 
     fireEvent.click(screen.getByTitle("Copy SHA-256 checksum"));
 

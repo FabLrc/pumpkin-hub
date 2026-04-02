@@ -235,13 +235,8 @@ impl ObjectStorage {
     }
 
     /// Builds the canonical S3 object key for a plugin binary.
-    /// Pattern: `plugins/{slug}/{version}/{platform}/{file_name}`
-    pub fn build_storage_key(
-        plugin_slug: &str,
-        version: &str,
-        platform: &str,
-        file_name: &str,
-    ) -> String {
-        format!("plugins/{plugin_slug}/{version}/{platform}/{file_name}")
+    /// Pattern: `plugins/{slug}/{version}/{file_name}`
+    pub fn build_storage_key(plugin_slug: &str, version: &str, file_name: &str) -> String {
+        format!("plugins/{plugin_slug}/{version}/{file_name}")
     }
 }

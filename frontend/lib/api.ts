@@ -370,11 +370,9 @@ export async function uploadBinary(
   slug: string,
   version: string,
   file: File,
-  platform: string,
   onProgress?: (progress: number) => void,
 ): Promise<BinaryUploadResponse> {
   const formData = new FormData();
-  formData.append("platform", platform);
   formData.append("file", file);
 
   // Use XMLHttpRequest for upload progress tracking
@@ -408,10 +406,9 @@ export async function uploadBinary(
 export async function fetchBinaryDownload(
   slug: string,
   version: string,
-  platform: string,
 ): Promise<BinaryDownloadResponse> {
   return apiFetch<BinaryDownloadResponse>(
-    `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download?platform=${encodeURIComponent(platform)}`,
+    `/plugins/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download`,
   );
 }
 
@@ -422,7 +419,6 @@ function buildSearchQueryString(params: SearchParams): string {
 
   if (params.q) searchParams.set("q", params.q);
   if (params.category) searchParams.set("category", params.category);
-  if (params.platform) searchParams.set("platform", params.platform);
   if (params.pumpkin_version)
     searchParams.set("pumpkin_version", params.pumpkin_version);
   if (params.sort) searchParams.set("sort", params.sort);

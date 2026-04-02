@@ -23,10 +23,9 @@ export function ExplorerContent() {
   const page = Number(searchParams.get("page") ?? "1");
   const sortBy = (searchParams.get("sort") as SearchSortOption) ?? "downloads";
   const category = searchParams.get("category") ?? undefined;
-  const platform = searchParams.get("platform") ?? undefined;
   const pumpkinVersion = searchParams.get("pumpkin_version") ?? undefined;
 
-  const activeFilterCount = [category, platform, pumpkinVersion].filter(Boolean).length;
+  const activeFilterCount = [category, pumpkinVersion].filter(Boolean).length;
   const hasActiveFilters = activeFilterCount > 0;
 
   const { viewMode, setViewMode } = useViewPreference();
@@ -40,7 +39,6 @@ export function ExplorerContent() {
   const { data, isLoading } = useSearch({
     q: searchQuery || undefined,
     category,
-    platform,
     pumpkin_version: pumpkinVersion,
     sort: sortBy,
     page,
@@ -74,10 +72,6 @@ export function ExplorerContent() {
     updateParams({ category: categorySlug });
   }
 
-  function handlePlatformChange(platformValue: string | undefined) {
-    updateParams({ platform: platformValue });
-  }
-
   function handlePumpkinVersionChange(version: string | undefined) {
     updateParams({ pumpkin_version: version });
   }
@@ -105,8 +99,6 @@ export function ExplorerContent() {
         onSortChange={handleSortChange}
         activeCategory={category}
         onCategoryChange={handleCategoryChange}
-        activePlatform={platform}
-        onPlatformChange={handlePlatformChange}
         activePumpkinVersion={pumpkinVersion}
         onPumpkinVersionChange={handlePumpkinVersionChange}
         facets={data?.facet_distribution ?? null}

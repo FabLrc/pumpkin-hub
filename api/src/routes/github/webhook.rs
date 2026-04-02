@@ -166,51 +166,39 @@ pub async fn handle_github_webhook(
 
 // ── Release Handler ─────────────────────────────────────────────────────────
 
-/// Downloads and stores all recognized platform assets from a release.
-/// Returns the list of platform strings that were successfully stored.
+/// Downloads and stores the `.wasm` asset from a release (at most one per version).
+/// Returns `true` if a `.wasm` binary was successfully stored.
 async fn store_release_assets(
     state: &AppState,
     linked: &LinkedPlugin,
     version_id: Uuid,
     version_str: &str,
     release: &ReleasePayload,
-) -> Vec<String> {
+) -> bool {
     let github_client = state.config.github_app.as_ref().map(GitHubAppClient::new);
-    let mut stored_platforms: Vec<String> = Vec::new();
 
     let client = match github_client {
         Some(c) => c,
-        None => return stored_platforms,
+        None => return false,
     };
 
     for asset in &release.assets {
-        let Some(platform) = detect_platform_from_filename(&asset.name) else {
+        if !is_wasm_asset(&asset.name) {
             continue;
-        };
-        match download_and_store_asset(
-            state,
-            &client,
-            linked,
-            version_id,
-            version_str,
-            &platform,
-            asset,
-        )
-        .await
+        }
+        match download_and_store_asset(state, &client, linked, version_id, version_str, asset).await
         {
             Ok(_) => {
-                tracing::info!(asset = %asset.name, platform = %platform, "Stored release asset");
-                if !stored_platforms.contains(&platform) {
-                    stored_platforms.push(platform);
-                }
+                tracing::info!(asset = %asset.name, "Stored .wasm release asset");
+                return true;
             }
             Err(e) => {
-                tracing::warn!(asset = %asset.name, error = %e, "Failed to store release asset");
+                tracing::warn!(asset = %asset.name, error = %e, "Failed to store .wasm release asset");
             }
         }
     }
 
-    stored_platforms
+    false
 }
 
 /// Handles a `release.published` event: creates a new version and downloads assets.
@@ -279,29 +267,21 @@ async fn handle_release_published(
         "Auto-published version from GitHub release"
     );
 
-    // Download and store release assets as binaries
-    let stored_platforms =
+    // Download and store the .wasm release asset
+    let wasm_stored =
         store_release_assets(state, linked, version_id, &version_str, release).await;
 
     // Re-index in Meilisearch
     reindex_plugin(state, linked.plugin_id).await;
 
-    // Notify about missing platform coverage (warn if not all 3 OS are present)
-    let all_platforms = ["windows", "linux", "macos"];
-    let missing_platforms: Vec<&str> = all_platforms
-        .iter()
-        .filter(|p| !stored_platforms.iter().any(|s| s == **p))
-        .copied()
-        .collect();
-
-    if !missing_platforms.is_empty() {
+    // Warn if no .wasm binary was found in the release
+    if !wasm_stored {
         tracing::warn!(
             version = %version_str,
             plugin = %linked.plugin_slug,
-            missing = ?missing_platforms,
-            "Release is missing platform binaries"
+            "Release has no .wasm binary asset"
         );
-        notify_missing_platforms(pool, linked, &version_str, &missing_platforms).await;
+        notify_missing_wasm(pool, linked, &version_str).await;
     }
 
     // Send notification to the author
@@ -310,23 +290,21 @@ async fn handle_release_published(
     Ok(())
 }
 
-/// Downloads a release asset from GitHub and stores it in S3.
+/// Downloads a `.wasm` release asset from GitHub and stores it in S3.
 async fn download_and_store_asset(
     state: &AppState,
     client: &GitHubAppClient,
     linked: &LinkedPlugin,
     version_id: Uuid,
     version_str: &str,
-    platform: &str,
     asset: &ReleaseAssetPayload,
 ) -> Result<(), AppError> {
     let pool = &state.db;
 
-    // Check for existing binary with same platform
+    // Check for an existing binary for this version (only one allowed)
     let existing: Option<Uuid> =
-        sqlx::query_scalar("SELECT id FROM binaries WHERE version_id = $1 AND platform = $2")
+        sqlx::query_scalar("SELECT id FROM binaries WHERE version_id = $1")
             .bind(version_id)
-            .bind(platform)
             .fetch_optional(pool)
             .await
             .map_err(AppError::internal)?;
@@ -346,7 +324,7 @@ async fn download_and_store_asset(
 
     // Build storage key and upload
     let storage_key =
-        ObjectStorage::build_storage_key(&linked.plugin_slug, version_str, platform, &asset.name);
+        ObjectStorage::build_storage_key(&linked.plugin_slug, version_str, &asset.name);
     let file_size = data.len() as i64;
     let content_type = &asset.content_type;
 
@@ -358,11 +336,10 @@ async fn download_and_store_asset(
 
     // Insert binary metadata
     sqlx::query(
-        "INSERT INTO binaries (version_id, platform, file_name, file_size, checksum_sha256, storage_key, content_type)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO binaries (version_id, file_name, file_size, checksum_sha256, storage_key, content_type)
+         VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind(version_id)
-    .bind(platform)
     .bind(&asset.name)
     .bind(file_size)
     .bind(&checksum)
@@ -498,18 +475,9 @@ fn is_default_branch_push(payload: &WebhookPayload, default_branch: &str) -> boo
         .unwrap_or(false)
 }
 
-/// Detects the target platform from a binary file name.
-fn detect_platform_from_filename(filename: &str) -> Option<String> {
-    let lower = filename.to_lowercase();
-    if lower.contains("windows") || lower.ends_with(".dll") || lower.ends_with(".exe") {
-        Some("windows".to_string())
-    } else if lower.contains("macos") || lower.contains("darwin") || lower.ends_with(".dylib") {
-        Some("macos".to_string())
-    } else if lower.contains("linux") || lower.ends_with(".so") {
-        Some("linux".to_string())
-    } else {
-        None
-    }
+/// Returns `true` when the asset file name indicates a WebAssembly binary.
+fn is_wasm_asset(filename: &str) -> bool {
+    filename.to_lowercase().ends_with(".wasm")
 }
 
 /// Computes the SHA-256 hash of binary data, returned as a hex string.
@@ -589,13 +557,8 @@ async fn notify_invalid_tag(pool: &PgPool, linked: &LinkedPlugin, tag: &str) {
     }
 }
 
-/// Sends a warning notification listing platforms whose binaries are absent from the release.
-async fn notify_missing_platforms(
-    pool: &PgPool,
-    linked: &LinkedPlugin,
-    version: &str,
-    missing: &[&str],
-) {
+/// Sends a warning notification when a release contains no `.wasm` binary asset.
+async fn notify_missing_wasm(pool: &PgPool, linked: &LinkedPlugin, version: &str) {
     let author_id: Option<Uuid> = sqlx::query_scalar("SELECT author_id FROM plugins WHERE id = $1")
         .bind(linked.plugin_id)
         .fetch_optional(pool)
@@ -604,18 +567,17 @@ async fn notify_missing_platforms(
         .flatten();
 
     if let Some(user_id) = author_id {
-        let missing_list = missing.join(", ");
         let _ = sqlx::query(
             "INSERT INTO notifications (id, user_id, kind, title, body, link)
              VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)",
         )
         .bind(user_id)
         .bind("github_missing_binaries")
-        .bind(format!("v{} — missing platform binaries", version))
+        .bind(format!("v{} — missing .wasm binary", version))
         .bind(format!(
-            "Version {} of {} was published but is missing binaries for: {}. \
-             Upload them manually or include them in the next release.",
-            version, linked.plugin_slug, missing_list
+            "Version {} of {} was published but no .wasm binary was found in the release assets. \
+             Upload it manually from the plugin page.",
+            version, linked.plugin_slug
         ))
         .bind(format!("/plugins/{}", linked.plugin_slug))
         .execute(pool)
@@ -642,23 +604,13 @@ mod tests {
     }
 
     #[test]
-    fn test_detect_platform_from_filename() {
-        assert_eq!(
-            detect_platform_from_filename("plugin-windows-x86_64.dll"),
-            Some("windows".to_string())
-        );
-        assert_eq!(
-            detect_platform_from_filename("plugin-linux-x86_64.so"),
-            Some("linux".to_string())
-        );
-        assert_eq!(
-            detect_platform_from_filename("plugin-macos-aarch64.dylib"),
-            Some("macos".to_string())
-        );
-        assert_eq!(
-            detect_platform_from_filename("plugin-darwin-arm64.dylib"),
-            Some("macos".to_string())
-        );
-        assert_eq!(detect_platform_from_filename("README.md"), None);
+    fn test_is_wasm_asset() {
+        assert!(is_wasm_asset("plugin.wasm"));
+        assert!(is_wasm_asset("my-plugin-0.3.0.wasm"));
+        assert!(is_wasm_asset("PLUGIN.WASM"));
+        assert!(!is_wasm_asset("plugin.dll"));
+        assert!(!is_wasm_asset("plugin.so"));
+        assert!(!is_wasm_asset("plugin.dylib"));
+        assert!(!is_wasm_asset("README.md"));
     }
 }

@@ -302,28 +302,15 @@ pub struct YankVersionRequest {
 
 const FILE_NAME_MAX_LENGTH: usize = 255;
 
-/// Accepted target platforms for plugin binaries.
-const VALID_PLATFORMS: &[&str] = &["windows", "macos", "linux"];
-
-/// Allowed Content-Types for binary uploads.
-const ALLOWED_BINARY_CONTENT_TYPES: &[&str] = &[
-    "application/octet-stream",
-    "application/wasm",
-    "application/x-elf",
-    "application/x-executable",
-    "application/x-sharedlib",
-    "application/x-mach-binary",
-    // Windows PE format (.dll, .exe) — reported by different browsers/OS combinations
-    "application/x-dosexec",
-    "application/x-msdownload",
-    "application/vnd.microsoft.portable-executable",
-];
+/// Allowed Content-Types for .wasm binary uploads.
+/// Note: browsers may report application/octet-stream for .wasm files.
+const ALLOWED_BINARY_CONTENT_TYPES: &[&str] =
+    &["application/wasm", "application/octet-stream"];
 
 /// Response DTO for a single binary artifact.
 #[derive(Debug, Serialize)]
 pub struct BinaryResponse {
     pub id: Uuid,
-    pub platform: String,
     pub file_name: String,
     pub file_size: i64,
     pub checksum_sha256: String,
@@ -347,12 +334,6 @@ pub struct BinaryUploadResponse {
     pub download_url: String,
 }
 
-/// Query parameters for the download endpoint.
-#[derive(Debug, Deserialize)]
-pub struct DownloadBinaryParams {
-    pub platform: String,
-}
-
 /// Response returned with the pre-signed download URL.
 #[derive(Debug, Serialize)]
 pub struct BinaryDownloadResponse {
@@ -360,7 +341,6 @@ pub struct BinaryDownloadResponse {
     pub file_name: String,
     pub file_size: i64,
     pub checksum_sha256: String,
-    pub platform: String,
     pub expires_in_seconds: u64,
 }
 
@@ -377,16 +357,6 @@ pub fn validate_icon_size(size: u64) -> Result<(), AppError> {
     if size > ICON_MAX_SIZE_BYTES {
         return Err(AppError::UnprocessableEntity(format!(
             "Icon file size ({size} bytes) exceeds maximum ({ICON_MAX_SIZE_BYTES} bytes)"
-        )));
-    }
-    Ok(())
-}
-
-pub fn validate_platform(platform: &str) -> Result<(), AppError> {
-    if !VALID_PLATFORMS.contains(&platform) {
-        return Err(AppError::UnprocessableEntity(format!(
-            "Invalid platform '{platform}'. Supported: {}",
-            VALID_PLATFORMS.join(", ")
         )));
     }
     Ok(())

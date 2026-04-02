@@ -26,7 +26,6 @@ pub struct PluginDocument {
     pub downloads_total: i64,
     pub categories: Vec<String>,
     pub category_slugs: Vec<String>,
-    pub platforms: Vec<String>,
     pub pumpkin_versions: Vec<String>,
     pub created_at_timestamp: i64,
     pub updated_at_timestamp: i64,
@@ -39,7 +38,6 @@ pub struct PluginDocument {
 pub struct SearchQuery {
     pub q: Option<String>,
     pub category: Option<String>,
-    pub platform: Option<String>,
     pub pumpkin_version: Option<String>,
     pub sort: Option<String>,
     pub page: Option<usize>,
@@ -64,7 +62,6 @@ pub struct SearchHit {
     pub downloads_total: i64,
     pub categories: Vec<String>,
     pub category_slugs: Vec<String>,
-    pub platforms: Vec<String>,
     pub pumpkin_versions: Vec<String>,
     pub created_at_timestamp: i64,
     pub updated_at_timestamp: i64,
@@ -76,7 +73,6 @@ pub struct SearchHit {
 #[derive(Debug, Serialize)]
 pub struct FacetDistribution {
     pub categories: std::collections::HashMap<String, usize>,
-    pub platforms: std::collections::HashMap<String, usize>,
     pub pumpkin_versions: std::collections::HashMap<String, usize>,
 }
 
@@ -123,12 +119,7 @@ impl SearchService {
                 "author_username",
                 "categories",
             ])
-            .with_filterable_attributes([
-                "category_slugs",
-                "platforms",
-                "pumpkin_versions",
-                "author_username",
-            ])
+            .with_filterable_attributes(["category_slugs", "pumpkin_versions", "author_username"])
             .with_sortable_attributes([
                 "downloads_total",
                 "created_at_timestamp",
@@ -147,7 +138,6 @@ impl SearchService {
                 "downloads_total",
                 "categories",
                 "category_slugs",
-                "platforms",
                 "pumpkin_versions",
                 "created_at_timestamp",
                 "updated_at_timestamp",
@@ -236,12 +226,6 @@ impl SearchService {
                 sanitize_filter_value(cat)
             ));
         }
-        if let Some(ref platform) = query.platform {
-            filters.push(format!(
-                "platforms = \"{}\"",
-                sanitize_filter_value(platform)
-            ));
-        }
         if let Some(ref pv) = query.pumpkin_version {
             filters.push(format!(
                 "pumpkin_versions = \"{}\"",
@@ -283,11 +267,8 @@ impl SearchService {
         }
 
         // Request facet distribution
-        search_request.with_facets(Selectors::Some(&[
-            "category_slugs",
-            "platforms",
-            "pumpkin_versions",
-        ]));
+        search_request
+            .with_facets(Selectors::Some(&["category_slugs", "pumpkin_versions"]));
 
         let results: SearchResults<SearchHit> = search_request.execute().await.map_err(|e| {
             AppError::internal(std::io::Error::other(format!(
@@ -299,7 +280,6 @@ impl SearchService {
 
         let facet_distribution = results.facet_distribution.map(|fd| FacetDistribution {
             categories: fd.get("category_slugs").cloned().unwrap_or_default(),
-            platforms: fd.get("platforms").cloned().unwrap_or_default(),
             pumpkin_versions: fd.get("pumpkin_versions").cloned().unwrap_or_default(),
         });
 
@@ -439,27 +419,6 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
         entry.1.push(row.category_slug);
     }
 
-    // Batch-load platforms per plugin (via versions → binaries)
-    let platform_rows: Vec<PlatformRow> = sqlx::query_as(
-        "SELECT DISTINCT v.plugin_id, b.platform
-         FROM binaries b
-         JOIN versions v ON b.version_id = v.id
-         WHERE v.plugin_id = ANY($1)",
-    )
-    .bind(&plugin_ids)
-    .fetch_all(pool)
-    .await
-    .map_err(AppError::internal)?;
-
-    let mut platforms_map: std::collections::HashMap<Uuid, Vec<String>> =
-        std::collections::HashMap::new();
-    for row in platform_rows {
-        platforms_map
-            .entry(row.plugin_id)
-            .or_default()
-            .push(row.platform);
-    }
-
     // Batch-load pumpkin version ranges per plugin
     let version_rows: Vec<PumpkinVersionRow> = sqlx::query_as(
         "SELECT DISTINCT plugin_id, pumpkin_version_min, pumpkin_version_max
@@ -491,7 +450,6 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
         .into_iter()
         .map(|row| {
             let (categories, category_slugs) = categories_map.remove(&row.id).unwrap_or_default();
-            let platforms = platforms_map.remove(&row.id).unwrap_or_default();
             let pumpkin_versions = pumpkin_versions_map.remove(&row.id).unwrap_or_default();
 
             let (review_count, average_rating) =
@@ -510,7 +468,6 @@ pub async fn build_plugin_documents(pool: &PgPool) -> Result<Vec<PluginDocument>
                 downloads_total: row.downloads_total,
                 categories,
                 category_slugs,
-                platforms,
                 pumpkin_versions,
                 created_at_timestamp: row.created_at.timestamp(),
                 updated_at_timestamp: row.updated_at.timestamp(),
@@ -562,19 +519,6 @@ pub async fn build_single_plugin_document(
 
     let categories: Vec<String> = cat_rows.iter().map(|r| r.category_name.clone()).collect();
     let category_slugs: Vec<String> = cat_rows.iter().map(|r| r.category_slug.clone()).collect();
-
-    let platform_rows: Vec<PlatformRow> = sqlx::query_as(
-        "SELECT DISTINCT v.plugin_id, b.platform
-         FROM binaries b
-         JOIN versions v ON b.version_id = v.id
-         WHERE v.plugin_id = $1",
-    )
-    .bind(plugin_id)
-    .fetch_all(pool)
-    .await
-    .map_err(AppError::internal)?;
-
-    let platforms: Vec<String> = platform_rows.into_iter().map(|r| r.platform).collect();
 
     let version_rows: Vec<PumpkinVersionRow> = sqlx::query_as(
         "SELECT DISTINCT plugin_id, pumpkin_version_min, pumpkin_version_max
@@ -630,7 +574,6 @@ pub async fn build_single_plugin_document(
         downloads_total: row.downloads_total,
         categories,
         category_slugs,
-        platforms,
         pumpkin_versions,
         created_at_timestamp: row.created_at.timestamp(),
         updated_at_timestamp: row.updated_at.timestamp(),
@@ -669,12 +612,6 @@ struct ReviewStatRow {
     plugin_id: Uuid,
     review_count: i64,
     average_rating: f64,
-}
-
-#[derive(Debug, sqlx::FromRow)]
-struct PlatformRow {
-    plugin_id: Uuid,
-    platform: String,
 }
 
 #[derive(Debug, sqlx::FromRow)]

@@ -23,14 +23,12 @@ vi.mock("./ExplorerSidebar", () => ({
     onSearchChange,
     onSortChange,
     onCategoryChange,
-    onPlatformChange,
     onPumpkinVersionChange,
     onClearFilters,
   }: {
     onSearchChange: (q: string) => void;
     onSortChange: (s: string) => void;
     onCategoryChange: (c: string) => void;
-    onPlatformChange: (p: string) => void;
     onPumpkinVersionChange: (v: string) => void;
     onClearFilters: () => void;
   }) => (
@@ -38,7 +36,6 @@ vi.mock("./ExplorerSidebar", () => ({
       <button onClick={() => onSearchChange("test")}>search</button>
       <button onClick={() => onSortChange("name")}>sort</button>
       <button onClick={() => onCategoryChange("security")}>category</button>
-      <button onClick={() => onPlatformChange("windows")}>platform</button>
       <button onClick={() => onPumpkinVersionChange("1.0")}>version</button>
       <button onClick={() => onClearFilters()}>clear</button>
     </div>
@@ -100,14 +97,6 @@ describe("ExplorerContent", () => {
     render(<ExplorerContent />);
     await user.click(screen.getByText("category"));
     expect(pushMock).toHaveBeenCalledWith(expect.stringContaining("category=security"));
-  });
-
-  it("handles platform change", async () => {
-    const { default: userEvent } = await import("@testing-library/user-event");
-    const user = userEvent.setup();
-    render(<ExplorerContent />);
-    await user.click(screen.getByText("platform"));
-    expect(pushMock).toHaveBeenCalledWith(expect.stringContaining("platform=windows"));
   });
 
   it("handles pumpkin version change", async () => {

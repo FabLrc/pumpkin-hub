@@ -74,14 +74,9 @@ function ListCard({ hit, featured }: { readonly hit: SearchHit; readonly feature
                 #{slug}
               </span>
             ))}
-            {hit.platforms.map((platform) => (
-              <span
-                key={platform}
-                className="font-mono text-[10px] border border-accent/20 text-accent/70 px-2 py-0.5 capitalize"
-              >
-                {platform}
-              </span>
-            ))}
+            <span className="font-mono text-[10px] border border-accent/20 text-accent/70 px-2 py-0.5">
+              WASM
+            </span>
             {hit.license && (
               <span className="font-mono text-[10px] border border-border-default text-text-dim px-2 py-0.5">
                 {hit.license}

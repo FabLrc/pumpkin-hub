@@ -397,7 +397,7 @@ function VersionRow({
                   <BinaryUpload
                     slug={slug}
                     version={version.version}
-                    existingPlatforms={binariesData.binaries.map((b) => b.platform)}
+                    hasBinary={binariesData.binaries.length > 0}
                     onUploaded={revalidateBinaries}
                   />
                 </div>

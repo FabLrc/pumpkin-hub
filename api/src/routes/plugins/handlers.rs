@@ -15,8 +15,8 @@ use crate::{auth::middleware::AuthUser, error::AppError, state::AppState, storag
 use super::dto::{
     AuthorSummary, BinariesListResponse, BinaryDownloadResponse, BinaryResponse,
     BinaryUploadResponse, CategorySummary, CreatePluginRequest, CreateVersionRequest,
-    DownloadBinaryParams, ListPluginsParams, PaginatedResponse, PaginationMeta, PluginResponse,
-    PluginSummary, UpdatePluginRequest, VersionResponse, VersionsListResponse, YankVersionRequest,
+    ListPluginsParams, PaginatedResponse, PaginationMeta, PluginResponse, PluginSummary,
+    UpdatePluginRequest, VersionResponse, VersionsListResponse, YankVersionRequest,
 };
 
 // ── SQL Row Types ───────────────────────────────────────────────────────────
@@ -1032,7 +1032,6 @@ pub async fn yank_version(
 #[derive(Debug, FromRow)]
 struct BinaryRow {
     id: Uuid,
-    platform: String,
     file_name: String,
     file_size: i64,
     checksum_sha256: String,
@@ -1041,18 +1040,12 @@ struct BinaryRow {
     uploaded_at: DateTime<Utc>,
 }
 
-fn build_download_fallback_url(
-    state: &AppState,
-    slug: &str,
-    version: &str,
-    platform: &str,
-) -> String {
+fn build_download_fallback_url(state: &AppState, slug: &str, version: &str) -> String {
     format!(
-        "{}/api/v1/plugins/{}/versions/{}/download?platform={}",
+        "{}/api/v1/plugins/{}/versions/{}/download",
         state.config.server.api_public_url.trim_end_matches('/'),
         slug,
-        version,
-        platform
+        version
     )
 }
 
@@ -1094,11 +1087,10 @@ async fn read_binary_file_field(
     Ok((file_name, content_type, bytes.to_vec()))
 }
 
-/// POST /api/v1/plugins/:slug/versions/:version/binaries — upload a binary artifact.
+/// POST /api/v1/plugins/:slug/versions/:version/binaries — upload a .wasm binary artifact.
 ///
 /// Expects a `multipart/form-data` body with:
-/// - `platform` (text field): target OS platform (windows | macos | linux)
-/// - `file` (file field): the binary artifact
+/// - `file` (file field): the .wasm binary artifact
 pub async fn upload_binary(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -1121,7 +1113,6 @@ pub async fn upload_binary(
             .ok_or(AppError::NotFound)?;
 
     // Parse multipart fields
-    let mut platform: Option<String> = None;
     let mut file_data: Option<Vec<u8>> = None;
     let mut file_name: Option<String> = None;
     let mut content_type = "application/octet-stream".to_string();
@@ -1134,20 +1125,6 @@ pub async fn upload_binary(
         let field_name = field.name().unwrap_or_default().to_string();
 
         match field_name.as_str() {
-            "platform" => {
-                platform = Some(
-                    field
-                        .text()
-                        .await
-                        .map_err(|e| {
-                            AppError::UnprocessableEntity(format!(
-                                "Failed to read platform field: {e}"
-                            ))
-                        })?
-                        .trim()
-                        .to_string(),
-                );
-            }
             "file" => {
                 let (fname, ct, bytes) = read_binary_file_field(field, max_size).await?;
                 file_name = fname;
@@ -1159,29 +1136,24 @@ pub async fn upload_binary(
     }
 
     // Validate required fields
-    let platform = platform.ok_or_else(|| {
-        AppError::UnprocessableEntity("Missing required field: platform".to_string())
-    })?;
     let file_data = file_data
         .ok_or_else(|| AppError::UnprocessableEntity("Missing required field: file".to_string()))?;
-    let file_name = file_name.unwrap_or_else(|| "plugin.bin".to_string());
+    let file_name = file_name.unwrap_or_else(|| "plugin.wasm".to_string());
 
-    super::dto::validate_platform(&platform)?;
     super::dto::validate_binary_content_type(&content_type)?;
     super::dto::validate_file_name(&file_name)?;
 
-    // Check for existing binary with same platform
+    // Check for existing binary for this version
     let existing: Option<Uuid> =
-        sqlx::query_scalar("SELECT id FROM binaries WHERE version_id = $1 AND platform = $2")
+        sqlx::query_scalar("SELECT id FROM binaries WHERE version_id = $1")
             .bind(version_id)
-            .bind(&platform)
             .fetch_optional(pool)
             .await
             .map_err(AppError::internal)?;
 
     if existing.is_some() {
         return Err(AppError::Conflict(format!(
-            "A binary for platform '{platform}' already exists for version {version}"
+            "A binary already exists for version {version}"
         )));
     }
 
@@ -1189,7 +1161,7 @@ pub async fn upload_binary(
     let checksum = compute_sha256(&file_data);
 
     // Build storage key and upload to S3
-    let storage_key = ObjectStorage::build_storage_key(&slug, &version, &platform, &file_name);
+    let storage_key = ObjectStorage::build_storage_key(&slug, &version, &file_name);
     let file_size = file_data.len() as i64;
 
     state
@@ -1201,7 +1173,6 @@ pub async fn upload_binary(
                 error = %e,
                 plugin_slug = %slug,
                 plugin_version = %version,
-                platform = %platform,
                 %storage_key,
                 "Binary upload to object storage failed"
             );
@@ -1212,12 +1183,11 @@ pub async fn upload_binary(
 
     // Insert metadata into database
     let row: BinaryRow = sqlx::query_as(
-        "INSERT INTO binaries (version_id, platform, file_name, file_size, checksum_sha256, storage_key, content_type)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, platform, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at",
+        "INSERT INTO binaries (version_id, file_name, file_size, checksum_sha256, storage_key, content_type)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at",
     )
     .bind(version_id)
-    .bind(&platform)
     .bind(&file_name)
     .bind(file_size)
     .bind(&checksum)
@@ -1235,15 +1205,14 @@ pub async fn upload_binary(
                 error = %e,
                 plugin_slug = %slug,
                 plugin_version = %version,
-                platform = %platform,
                 %storage_key,
                 "Failed to generate presigned URL after upload, using API fallback URL"
             );
-            build_download_fallback_url(&state, &slug, &version, &platform)
+            build_download_fallback_url(&state, &slug, &version)
         }
     };
 
-    // Re-index plugin in Meilisearch (platforms may have changed)
+    // Re-index plugin in Meilisearch
     let search = state.search.clone();
     let db = pool.clone();
     let pid = plugin_row.id;
@@ -1261,7 +1230,6 @@ pub async fn upload_binary(
         Json(BinaryUploadResponse {
             binary: BinaryResponse {
                 id: row.id,
-                platform: row.platform,
                 file_name: row.file_name,
                 file_size: row.file_size,
                 checksum_sha256: row.checksum_sha256,
@@ -1298,8 +1266,8 @@ pub async fn list_binaries(
             .ok_or(AppError::NotFound)?;
 
     let rows: Vec<BinaryRow> = sqlx::query_as(
-        "SELECT id, platform, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
-         FROM binaries WHERE version_id = $1 ORDER BY platform",
+        "SELECT id, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
+         FROM binaries WHERE version_id = $1 ORDER BY uploaded_at DESC",
     )
     .bind(version_id)
     .fetch_all(pool)
@@ -1310,7 +1278,6 @@ pub async fn list_binaries(
         .into_iter()
         .map(|r| BinaryResponse {
             id: r.id,
-            platform: r.platform,
             file_name: r.file_name,
             file_size: r.file_size,
             checksum_sha256: r.checksum_sha256,
@@ -1327,16 +1294,13 @@ pub async fn list_binaries(
     }))
 }
 
-/// GET /api/v1/plugins/:slug/versions/:version/download?platform=windows — get a pre-signed download URL.
+/// GET /api/v1/plugins/:slug/versions/:version/download — get a pre-signed download URL.
 ///
 /// Also increments version and plugin download counters atomically.
 pub async fn download_binary(
     State(state): State<AppState>,
     Path((slug, version)): Path<(String, String)>,
-    Query(params): Query<DownloadBinaryParams>,
 ) -> Result<Json<BinaryDownloadResponse>, AppError> {
-    super::dto::validate_platform(&params.platform)?;
-
     let pool = &state.db;
 
     let (plugin_id, plugin_name): (Uuid, String) =
@@ -1357,17 +1321,14 @@ pub async fn download_binary(
             .ok_or(AppError::NotFound)?;
 
     let binary_row: BinaryRow = sqlx::query_as(
-        "SELECT id, platform, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
-         FROM binaries WHERE version_id = $1 AND platform = $2",
+        "SELECT id, file_name, file_size, checksum_sha256, storage_key, content_type, uploaded_at
+         FROM binaries WHERE version_id = $1",
     )
     .bind(version_id)
-    .bind(&params.platform)
     .fetch_optional(pool)
     .await
     .map_err(AppError::internal)?
-    .ok_or_else(|| {
-        AppError::NotFound
-    })?;
+    .ok_or(AppError::NotFound)?;
 
     // Increment download counters
     sqlx::query("UPDATE versions SET downloads = downloads + 1 WHERE id = $1")
@@ -1384,15 +1345,12 @@ pub async fn download_binary(
     .map_err(AppError::internal)?;
 
     // Record download event for analytics
-    sqlx::query(
-        "INSERT INTO download_events (plugin_id, version_id, platform) VALUES ($1, $2, $3)",
-    )
-    .bind(plugin_id)
-    .bind(version_id)
-    .bind(&params.platform)
-    .execute(pool)
-    .await
-    .map_err(AppError::internal)?;
+    sqlx::query("INSERT INTO download_events (plugin_id, version_id) VALUES ($1, $2)")
+        .bind(plugin_id)
+        .bind(version_id)
+        .execute(pool)
+        .await
+        .map_err(AppError::internal)?;
 
     // Check for download milestone (fire-and-forget)
     {
@@ -1415,7 +1373,6 @@ pub async fn download_binary(
                 error = %e,
                 plugin_slug = %slug,
                 plugin_version = %version,
-                platform = %params.platform,
                 storage_key = %binary_row.storage_key,
                 "Failed to generate presigned download URL"
             );
@@ -1429,7 +1386,6 @@ pub async fn download_binary(
         file_name: binary_row.file_name,
         file_size: binary_row.file_size,
         checksum_sha256: binary_row.checksum_sha256,
-        platform: binary_row.platform,
         expires_in_seconds: presigned.expires_in_seconds,
     }))
 }
