@@ -2,7 +2,7 @@ use pumpkin_hub_api::{
     config::Config,
     db,
     search::{PumpkinVersionFetcher, SearchService},
-    storage::ObjectStorage,
+    storage::{pumpkin_binary::PumpkinBinaryCache, ObjectStorage},
 };
 
 #[tokio::main]
@@ -58,10 +58,19 @@ async fn main() {
         Err(err) => tracing::warn!("Failed to fetch Pumpkin versions: {err}"),
     }
 
+    let pumpkin_binary_cache = PumpkinBinaryCache::new();
+
     let addr = config.server.address;
     tracing::info!(%addr, "Starting pumpkin-hub-api");
 
-    let app = pumpkin_hub_api::build_app(config, pool, storage, search, pumpkin_versions);
+    let app = pumpkin_hub_api::build_app(
+        config,
+        pool,
+        storage,
+        search,
+        pumpkin_versions,
+        pumpkin_binary_cache,
+    );
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await

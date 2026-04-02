@@ -16,6 +16,9 @@ pub struct Config {
     pub rate_limit: RateLimitConfig,
     pub smtp: Option<SmtpConfig>,
     pub github_app: Option<GitHubAppConfig>,
+    /// Optional GitHub personal access token used to raise the API rate limit
+    /// when fetching Pumpkin release metadata (from 60 to 5 000 req/hour).
+    pub github_api_token: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -190,6 +193,9 @@ impl Config {
 
         let smtp = load_smtp_config()?;
         let github_app = load_github_app_config()?;
+        let github_api_token = std::env::var("GITHUB_API_TOKEN")
+            .ok()
+            .filter(|s| !s.is_empty());
 
         Ok(Config {
             server: ServerConfig {
@@ -229,6 +235,7 @@ impl Config {
             rate_limit,
             smtp,
             github_app,
+            github_api_token,
         })
     }
 }
@@ -278,6 +285,7 @@ impl Default for Config {
             },
             smtp: None,
             github_app: None,
+            github_api_token: None,
         }
     }
 }

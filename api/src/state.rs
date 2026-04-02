@@ -6,6 +6,7 @@ use crate::config::Config;
 use crate::email::EmailService;
 use crate::rate_limit::{ApiKeyRateLimiters, IpRateLimiter};
 use crate::search::{PumpkinVersionFetcher, SearchService};
+use crate::storage::pumpkin_binary::PumpkinBinaryCache;
 use crate::storage::ObjectStorage;
 
 /// Shared application state injected into all handlers via Axum's `State` extractor.
@@ -17,6 +18,7 @@ pub struct AppState {
     pub storage: ObjectStorage,
     pub search: SearchService,
     pub pumpkin_versions: PumpkinVersionFetcher,
+    pub pumpkin_binary_cache: PumpkinBinaryCache,
     pub email: Option<EmailService>,
     /// Keyed per-IP rate limiter (replaces the former global GovernorLayer).
     pub ip_rate_limiter: Arc<IpRateLimiter>,
@@ -32,6 +34,7 @@ impl AppState {
         storage: ObjectStorage,
         search: SearchService,
         pumpkin_versions: PumpkinVersionFetcher,
+        pumpkin_binary_cache: PumpkinBinaryCache,
         email: Option<EmailService>,
         ip_rate_limiter: Arc<IpRateLimiter>,
         api_key_rate_limiters: ApiKeyRateLimiters,
@@ -42,6 +45,7 @@ impl AppState {
             storage,
             search,
             pumpkin_versions,
+            pumpkin_binary_cache,
             email,
             ip_rate_limiter,
             api_key_rate_limiters,

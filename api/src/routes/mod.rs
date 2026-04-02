@@ -3,6 +3,7 @@ mod api_keys;
 pub mod auth;
 mod categories;
 mod changelogs;
+pub(crate) mod configurator;
 mod dashboard;
 mod dependencies;
 mod github;
@@ -48,4 +49,5 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(changelogs::routes())
         .merge(admin::routes())
         .merge(github::routes())
+        .merge(configurator::routes())
 }

@@ -36,7 +36,7 @@ use crate::{
     rate_limit::ApiKeyRateLimiters,
     search::{PumpkinVersionFetcher, SearchService},
     state::AppState,
-    storage::ObjectStorage,
+    storage::{pumpkin_binary::PumpkinBinaryCache, ObjectStorage},
 };
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
@@ -49,6 +49,7 @@ pub fn build_app(
     storage: ObjectStorage,
     search: SearchService,
     pumpkin_versions: PumpkinVersionFetcher,
+    pumpkin_binary_cache: PumpkinBinaryCache,
 ) -> Router {
     let email_service = config.smtp.as_ref().and_then(|smtp_cfg| {
         let frontend_url = config
@@ -80,6 +81,7 @@ pub fn build_app(
         storage,
         search,
         pumpkin_versions,
+        pumpkin_binary_cache,
         email_service,
         ip_rate_limiter.clone(),
         api_key_rate_limiters,

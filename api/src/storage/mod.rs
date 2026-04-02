@@ -1,10 +1,13 @@
+pub mod pumpkin_binary;
+
+use std::collections::HashMap;
 use std::time::Duration;
 
 use aws_config::BehaviorVersion;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::{config::Region, presigning::PresigningConfig, primitives::ByteStream, Client};
 
-use crate::config::S3Config;
+use crate::{config::S3Config, error::AppError};
 
 /// S3-compatible object storage client.
 /// Works with MinIO (development) and Cloudflare R2 (production).
@@ -231,6 +234,80 @@ impl ObjectStorage {
             .key(key)
             .send()
             .await?;
+        Ok(())
+    }
+
+    /// Downloads all bytes of an object from the bucket using the internal client.
+    /// Use this for server-side operations (ZIP generation, binary caching).
+    /// Returns `AppError::NotFound` if the object does not exist.
+    pub async fn get_object_bytes(&self, key: &str) -> Result<Vec<u8>, AppError> {
+        let output = self
+            .client
+            .get_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .send()
+            .await
+            .map_err(AppError::internal)?;
+
+        let bytes = output
+            .body
+            .collect()
+            .await
+            .map_err(AppError::internal)?
+            .into_bytes()
+            .to_vec();
+
+        Ok(bytes)
+    }
+
+    /// Fetches the metadata of an S3 object without downloading its content.
+    /// Returns `None` if the object does not exist (404).
+    pub async fn head_object_metadata(
+        &self,
+        key: &str,
+    ) -> Result<Option<HashMap<String, String>>, AppError> {
+        match self
+            .client
+            .head_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .send()
+            .await
+        {
+            Ok(output) => Ok(Some(output.metadata().cloned().unwrap_or_default())),
+            Err(err) => {
+                // HEAD on a missing object returns HTTP 404; treat it as a cache miss.
+                if let aws_sdk_s3::error::SdkError::ServiceError(ref svc) = err {
+                    if svc.raw().status().as_u16() == 404 {
+                        return Ok(None);
+                    }
+                }
+                Err(AppError::internal(err))
+            }
+        }
+    }
+
+    /// Uploads bytes with custom S3 user-defined metadata.
+    /// Metadata keys must NOT include the `x-amz-meta-` prefix — the SDK adds it.
+    pub async fn put_object_with_metadata(
+        &self,
+        key: &str,
+        body: Vec<u8>,
+        content_type: &str,
+        metadata: HashMap<String, String>,
+    ) -> Result<(), AppError> {
+        self.client
+            .put_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .body(ByteStream::from(body))
+            .content_type(content_type)
+            .set_metadata(Some(metadata))
+            .send()
+            .await
+            .map_err(AppError::internal)?;
+
         Ok(())
     }
 
