@@ -1,0 +1,4 @@
+-- Irreversible migration.
+--
+-- If demo data is needed locally, re-run a dedicated dev seed script manually.
+-- Do not re-introduce demo rows through automatic migrations.
