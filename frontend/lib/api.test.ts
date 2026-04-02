@@ -247,9 +247,9 @@ describe("lib/api", () => {
 
   it("uploads binary via XHR and forwards progress", async () => {
     const onProgress = vi.fn();
-    const file = new File(["bin"], "plugin.so");
+    const file = new File(["bin"], "plugin.wasm");
 
-    const res = await api.uploadBinary("slug name", "1.0.0", file, "linux", onProgress);
+    const res = await api.uploadBinary("slug name", "1.0.0", file, onProgress);
 
     expect(res.binary.checksum_sha256).toBe("abc");
     expect(onProgress).toHaveBeenCalledWith(50);
@@ -259,15 +259,15 @@ describe("lib/api", () => {
     (MockXMLHttpRequest as { nextStatus: number }).nextStatus = 400;
     (MockXMLHttpRequest as { nextResponseText: string }).nextResponseText = "bad request";
 
-    const file = new File(["bin"], "plugin.so");
-    await expect(api.uploadBinary("slug", "1.0.0", file, "linux")).rejects.toThrow("API 400: bad request");
+    const file = new File(["bin"], "plugin.wasm");
+    await expect(api.uploadBinary("slug", "1.0.0", file)).rejects.toThrow("API 400: bad request");
   });
 
   it("rejects binary upload on network error", async () => {
     (MockXMLHttpRequest as { shouldError: boolean }).shouldError = true;
 
-    const file = new File(["bin"], "plugin.so");
-    await expect(api.uploadBinary("slug", "1.0.0", file, "linux")).rejects.toThrow("Network error during binary upload");
+    const file = new File(["bin"], "plugin.wasm");
+    await expect(api.uploadBinary("slug", "1.0.0", file)).rejects.toThrow("Network error during binary upload");
   });
 
   it("uploads media with xhr and credentials enabled", async () => {

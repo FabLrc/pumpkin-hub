@@ -1,10 +1,10 @@
 -- Migration 030: Dev seed data v2 (WASM-only era)
 -- Replaces seed data wiped by migration 027.
--- Uses fixed UUIDs prefixed f6/g7/h8/i9 for easy reference and cleanup.
+-- Uses fixed UUIDs (all hex) prefixed f6/07/08/09 for easy reference and cleanup.
 -- Categories reference migration 026 IDs (c2000000-...-0009 through 0017).
 
 -- ============================================================
--- Users
+-- Users  (prefix: f6)
 -- ============================================================
 INSERT INTO users (id, github_id, username, display_name, email, avatar_url, bio, role) VALUES
     ('f6000000-0000-0000-0000-000000000001', 200001, 'rustcraftdev', 'Alex Craft',    'alex@example.com',   'https://avatars.githubusercontent.com/u/200001', 'Rust enthusiast building Pumpkin plugins since day one.', 'admin'),
@@ -14,11 +14,11 @@ INSERT INTO users (id, github_id, username, display_name, email, avatar_url, bio
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- Plugins
+-- Plugins  (prefix: 07)
 -- ============================================================
 INSERT INTO plugins (id, author_id, name, slug, short_description, description, repository_url, license, downloads_total) VALUES
     (
-        'g7000000-0000-0000-0000-000000000001',
+        '07000000-0000-0000-0000-000000000001',
         'f6000000-0000-0000-0000-000000000001',
         'PumpkinGuard',
         'pumpkin-guard',
@@ -29,7 +29,7 @@ INSERT INTO plugins (id, author_id, name, slug, short_description, description, 
         14750
     ),
     (
-        'g7000000-0000-0000-0000-000000000002',
+        '07000000-0000-0000-0000-000000000002',
         'f6000000-0000-0000-0000-000000000002',
         'EconoMine',
         'economine',
@@ -40,7 +40,7 @@ INSERT INTO plugins (id, author_id, name, slug, short_description, description, 
         9120
     ),
     (
-        'g7000000-0000-0000-0000-000000000003',
+        '07000000-0000-0000-0000-000000000003',
         'f6000000-0000-0000-0000-000000000003',
         'TerraCraft',
         'terracraft',
@@ -51,7 +51,7 @@ INSERT INTO plugins (id, author_id, name, slug, short_description, description, 
         6340
     ),
     (
-        'g7000000-0000-0000-0000-000000000004',
+        '07000000-0000-0000-0000-000000000004',
         'f6000000-0000-0000-0000-000000000001',
         'PumpkinCore',
         'pumpkin-core',
@@ -62,7 +62,7 @@ INSERT INTO plugins (id, author_id, name, slug, short_description, description, 
         23800
     ),
     (
-        'g7000000-0000-0000-0000-000000000005',
+        '07000000-0000-0000-0000-000000000005',
         'f6000000-0000-0000-0000-000000000002',
         'ChatForge',
         'chatforge',
@@ -73,7 +73,7 @@ INSERT INTO plugins (id, author_id, name, slug, short_description, description, 
         4210
     ),
     (
-        'g7000000-0000-0000-0000-000000000006',
+        '07000000-0000-0000-0000-000000000006',
         'f6000000-0000-0000-0000-000000000003',
         'QuestForge',
         'questforge',
@@ -87,56 +87,56 @@ ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- Plugin ↔ Category associations (using migration 026 IDs)
+-- After migration 027, categories 001-008 are deleted.
+-- Available: 009=Adventure, 010=Decoration, 011=Equipment,
+--            012=Minigame, 013=Mobs, 014=Social,
+--            015=Storage, 016=Transportation, 017=Utility
 -- ============================================================
 INSERT INTO plugin_categories (plugin_id, category_id) VALUES
-    -- PumpkinGuard → Security (c2000000-...-0008 was deleted; use Management 0002-equiv from 026 context)
-    -- After migration 027, categories 001-008 are gone. Use 026 categories (009-017):
-    -- 009=Adventure, 010=Decoration, 011=Equipment, 012=Minigame, 013=Mobs,
-    -- 014=Social, 015=Storage, 016=Transportation, 017=Utility
-    ('g7000000-0000-0000-0000-000000000001', 'c2000000-0000-0000-0000-000000000017'),  -- PumpkinGuard → Utility
-    ('g7000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000017'),  -- EconoMine → Utility
-    ('g7000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000012'),  -- EconoMine → Minigame
-    ('g7000000-0000-0000-0000-000000000003', 'c2000000-0000-0000-0000-000000000009'),  -- TerraCraft → Adventure
-    ('g7000000-0000-0000-0000-000000000004', 'c2000000-0000-0000-0000-000000000017'),  -- PumpkinCore → Utility
-    ('g7000000-0000-0000-0000-000000000005', 'c2000000-0000-0000-0000-000000000014'),  -- ChatForge → Social
-    ('g7000000-0000-0000-0000-000000000006', 'c2000000-0000-0000-0000-000000000009'),  -- QuestForge → Adventure
-    ('g7000000-0000-0000-0000-000000000006', 'c2000000-0000-0000-0000-000000000013')   -- QuestForge → Mobs
+    ('07000000-0000-0000-0000-000000000001', 'c2000000-0000-0000-0000-000000000017'),  -- PumpkinGuard → Utility
+    ('07000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000017'),  -- EconoMine → Utility
+    ('07000000-0000-0000-0000-000000000002', 'c2000000-0000-0000-0000-000000000012'),  -- EconoMine → Minigame
+    ('07000000-0000-0000-0000-000000000003', 'c2000000-0000-0000-0000-000000000009'),  -- TerraCraft → Adventure
+    ('07000000-0000-0000-0000-000000000004', 'c2000000-0000-0000-0000-000000000017'),  -- PumpkinCore → Utility
+    ('07000000-0000-0000-0000-000000000005', 'c2000000-0000-0000-0000-000000000014'),  -- ChatForge → Social
+    ('07000000-0000-0000-0000-000000000006', 'c2000000-0000-0000-0000-000000000009'),  -- QuestForge → Adventure
+    ('07000000-0000-0000-0000-000000000006', 'c2000000-0000-0000-0000-000000000013')   -- QuestForge → Mobs
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- Versions
+-- Versions  (prefix: 08)
 -- ============================================================
 INSERT INTO versions (id, plugin_id, version, changelog, pumpkin_version_min, pumpkin_version_max, downloads, published_at) VALUES
     -- PumpkinGuard
-    ('h8000000-0000-0000-0000-000000000001', 'g7000000-0000-0000-0000-000000000001', '0.2.0', E'- Added combat analysis engine\n- Improved speed detection', '0.1.0', '0.2.x', 5100, '2025-08-20T14:30:00Z'),
-    ('h8000000-0000-0000-0000-000000000002', 'g7000000-0000-0000-0000-000000000001', '0.3.0', E'- Configurable thresholds via TOML\n- False-positive reduction\n- WASM recompile for Pumpkin 0.3.x', '0.2.0', '0.3.x', 9650, '2025-11-01T09:00:00Z'),
+    ('08000000-0000-0000-0000-000000000001', '07000000-0000-0000-0000-000000000001', '0.2.0', E'- Added combat analysis engine\n- Improved speed detection', '0.1.0', '0.2.x', 5100, '2025-08-20T14:30:00Z'),
+    ('08000000-0000-0000-0000-000000000002', '07000000-0000-0000-0000-000000000001', '0.3.0', E'- Configurable thresholds via TOML\n- False-positive reduction\n- WASM recompile for Pumpkin 0.3.x', '0.2.0', '0.3.x', 9650, '2025-11-01T09:00:00Z'),
 
     -- EconoMine
-    ('h8000000-0000-0000-0000-000000000003', 'g7000000-0000-0000-0000-000000000002', '1.1.0', E'- Auction house\n- Transaction history\n- Migrated to WASM binary', '0.2.0', '0.3.x', 9120, '2025-10-10T16:00:00Z'),
+    ('08000000-0000-0000-0000-000000000003', '07000000-0000-0000-0000-000000000002', '1.1.0', E'- Auction house\n- Transaction history\n- Migrated to WASM binary', '0.2.0', '0.3.x', 9120, '2025-10-10T16:00:00Z'),
 
     -- TerraCraft
-    ('h8000000-0000-0000-0000-000000000004', 'g7000000-0000-0000-0000-000000000003', '0.2.0', E'- 8 more biomes\n- Ore distribution config\n- Structure gen API\n- Universal .wasm build', '0.2.0', '0.3.x', 6340, '2025-12-15T11:00:00Z'),
+    ('08000000-0000-0000-0000-000000000004', '07000000-0000-0000-0000-000000000003', '0.2.0', E'- 8 more biomes\n- Ore distribution config\n- Structure gen API\n- Universal .wasm build', '0.2.0', '0.3.x', 6340, '2025-12-15T11:00:00Z'),
 
     -- PumpkinCore
-    ('h8000000-0000-0000-0000-000000000005', 'g7000000-0000-0000-0000-000000000004', '0.2.0', E'- New macros for event handling\n- Error trait improvements', '0.1.0', '0.3.x', 12100, '2025-09-30T10:00:00Z'),
-    ('h8000000-0000-0000-0000-000000000006', 'g7000000-0000-0000-0000-000000000004', '0.3.0', E'- Async hooks support\n- Memory-safe slice API\n- WASM ABI stabilisation', '0.3.0', '0.3.x', 11700, '2026-01-15T09:00:00Z'),
+    ('08000000-0000-0000-0000-000000000005', '07000000-0000-0000-0000-000000000004', '0.2.0', E'- New macros for event handling\n- Error trait improvements', '0.1.0', '0.3.x', 12100, '2025-09-30T10:00:00Z'),
+    ('08000000-0000-0000-0000-000000000006', '07000000-0000-0000-0000-000000000004', '0.3.0', E'- Async hooks support\n- Memory-safe slice API\n- WASM ABI stabilisation', '0.3.0', '0.3.x', 11700, '2026-01-15T09:00:00Z'),
 
     -- ChatForge
-    ('h8000000-0000-0000-0000-000000000007', 'g7000000-0000-0000-0000-000000000005', '0.2.0', E'- Private channels\n- Markdown rendering', '0.2.0', '0.3.x', 4210, '2026-01-08T15:00:00Z'),
+    ('08000000-0000-0000-0000-000000000007', '07000000-0000-0000-0000-000000000005', '0.2.0', E'- Private channels\n- Markdown rendering', '0.2.0', '0.3.x', 4210, '2026-01-08T15:00:00Z'),
 
     -- QuestForge
-    ('h8000000-0000-0000-0000-000000000008', 'g7000000-0000-0000-0000-000000000006', '0.1.0', 'Initial alpha release: basic quest chains.', '0.3.0', '0.3.x', 2980, '2026-02-01T10:00:00Z')
+    ('08000000-0000-0000-0000-000000000008', '07000000-0000-0000-0000-000000000006', '0.1.0', 'Initial alpha release: basic quest chains.', '0.3.0', '0.3.x', 2980, '2026-02-01T10:00:00Z')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- Binaries (.wasm only, no platform column)
+-- Binaries (.wasm only, no platform column)  (prefix: 09)
 -- Storage keys follow pattern: plugins/{slug}/{version}/{filename}
 -- SHA-256 values are fake (dev only — actual files not in MinIO)
 -- ============================================================
 INSERT INTO binaries (id, version_id, file_name, file_size, checksum_sha256, storage_key, content_type) VALUES
     (
-        'i9000000-0000-0000-0000-000000000001',
-        'h8000000-0000-0000-0000-000000000002',
+        '09000000-0000-0000-0000-000000000001',
+        '08000000-0000-0000-0000-000000000002',
         'pumpkin-guard.wasm',
         524288,
         'a3b4c5d6e7f8a3b4c5d6e7f8a3b4c5d6e7f8a3b4c5d6e7f8a3b4c5d6e7f8a3b4',
@@ -144,8 +144,8 @@ INSERT INTO binaries (id, version_id, file_name, file_size, checksum_sha256, sto
         'application/wasm'
     ),
     (
-        'i9000000-0000-0000-0000-000000000002',
-        'h8000000-0000-0000-0000-000000000003',
+        '09000000-0000-0000-0000-000000000002',
+        '08000000-0000-0000-0000-000000000003',
         'economine.wasm',
         786432,
         'b4c5d6e7f8a9b4c5d6e7f8a9b4c5d6e7f8a9b4c5d6e7f8a9b4c5d6e7f8a9b4c5',
@@ -153,8 +153,8 @@ INSERT INTO binaries (id, version_id, file_name, file_size, checksum_sha256, sto
         'application/wasm'
     ),
     (
-        'i9000000-0000-0000-0000-000000000003',
-        'h8000000-0000-0000-0000-000000000004',
+        '09000000-0000-0000-0000-000000000003',
+        '08000000-0000-0000-0000-000000000004',
         'terracraft.wasm',
         1048576,
         'c5d6e7f8a9b0c5d6e7f8a9b0c5d6e7f8a9b0c5d6e7f8a9b0c5d6e7f8a9b0c5d6',
@@ -162,8 +162,8 @@ INSERT INTO binaries (id, version_id, file_name, file_size, checksum_sha256, sto
         'application/wasm'
     ),
     (
-        'i9000000-0000-0000-0000-000000000004',
-        'h8000000-0000-0000-0000-000000000006',
+        '09000000-0000-0000-0000-000000000004',
+        '08000000-0000-0000-0000-000000000006',
         'pumpkin-core.wasm',
         262144,
         'd6e7f8a9b0c1d6e7f8a9b0c1d6e7f8a9b0c1d6e7f8a9b0c1d6e7f8a9b0c1d6e7',
@@ -171,8 +171,8 @@ INSERT INTO binaries (id, version_id, file_name, file_size, checksum_sha256, sto
         'application/wasm'
     ),
     (
-        'i9000000-0000-0000-0000-000000000005',
-        'h8000000-0000-0000-0000-000000000007',
+        '09000000-0000-0000-0000-000000000005',
+        '08000000-0000-0000-0000-000000000007',
         'chatforge.wasm',
         393216,
         'e7f8a9b0c1d2e7f8a9b0c1d2e7f8a9b0c1d2e7f8a9b0c1d2e7f8a9b0c1d2e7f8',

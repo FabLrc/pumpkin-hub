@@ -2,10 +2,12 @@
 -- Remove platform-specific constraints and column from binaries table
 
 -- 1. Remove duplicate binaries before adding UNIQUE (version_id) constraint
---    Keep the earliest-inserted binary for each version
+--    Keep the earliest-uploaded binary for each version
 DELETE FROM binaries
 WHERE id NOT IN (
-    SELECT MIN(id) FROM binaries GROUP BY version_id
+    SELECT DISTINCT ON (version_id) id
+    FROM binaries
+    ORDER BY version_id, uploaded_at
 );
 
 -- 2. Drop platform-related constraints
