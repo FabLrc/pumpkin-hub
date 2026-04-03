@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { LogOut, User, ChevronDown, LayoutDashboard, Shield, Menu, X, Wrench } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
 import { logout } from "@/lib/api";
@@ -34,11 +35,13 @@ export function Navbar() {
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-            <div className="w-7 h-7 bg-accent flex items-center justify-center">
-              <span className="text-black font-mono font-bold text-xs">
-                PH
-              </span>
-            </div>
+            <Image
+              src="/pumpkinhub_logo.png"
+              alt="Pumpkin Hub logo"
+              width={28}
+              height={28}
+              className="w-7 h-7 object-cover"
+            />
             <span className="font-raleway font-bold text-sm tracking-widest uppercase text-text-primary">
               Pumpkin Hub
             </span>
@@ -65,10 +68,10 @@ export function Navbar() {
             Docs
           </a>
           <Link
-            href="/configurator"
+            href="/server-builder"
             className="hover:text-text-primary transition-colors"
           >
-            Configurator
+            Server Builder
           </Link>
           <Link
             href="/plugins/new"
@@ -154,12 +157,12 @@ export function Navbar() {
                       Dashboard
                     </Link>
                     <Link
-                      href="/dashboard/configurator"
+                      href="/dashboard/server-builder"
                       onClick={() => setIsMenuOpen(false)}
                       className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors"
                     >
                       <Wrench className="w-3.5 h-3.5" />
-                      My Configurations
+                      My Server Builds
                     </Link>
                     {(user.role === "admin" || user.role === "moderator") && (
                       <Link
@@ -217,11 +220,11 @@ export function Navbar() {
               Docs
             </a>
             <Link
-              href="/configurator"
+              href="/server-builder"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block py-3 text-text-subtle hover:text-text-primary transition-colors border-b border-border-default"
             >
-              Configurator
+              Server Builder
             </Link>
             <Link
               href="/plugins/new"

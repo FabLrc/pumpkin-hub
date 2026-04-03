@@ -5,6 +5,8 @@
 [![Status: Active Development](https://img.shields.io/badge/Status-Active_Development-orange?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
 [![Built with: Rust & Next.js](https://img.shields.io/badge/Stack-Rust_%2F_Next.js-black?style=for-the-badge)](https://github.com/FabLrc/pumpkin-hub)
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/FabLrc/pumpkin-hub)
+
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=bugs)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_pumpkin-hub&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=FabLrc_pumpkin-hub)
@@ -96,6 +98,10 @@ docker compose up --build
 ## Documentation
 
 Full documentation at **[fablrc.github.io/pumpkin-hub](https://fablrc.github.io/pumpkin-hub/)** — architecture, API reference, design system, roadmap, and contribution guide.
+
+A new auto-generated wiki is now available and will soon replace the classique documentation.
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/FabLrc/pumpkin-hub)
 
 ## License
 

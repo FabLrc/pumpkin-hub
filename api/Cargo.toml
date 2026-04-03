@@ -55,8 +55,8 @@ oauth2 = "5"
 # HTTP client (for GitHub API calls)
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
-# JWT authentication
-jsonwebtoken = "9"
+# JWT authentication (v10 requires selecting a single crypto backend)
+jsonwebtoken = { version = "10", default-features = false, features = ["use_pem", "rust_crypto"] }
 
 # Cookie support
 axum-extra = { version = "0.10", features = ["cookie"] }

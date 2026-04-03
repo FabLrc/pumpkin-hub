@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Github, Mail, ArrowLeft, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -77,9 +78,16 @@ export default function AuthPage() {
         <div className="border border-border-default bg-bg-elevated p-8">
           {/* Header */}
           <div className="mb-8">
-            <div className="w-10 h-10 bg-accent flex items-center justify-center mb-4">
-              <span className="text-black font-mono font-bold text-sm">
-                PH
+            <div className="flex items-center gap-3 mb-4">
+              <Image
+                src="/pumpkinhub_logo.png"
+                alt="Pumpkin Hub logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-cover"
+              />
+              <span className="font-raleway font-bold text-sm tracking-widest uppercase text-text-primary">
+                Pumpkin Hub
               </span>
             </div>
             <h1 className="font-raleway font-bold text-xl text-text-primary tracking-wide">

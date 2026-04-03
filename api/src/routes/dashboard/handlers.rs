@@ -53,6 +53,7 @@ pub async fn get_author_stats(
          FROM plugins
          WHERE author_id = $1 AND is_active = true",
     )
+    .bind(author_id)
     .fetch_one(pool)
     .await
     .map_err(AppError::internal)?;

@@ -24,6 +24,21 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pumpkinhub.org";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  manifest: "/favicon/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon/favicon.svg", type: "image/svg+xml" },
+      {
+        url: "/favicon/favicon-96x96.png",
+        type: "image/png",
+        sizes: "96x96",
+      },
+    ],
+    apple: [{ url: "/favicon/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: ["/favicon.ico"],
+  },
+  themeColor: "#0a0a0a",
   title: {
     default: `${SITE_NAME} — Plugin Registry`,
     template: `%s | ${SITE_NAME}`,

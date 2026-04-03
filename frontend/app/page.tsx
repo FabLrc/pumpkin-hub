@@ -3,6 +3,7 @@
 import { usePlugins, usePublicStats } from "@/lib/hooks";
 import { Navbar, Footer } from "@/components/layout";
 import { HeroSection } from "./_components/HeroSection";
+import { ServerBuilderSpotlight } from "./_components/ServerBuilderSpotlight";
 import { TrendingSection } from "./_components/TrendingSection";
 import { FeaturesSection } from "./_components/FeaturesSection";
 import { CtaSection } from "./_components/CtaSection";
@@ -27,6 +28,7 @@ export default function HomePage() {
         totalAuthors={statsData?.total_authors ?? 0}
         totalDownloads={statsData?.total_downloads ?? 0}
       />
+      <ServerBuilderSpotlight />
       <TrendingSection plugins={plugins} />
       <FeaturesSection />
       <CtaSection />

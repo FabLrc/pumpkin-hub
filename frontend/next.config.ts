@@ -82,6 +82,28 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns,
   },
+  redirects: async () => [
+    {
+      source: "/configurator",
+      destination: "/server-builder",
+      permanent: true,
+    },
+    {
+      source: "/configurator/:path*",
+      destination: "/server-builder/:path*",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/configurator",
+      destination: "/dashboard/server-builder",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/configurator/:path*",
+      destination: "/dashboard/server-builder/:path*",
+      permanent: true,
+    },
+  ],
   headers: async () => [{ source: "/(.*)", headers: securityHeaders }],
 };
 

@@ -52,6 +52,7 @@ vi.mock("@/components/layout", () => ({
 }));
 
 vi.mock("./_components/HeroSection", () => ({ HeroSection: () => <div>HeroSection</div> }));
+vi.mock("./_components/ServerBuilderSpotlight", () => ({ ServerBuilderSpotlight: () => <div>ServerBuilderSpotlight</div> }));
 vi.mock("./_components/TrendingSection", () => ({ TrendingSection: () => <div>TrendingSection</div> }));
 vi.mock("./_components/FeaturesSection", () => ({ FeaturesSection: () => <div>FeaturesSection</div> }));
 vi.mock("./_components/CtaSection", () => ({ CtaSection: () => <div>CtaSection</div> }));

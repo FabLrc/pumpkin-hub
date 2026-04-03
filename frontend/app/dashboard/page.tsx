@@ -292,7 +292,7 @@ export default function DashboardPage() {
         </Link>
 
         <Link
-          href="/dashboard/configurator"
+          href="/dashboard/server-builder"
           className="flex items-center gap-3 border border-border-default bg-bg-elevated p-4 mb-8 hover:border-accent/40 transition-colors group"
         >
           <div className="w-9 h-9 bg-bg-surface border border-border-default flex items-center justify-center shrink-0 group-hover:border-accent/40 transition-colors">
@@ -300,10 +300,10 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1 min-w-0">
             <span className="font-raleway font-bold text-sm text-text-primary group-hover:text-accent transition-colors">
-              Server Configurator
+              Server Builder
             </span>
             <span className="block font-mono text-xs text-text-muted">
-              Access saved server bundles and manage share links
+              Access ready-to-run server builds and manage share links
             </span>
           </div>
           <ExternalLink className="w-4 h-4 text-text-dim group-hover:text-accent transition-colors shrink-0" />

@@ -14,7 +14,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: ["lib/**", "components/**"],
-      exclude: ["**/*.test.*", "**/*.d.ts", "components/configurator/**"],
+      exclude: ["**/*.test.*", "**/*.d.ts", "components/server-builder/**"],
       thresholds: {
         autoUpdate: false,
         lines: 80,
