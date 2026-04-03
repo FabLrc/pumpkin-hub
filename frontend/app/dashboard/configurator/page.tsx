@@ -46,7 +46,7 @@ function getShareUrl(shareToken: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? runtimeOrigin;
 
   const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
-  return `${normalizedBaseUrl}/configurator/share/${shareToken}`;
+  return `${normalizedBaseUrl}/server-builder/share/${shareToken}`;
 }
 
 function PlatformChip({ platform }: { readonly platform: ServerConfigPlatform }) {
@@ -193,15 +193,15 @@ export default function DashboardConfiguratorPage() {
         <div className="p-12 text-center">
           <Wrench className="w-10 h-10 text-text-dim mx-auto mb-4" />
           <p className="font-mono text-sm text-text-muted mb-2">
-            No server configurations yet
+            No server builds yet
           </p>
           <p className="font-mono text-xs text-text-dim mb-6 max-w-sm mx-auto">
             Build your first portable Pumpkin server bundle and share it with
             your team.
           </p>
-          <Button href="/configurator" className="justify-center">
+          <Button href="/server-builder" className="justify-center">
             <Plus className="w-3.5 h-3.5" />
-            Open Configurator
+            Open Server Builder
           </Button>
         </div>
       );
@@ -239,7 +239,7 @@ export default function DashboardConfiguratorPage() {
 
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 <Link
-                  href={`/configurator?id=${config.id}`}
+                  href={`/server-builder?id=${config.id}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -311,25 +311,25 @@ export default function DashboardConfiguratorPage() {
                 <Wrench className="w-5 h-5 text-black" />
               </div>
               <h1 className="font-raleway font-bold text-2xl text-text-primary tracking-wide">
-                Server Configurator
+                Server Builder
               </h1>
             </div>
             <p className="font-mono text-xs text-text-dim max-w-2xl">
-              Manage saved server bundles, copy share links, revoke public access,
-              or jump back into the editor.
+              Manage ready-to-run server builds, copy share links, revoke public access,
+              or jump back into the builder.
             </p>
           </div>
 
-          <Button href="/configurator">
+          <Button href="/server-builder">
             <Plus className="w-3.5 h-3.5" />
-            New Configuration
+            New Server Build
           </Button>
         </header>
 
         <div className="border border-border-default bg-bg-elevated">
           <div className="px-6 py-4 border-b border-border-default flex items-center justify-between">
             <h2 className="font-raleway font-bold text-sm text-text-primary tracking-wide uppercase">
-              Saved Configurations
+              Saved Server Builds
             </h2>
             <span className="font-mono text-xs text-text-muted">
               {configs.length} {configs.length === 1 ? "config" : "configs"}

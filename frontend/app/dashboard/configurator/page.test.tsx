@@ -120,6 +120,11 @@ describe("dashboard configurator page", () => {
 
       expect(hasSuccessFeedback || hasClipboardFallbackFeedback).toBe(true);
     });
+
+    const copiedUrl = clipboardWriteTextMock.mock.calls[0]?.[0];
+    if (typeof copiedUrl === "string") {
+      expect(copiedUrl).toContain("/server-builder/share/token-1");
+    }
   });
 
   it("rotates share token and refreshes list", async () => {

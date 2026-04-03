@@ -32,26 +32,26 @@ export async function generateMetadata({
 
   if (!config) {
     return {
-      title: "Configuration not found",
-      description: "This shared configuration does not exist or is no longer available.",
+      title: "Server build not found",
+      description: "This shared server build does not exist or is no longer available.",
       openGraph: {
-        title: "Configuration unavailable - PumpkinHub",
+        title: "Server build unavailable - PumpkinHub",
       },
     };
   }
 
-  const shareTitle = `Configuration ${config.name} — PumpkinHub`;
+  const shareTitle = `Server Build ${config.name} — PumpkinHub`;
   const description =
-    "Shared Pumpkin server configuration with platform and .wasm plugin stack.";
+    "Shared ready-to-run Pumpkin server build with platform and .wasm plugin stack.";
 
   return {
-    title: `Configuration ${config.name}`,
+    title: `Server Build ${config.name}`,
     description,
     openGraph: {
       type: "website",
       title: shareTitle,
       description,
-      url: `/configurator/share/${config.share_token}`,
+      url: `/server-builder/share/${config.share_token}`,
     },
     twitter: {
       card: "summary",

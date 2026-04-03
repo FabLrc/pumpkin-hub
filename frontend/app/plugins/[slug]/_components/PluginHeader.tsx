@@ -134,11 +134,11 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
             </a>
           )}
           <Link
-            href={`/configurator?plugin=${plugin.slug}`}
+            href={`/server-builder?plugin=${plugin.slug}`}
             className="font-mono text-sm bg-accent hover:bg-accent-hover text-bg-base font-bold px-5 py-2.5 transition-colors flex items-center gap-2"
           >
             <Terminal className="w-[14px] h-[14px]" />
-            Quick Test
+            Build With Plugin
           </Link>
         </div>
       </div>

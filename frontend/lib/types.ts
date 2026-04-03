@@ -196,7 +196,7 @@ export interface BinaryDownloadResponse {
   expires_in_seconds: number;
 }
 
-// ── Server Configurator Types ───────────────────────────────────────────
+// ── Server Builder Types ────────────────────────────────────────────────
 
 export type ServerConfigPlatform = "windows" | "linux" | "macos";
 

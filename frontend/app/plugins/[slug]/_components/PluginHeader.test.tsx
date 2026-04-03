@@ -112,10 +112,10 @@ describe("PluginHeader", () => {
     expect(screen.queryByRole("link", { name: /Source/ })).not.toBeInTheDocument();
   });
 
-  it("renders Quick Test link to the configurator", () => {
+  it("renders builder link to the canonical server-builder route", () => {
     render(<PluginHeader plugin={mockPlugin} />);
-    const link = screen.getByRole("link", { name: /Quick Test/i });
-    expect(link).toHaveAttribute("href", "/configurator?plugin=test-plugin");
+    const link = screen.getByRole("link", { name: /Build With Plugin/i });
+    expect(link).toHaveAttribute("href", "/server-builder?plugin=test-plugin");
   });
 
   it("shows formatted date for plugins updated more than 30 days ago", () => {

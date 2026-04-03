@@ -612,7 +612,7 @@ export async function fetchDependants(
   return apiFetch<ReverseDependencyResponse>(getDependantsPath(slug));
 }
 
-// ── Server Configurator Endpoints ───────────────────────────────────────
+// ── Server Builder Endpoints ────────────────────────────────────────────
 
 export function getServerConfigsPath(): string {
   return "/server-configs";

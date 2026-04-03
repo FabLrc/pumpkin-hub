@@ -105,8 +105,8 @@ export function SharedConfigPageClient({ config }: SharedConfigPageClientProps) 
         plugins: cloneSelections,
       });
 
-      toast.success("Configuration clonee dans vos configs.");
-      router.push(`/configurator?id=${created.id}`);
+      toast.success("Configuration clonee dans vos builds.");
+      router.push(`/server-builder?id=${created.id}`);
     } catch (error) {
       toast.error(parseApiError(error, "Clonage impossible."));
     } finally {
@@ -119,11 +119,11 @@ export function SharedConfigPageClient({ config }: SharedConfigPageClientProps) 
       <Navbar />
       <main className="max-w-5xl mx-auto px-6 py-12">
         <Link
-          href="/configurator"
+          href="/server-builder"
           className="inline-flex items-center gap-2 text-xs font-mono text-text-dim hover:text-text-primary transition-colors mb-8"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to configurator
+          Back to Server Builder
         </Link>
 
         <section className="border border-border-default bg-bg-elevated p-6">
@@ -132,7 +132,7 @@ export function SharedConfigPageClient({ config }: SharedConfigPageClientProps) 
               <div className="inline-flex items-center gap-2 bg-bg-surface border border-border-default px-2 py-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-accent" />
                 <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">
-                  Public shared config
+                  Public shared build
                 </span>
               </div>
 
@@ -174,7 +174,7 @@ export function SharedConfigPageClient({ config }: SharedConfigPageClientProps) 
                 className="w-full justify-center"
               >
                 <CopyPlus className="w-3.5 h-3.5" />
-                {isCloning ? "Clonage..." : "Cloner dans mes configs"}
+                {isCloning ? "Clonage..." : "Cloner dans mes builds"}
               </Button>
 
               {!isLoadingUser && !user ? (

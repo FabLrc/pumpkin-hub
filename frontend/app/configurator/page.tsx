@@ -335,7 +335,7 @@ export default function ConfiguratorPage() {
           buildSnapshot(created.name, created.platform, created.plugins),
         );
         hydratedConfigIdRef.current = created.id;
-        router.replace(`/configurator?id=${created.id}`);
+        router.replace(`/server-builder?id=${created.id}`);
         toast.success("Configuration sauvegardee.");
       }
     } catch (error) {
@@ -477,11 +477,11 @@ export default function ConfiguratorPage() {
       <Navbar />
       <main className="max-w-6xl mx-auto px-6 py-12">
         <Link
-          href="/dashboard/configurator"
+          href="/dashboard/server-builder"
           className="inline-flex items-center gap-2 text-xs font-mono text-text-dim hover:text-text-primary transition-colors mb-8"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          My configs
+          My server builds
         </Link>
 
         <div className="mb-8 flex items-center gap-3">
@@ -490,10 +490,10 @@ export default function ConfiguratorPage() {
           </div>
           <div>
             <h1 className="font-raleway font-bold text-2xl text-text-primary tracking-wide">
-              Server Configurator
+              Server Builder
             </h1>
             <p className="font-mono text-xs text-text-dim mt-1">
-              Compose un serveur Pumpkin pret a lancer avec ses plugins .wasm.
+              Configure un serveur Pumpkin pret a l emploi avec ses plugins .wasm.
             </p>
           </div>
         </div>

@@ -236,10 +236,10 @@ describe("dashboard page", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("renders Server Configurator quick link", () => {
+  it("renders Server Builder quick link", () => {
     render(<DashboardPage />);
-    expect(screen.getByText("Server Configurator")).toBeInTheDocument();
-    const configuratorLink = screen.getByText("Server Configurator").closest("a");
-    expect(configuratorLink).toHaveAttribute("href", "/dashboard/configurator");
+    expect(screen.getByText("Server Builder")).toBeInTheDocument();
+    const serverBuilderLink = screen.getByText("Server Builder").closest("a");
+    expect(serverBuilderLink).toHaveAttribute("href", "/dashboard/server-builder");
   });
 });

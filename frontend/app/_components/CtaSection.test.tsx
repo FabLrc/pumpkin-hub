@@ -12,9 +12,9 @@ vi.mock("next/link", () => ({
 }));
 
 describe("CtaSection", () => {
-  it("renders 'Ready to build?' heading", () => {
+  it("renders updated server-focused heading", () => {
     render(<CtaSection />);
-    expect(screen.getByText("Ready to build?")).toBeInTheDocument();
+    expect(screen.getByText("Ready to ship your server?")).toBeInTheDocument();
   });
 
   it("renders 'Browse Plugins' link pointing to /explorer", () => {
@@ -27,5 +27,11 @@ describe("CtaSection", () => {
     render(<CtaSection />);
     const link = screen.getByText(/Publish a Plugin/).closest("a");
     expect(link).toHaveAttribute("href", "/plugins/new");
+  });
+
+  it("renders 'Open Server Builder' link pointing to /server-builder", () => {
+    render(<CtaSection />);
+    const link = screen.getByText("Open Server Builder").closest("a");
+    expect(link).toHaveAttribute("href", "/server-builder");
   });
 });

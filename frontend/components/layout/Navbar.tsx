@@ -65,10 +65,10 @@ export function Navbar() {
             Docs
           </a>
           <Link
-            href="/configurator"
+            href="/server-builder"
             className="hover:text-text-primary transition-colors"
           >
-            Configurator
+            Server Builder
           </Link>
           <Link
             href="/plugins/new"
@@ -154,12 +154,12 @@ export function Navbar() {
                       Dashboard
                     </Link>
                     <Link
-                      href="/dashboard/configurator"
+                      href="/dashboard/server-builder"
                       onClick={() => setIsMenuOpen(false)}
                       className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors"
                     >
                       <Wrench className="w-3.5 h-3.5" />
-                      My Configurations
+                      My Server Builds
                     </Link>
                     {(user.role === "admin" || user.role === "moderator") && (
                       <Link
@@ -217,11 +217,11 @@ export function Navbar() {
               Docs
             </a>
             <Link
-              href="/configurator"
+              href="/server-builder"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block py-3 text-text-subtle hover:text-text-primary transition-colors border-b border-border-default"
             >
-              Configurator
+              Server Builder
             </Link>
             <Link
               href="/plugins/new"
