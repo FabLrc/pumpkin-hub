@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { PluginHeader } from "./PluginHeader";
 import type { PluginResponse } from "@/lib/types";
@@ -113,55 +112,10 @@ describe("PluginHeader", () => {
     expect(screen.queryByRole("link", { name: /Source/ })).not.toBeInTheDocument();
   });
 
-  it("Quick Install button toggles install panel", async () => {
-    const user = userEvent.setup();
+  it("renders Quick Test link to the configurator", () => {
     render(<PluginHeader plugin={mockPlugin} />);
-
-    // Click Quick Install
-    await user.click(
-      screen.getByRole("button", { name: /Quick Install/i }),
-    );
-
-    // Panel content now present
-    expect(screen.getByText(/Install via Pumpkin CLI/i)).toBeInTheDocument();
-  });
-
-  it("install panel shows CLI command with plugin slug", async () => {
-    const user = userEvent.setup();
-    render(<PluginHeader plugin={mockPlugin} />);
-
-    await user.click(
-      screen.getByRole("button", { name: /Quick Install/i }),
-    );
-
-    expect(
-      screen.getByText("pumpkin install test-plugin"),
-    ).toBeInTheDocument();
-  });
-
-  it("install panel has copy buttons", async () => {
-    const user = userEvent.setup();
-    render(<PluginHeader plugin={mockPlugin} />);
-
-    await user.click(
-      screen.getByRole("button", { name: /Quick Install/i }),
-    );
-
-    const copyButtons = screen.getAllByRole("button", { name: /COPY/i });
-    expect(copyButtons.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it("closes install panel when X button is clicked", async () => {
-    const user = userEvent.setup();
-    render(<PluginHeader plugin={mockPlugin} />);
-
-    await user.click(screen.getByRole("button", { name: /Quick Install/i }));
-    expect(screen.getByText(/Install via Pumpkin CLI/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /Close install panel/i }));
-    // Re-opening works, confirming the state was toggled back
-    await user.click(screen.getByRole("button", { name: /Quick Install/i }));
-    expect(screen.getByText(/Install via Pumpkin CLI/i)).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /Quick Test/i });
+    expect(link).toHaveAttribute("href", "/configurator?plugin=test-plugin");
   });
 
   it("shows formatted date for plugins updated more than 30 days ago", () => {

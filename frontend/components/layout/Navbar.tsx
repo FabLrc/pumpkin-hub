@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { LogOut, User, ChevronDown, LayoutDashboard, Shield, Menu, X } from "lucide-react";
+import { LogOut, User, ChevronDown, LayoutDashboard, Shield, Menu, X, Wrench } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
 import { logout } from "@/lib/api";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -64,6 +64,12 @@ export function Navbar() {
           >
             Docs
           </a>
+          <Link
+            href="/configurator"
+            className="hover:text-text-primary transition-colors"
+          >
+            Configurator
+          </Link>
           <Link
             href="/plugins/new"
             className="text-accent hover:text-accent-light transition-colors"
@@ -147,6 +153,14 @@ export function Navbar() {
                       <LayoutDashboard className="w-3.5 h-3.5" />
                       Dashboard
                     </Link>
+                    <Link
+                      href="/dashboard/configurator"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="w-full flex items-center gap-2 px-3 py-2 font-mono text-xs text-text-dim hover:text-text-primary hover:bg-bg-surface transition-colors"
+                    >
+                      <Wrench className="w-3.5 h-3.5" />
+                      My Configurations
+                    </Link>
                     {(user.role === "admin" || user.role === "moderator") && (
                       <Link
                         href="/admin"
@@ -202,6 +216,13 @@ export function Navbar() {
             >
               Docs
             </a>
+            <Link
+              href="/configurator"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block py-3 text-text-subtle hover:text-text-primary transition-colors border-b border-border-default"
+            >
+              Configurator
+            </Link>
             <Link
               href="/plugins/new"
               onClick={() => setIsMobileMenuOpen(false)}

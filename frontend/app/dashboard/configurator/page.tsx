@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Copy,
+  Download,
   Monitor,
   Pencil,
   Plus,
@@ -18,7 +19,7 @@ import {
 import { toast } from "sonner";
 import { Footer, Navbar } from "@/components/layout";
 import { Button } from "@/components/ui";
-import { deleteServerConfig, rotateShareToken } from "@/lib/api";
+import { deleteServerConfig, downloadServerConfig, rotateShareToken } from "@/lib/api";
 import { useCurrentUser, useServerConfigs } from "@/lib/hooks";
 import type { ServerConfigPlatform, ServerConfigSummary } from "@/lib/types";
 
@@ -82,6 +83,7 @@ export default function DashboardConfiguratorPage() {
 
   const [revokingConfigId, setRevokingConfigId] = useState<string | null>(null);
   const [isCopyingConfigId, setIsCopyingConfigId] = useState<string | null>(null);
+  const [downloadingConfigId, setDownloadingConfigId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ServerConfigSummary | null>(
     null,
   );
@@ -109,6 +111,17 @@ export default function DashboardConfiguratorPage() {
       toast.error(parseApiError(error, "Failed to copy share link."));
     } finally {
       setIsCopyingConfigId(null);
+    }
+  }
+
+  async function handleDownload(configId: string): Promise<void> {
+    setDownloadingConfigId(configId);
+    try {
+      await downloadServerConfig(configId);
+    } catch (error) {
+      toast.error(parseApiError(error, "Download failed."));
+    } finally {
+      setDownloadingConfigId(null);
     }
   }
 
@@ -255,6 +268,16 @@ export default function DashboardConfiguratorPage() {
                       <Pencil className="w-3.5 h-3.5" />
                       Edit
                     </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(config.id)}
+                      disabled={downloadingConfigId === config.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {downloadingConfigId === config.id ? "Downloading..." : "Download"}
+                    </button>
 
                     <button
                       type="button"

@@ -1,4 +1,4 @@
-import { Upload } from "lucide-react";
+import { Server, Upload } from "lucide-react";
 import { Button } from "@/components/ui";
 
 export function CtaSection() {
@@ -13,9 +13,13 @@ export function CtaSection() {
             Publish your plugin in minutes. The community is waiting.
           </p>
         </div>
-        <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0 flex-wrap">
           <Button variant="ghost" href="/explorer" className="text-sm px-6 py-3">
             Browse Plugins
+          </Button>
+          <Button variant="ghost" href="/configurator" className="text-sm px-6 py-3">
+            <Server className="w-[14px] h-[14px]" />
+            Launch Configurator
           </Button>
           <Button href="/plugins/new" className="text-sm px-6 py-3">
             Publish a Plugin <Upload className="w-[14px] h-[14px]" />

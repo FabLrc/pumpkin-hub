@@ -15,7 +15,7 @@ import {
   updateServerConfig,
   validateServerConfig,
 } from "@/lib/api";
-import { useCurrentUser, useServerConfig } from "@/lib/hooks";
+import { useCurrentUser, usePlugin, usePluginVersions, useServerConfig } from "@/lib/hooks";
 import type { ServerConfigPlatform } from "@/lib/types";
 
 interface ConfigPluginItem {
@@ -60,6 +60,7 @@ export default function ConfiguratorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const configId = searchParams.get("id");
+  const presetPluginSlug = configId ? null : searchParams.get("plugin");
 
   const { data: user, isLoading: isLoadingUser } = useCurrentUser();
   const {
@@ -67,8 +68,11 @@ export default function ConfiguratorPage() {
     isLoading: isLoadingConfig,
     error: configError,
   } = useServerConfig(configId);
+  const { data: presetPlugin } = usePlugin(presetPluginSlug);
+  const { data: presetVersions } = usePluginVersions(presetPluginSlug);
 
   const hydratedConfigIdRef = useRef<string | null>(null);
+  const presetPluginAddedRef = useRef(false);
 
   const [name, setName] = useState("My Pumpkin Server");
   const [platform, setPlatform] = useState<ServerConfigPlatform>("linux");
@@ -97,6 +101,22 @@ export default function ConfiguratorPage() {
       setPlugins(loadedConfig.plugins);
     }
   }, [configId, loadedConfig]);
+
+  useEffect(() => {
+    if (presetPluginAddedRef.current) return;
+    if (!presetPlugin || !presetVersions) return;
+    const latestVersion = presetVersions.versions.find((v) => !v.is_yanked);
+    if (!latestVersion) return;
+    presetPluginAddedRef.current = true;
+    setPlugins([{
+      plugin_id: presetPlugin.id,
+      plugin_slug: presetPlugin.slug,
+      plugin_name: presetPlugin.name,
+      version_id: latestVersion.id,
+      version: latestVersion.version,
+      is_auto_dep: false,
+    }]);
+  }, [presetPlugin, presetVersions]);
 
   const manualSelections = useMemo(
     () =>

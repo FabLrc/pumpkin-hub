@@ -14,6 +14,18 @@ const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/Pumpkin-MC/Pumpk
 /// The SDK prefixes it with `x-amz-meta-` automatically.
 const S3_META_UPDATED_AT: &str = "pumpkin-asset-updated-at";
 
+// ── Internal error type ───────────────────────────────────────────────────────
+
+/// Distinguishes between a reachable GitHub that has no asset for the requested
+/// platform (no point trying a stale cache) vs. a network/HTTP failure where
+/// a cached binary is an acceptable fallback.
+enum FetchAssetError {
+    /// GitHub responded successfully but the release has no asset for this platform.
+    NoAsset(String),
+    /// Network failure, timeout, or non-success HTTP status.
+    Unreachable(String),
+}
+
 // ── GitHub API types ──────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -78,7 +90,12 @@ impl PumpkinBinaryCache {
 
         let (asset_updated_at, download_url) = match github_result {
             Ok(info) => info,
-            Err(err) => {
+            Err(FetchAssetError::NoAsset(msg)) => {
+                // GitHub is reachable but has no binary for this platform.
+                // A stale cache would be from a different platform; don't use it.
+                return Err(AppError::ServiceUnavailable(msg));
+            }
+            Err(FetchAssetError::Unreachable(err)) => {
                 tracing::warn!(
                     %err, %platform,
                     "GitHub API unavailable for Pumpkin binary — using fallback cache"
@@ -173,12 +190,12 @@ impl PumpkinBinaryCache {
     async fn fetch_asset_info(
         platform: &str,
         github_token: Option<&str>,
-    ) -> Result<(String, String), String> {
+    ) -> Result<(String, String), FetchAssetError> {
         let client = reqwest::Client::builder()
             .user_agent("pumpkin-hub-api/0.1")
             .timeout(std::time::Duration::from_secs(10))
             .build()
-            .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
+            .map_err(|e| FetchAssetError::Unreachable(format!("Failed to build HTTP client: {e}")))?;
 
         let mut req = client.get(GITHUB_RELEASES_URL);
         if let Some(token) = github_token {
@@ -188,25 +205,28 @@ impl PumpkinBinaryCache {
         let response = req
             .send()
             .await
-            .map_err(|e| format!("GitHub API request failed: {e}"))?;
+            .map_err(|e| FetchAssetError::Unreachable(format!("GitHub API request failed: {e}")))?;
 
         if !response.status().is_success() {
-            return Err(format!(
+            return Err(FetchAssetError::Unreachable(format!(
                 "GitHub API returned HTTP {}",
                 response.status().as_u16()
-            ));
+            )));
         }
 
         let release: GitHubRelease = response
             .json()
             .await
-            .map_err(|e| format!("Failed to parse GitHub release JSON: {e}"))?;
+            .map_err(|e| FetchAssetError::Unreachable(format!("Failed to parse GitHub release JSON: {e}")))?;
 
         let asset = release
             .assets
             .iter()
             .find(|a| a.name.contains(platform))
-            .ok_or_else(|| format!("No Pumpkin binary asset found for platform '{platform}'"))?;
+            .ok_or_else(|| FetchAssetError::NoAsset(format!(
+                "No Pumpkin binary available for platform '{platform}': \
+                 the latest Pumpkin release does not include a '{platform}' binary"
+            )))?;
 
         Ok((asset.updated_at.clone(), asset.browser_download_url.clone()))
     }

@@ -1,17 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   Github,
   Terminal,
-  CheckCircle,
-  Shield,
-  Cpu,
   Star,
-  Copy,
-  Check,
-  X,
 } from "lucide-react";
 import { Badge, PluginIcon } from "@/components/ui";
 import { PluginActions } from "@/components/plugins/PluginActions";
@@ -42,8 +35,6 @@ interface PluginHeaderProps {
 }
 
 export function PluginHeader({ plugin }: PluginHeaderProps) {
-  const [installOpen, setInstallOpen] = useState(false);
-
   const primaryCategory = plugin.categories[0];
   const isNew = NOW_MS - new Date(plugin.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
 
@@ -142,149 +133,15 @@ export function PluginHeader({ plugin }: PluginHeaderProps) {
               Source
             </a>
           )}
-          <button
-            onClick={() => setInstallOpen(!installOpen)}
-            className="font-mono text-sm bg-accent hover:bg-accent-hover text-bg-base font-bold px-5 py-2.5 transition-colors flex items-center gap-2 cursor-pointer"
+          <Link
+            href={`/configurator?plugin=${plugin.slug}`}
+            className="font-mono text-sm bg-accent hover:bg-accent-hover text-bg-base font-bold px-5 py-2.5 transition-colors flex items-center gap-2"
           >
             <Terminal className="w-[14px] h-[14px]" />
-            Quick Install
-          </button>
+            Quick Test
+          </Link>
         </div>
       </div>
-
-      {/* Install panel */}
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          installOpen ? "max-h-[300px] mt-4" : "max-h-0"
-        }`}
-      >
-        <InstallPanel
-          pluginSlug={plugin.slug}
-          onClose={() => setInstallOpen(false)}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ── Install Panel ─────────────────────────────────────────────────────────
-
-function InstallPanel({
-  pluginSlug,
-  onClose,
-}: {
-  readonly pluginSlug: string;
-  readonly onClose: () => void;
-}) {
-  return (
-    <div className="border border-accent/30 bg-bg-elevated p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-xs text-accent uppercase tracking-widest">
-          Install via Pumpkin CLI
-        </span>
-        <button
-          onClick={onClose}
-          aria-label="Close install panel"
-          title="Close install panel"
-          className="font-mono text-xs text-text-dim hover:text-text-primary transition-colors cursor-pointer"
-        >
-          <X className="w-[14px] h-[14px]" />
-        </button>
-      </div>
-
-      {/* Method 1: CLI */}
-      <div className="mb-3">
-        <div className="font-mono text-[10px] text-text-dim mb-1.5">
-          Method 1 — CLI (recommended)
-        </div>
-        <CopyableCommand command={`pumpkin install ${pluginSlug}`} />
-      </div>
-
-      {/* Method 2: Cargo.toml */}
-      <div className="mb-3">
-        <div className="font-mono text-[10px] text-text-dim mb-1.5">
-          Method 2 — Cargo.toml
-        </div>
-        <CopyableCommand
-          command={`[dependencies]\n${pluginSlug} = "latest"`}
-          display={
-            <>
-              <span className="text-text-dim">[dependencies]</span>
-              <br />
-              <span className="text-accent">{pluginSlug}</span>
-              {" = "}
-              <span className="text-green-400">&quot;latest&quot;</span>
-            </>
-          }
-        />
-      </div>
-
-      {/* Verification badges */}
-      <div className="flex items-center gap-4 font-mono text-[10px] text-text-dim">
-        <span className="flex items-center gap-1">
-          <CheckCircle className="w-[11px] h-[11px] text-green-500" />
-          SHA-256 verified
-        </span>
-        <span className="flex items-center gap-1">
-          <Shield className="w-[11px] h-[11px] text-green-500" />
-          No unsafe blocks
-        </span>
-        <span className="flex items-center gap-1">
-          <Cpu className="w-[11px] h-[11px] text-text-dim" />
-          x86_64, aarch64
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Copyable Command ──────────────────────────────────────────────────────
-
-function CopyableCommand({
-  command,
-  display,
-}: {
-  readonly command: string;
-  readonly display?: React.ReactNode;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API not available in some environments
-    }
-  }
-
-  return (
-    <div className="bg-bg-base border border-border-default p-3 flex items-center justify-between gap-4">
-      <code className="font-mono text-sm text-text-subtle flex-1 overflow-x-auto whitespace-pre">
-        {display ?? (
-          <>
-            <span className="text-accent select-none">$ </span>
-            {command}
-          </>
-        )}
-      </code>
-      <button
-        onClick={handleCopy}
-        className="font-mono text-[10px] border border-border-hover text-text-dim hover:border-accent hover:text-accent px-3 py-1.5 transition-colors flex-shrink-0 flex items-center gap-1 cursor-pointer"
-      >
-        {copied ? (
-          <>
-            <Check className="w-[10px] h-[10px]" />
-            COPIED
-          </>
-        ) : (
-          <>
-            <Copy className="w-[10px] h-[10px]" />
-            COPY
-          </>
-        )}
-      </button>
     </div>
   );
 }
