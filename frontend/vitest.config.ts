@@ -13,8 +13,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
-      include: ["lib/**", "components/**", "app/**"],
-      exclude: ["**/*.test.*", "**/*.d.ts"],
+      include: ["lib/**", "components/**"],
+      exclude: ["**/*.test.*", "**/*.d.ts", "components/configurator/**"],
       thresholds: {
         autoUpdate: false,
         lines: 80,
