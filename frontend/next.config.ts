@@ -10,6 +10,7 @@ const imgSrcOrigins = [
   "https://*.r2.cloudflarestorage.com",
   process.env.NEXT_PUBLIC_S3_PUBLIC_URL,
   process.env.NEXT_PUBLIC_S3_PRESIGNED_ORIGIN,
+  process.env.NEXT_PUBLIC_API_URL,
 ]
   .filter(Boolean)
   .join(" ");
@@ -63,6 +64,21 @@ if (process.env.NEXT_PUBLIC_S3_PUBLIC_URL) {
     remotePatterns.push({
       protocol: protocol.replace(":", "") as "https" | "http",
       hostname,
+    });
+  } catch {
+    // URL invalide, ignorée
+  }
+}
+
+if (process.env.NEXT_PUBLIC_API_URL) {
+  try {
+    const { protocol, hostname, port } = new URL(
+      process.env.NEXT_PUBLIC_API_URL
+    );
+    remotePatterns.push({
+      protocol: protocol.replace(":", "") as "https" | "http",
+      hostname,
+      ...(port ? { port } : {}),
     });
   } catch {
     // URL invalide, ignorée

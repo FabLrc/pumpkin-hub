@@ -17,6 +17,7 @@ function createMockResponse({
   return {
     ok,
     status,
+    headers: new Headers(),
     json: vi.fn().mockResolvedValue(jsonData),
     text: vi.fn().mockResolvedValue(textData),
   } as unknown as Response;

@@ -4,8 +4,8 @@ name: Intégration Continue (CI)
 #
 # develop  = branche de travail — tout push ou PR déclenche le CI complet.
 # master   = branche de production — reçoit uniquement des PR depuis develop.
-#            Le push sur master (merge d'un PR) relance le CI pour déclencher
-#            le workflow Docker (docker.yml → workflow_run).
+#            Le push sur master (merge d'un PR) relance le CI ; l'analyse Sonar
+#            est exécutée uniquement sur cette branche.
 #
 # La protection de branche sur master interdit les push directs et exige
 # que les status checks « Validation du Frontend » et « Validation de l'API
@@ -18,6 +18,7 @@ on:
   push:
     branches:
       - develop
+      - master
     paths:
       - 'frontend/**'
       - 'api/**'
@@ -147,6 +148,7 @@ jobs:
   sonarqube:
     name: Analyse SonarQube
     needs: [frontend-ci, backend-ci]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
