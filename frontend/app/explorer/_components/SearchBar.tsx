@@ -19,7 +19,7 @@ interface SearchBarProps {
 export function SearchBar({ value, onChange }: SearchBarProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLUListElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [localValue, setLocalValue] = useState(value);
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -158,7 +158,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
           placeholder="Search plugins..."
           className="search-input flex-1 bg-transparent font-mono text-xs text-text-primary placeholder-text-dim border-0 outline-none"
           role="combobox"
-          aria-expanded={showDropdown ? "true" : "false"}
+          aria-expanded={showDropdown}
           aria-autocomplete="list"
           aria-controls="search-suggestions"
           aria-activedescendant={
@@ -168,34 +168,33 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
       </div>
 
       {showDropdown && (
-        <ul
+        <div
           ref={dropdownRef}
           id="search-suggestions"
-          role="listbox"
           className="absolute z-50 top-full left-0 right-0 mt-px border border-border-default bg-bg-elevated shadow-lg list-none m-0 p-0"
         >
           {suggestionsLoading ? (
-            <li className="px-3 py-3 font-mono text-xs text-text-dim">
+            <p className="px-3 py-3 font-mono text-xs text-text-dim">
               Searching…
-            </li>
+            </p>
           ) : (
             suggestions?.map((suggestion: SearchSuggestion, index: number) => (
-              <li key={suggestion.slug} role="option" aria-selected={index === activeIndex}>
-                <button
-                  id={`suggestion-${index}`}
-                  onClick={() => navigateToPlugin(suggestion.slug)}
-                  className={`w-full text-left px-3 py-2.5 font-mono text-xs transition-colors cursor-pointer ${
-                    index === activeIndex
-                      ? "bg-accent/10 text-accent"
-                      : "text-text-secondary hover:bg-bg-surface"
-                  }`}
-                >
-                  {suggestion.name}
-                </button>
-              </li>
+              <button
+                key={suggestion.slug}
+                id={`suggestion-${index}`}
+                type="button"
+                onClick={() => navigateToPlugin(suggestion.slug)}
+                className={`w-full text-left px-3 py-2.5 font-mono text-xs transition-colors cursor-pointer ${
+                  index === activeIndex
+                    ? "bg-accent/10 text-accent"
+                    : "text-text-secondary hover:bg-bg-surface"
+                }`}
+              >
+                {suggestion.name}
+              </button>
             ))
           )}
-        </ul>
+        </div>
       )}
     </div>
   );

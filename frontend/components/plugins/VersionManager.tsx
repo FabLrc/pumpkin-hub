@@ -38,7 +38,10 @@ export function VersionManager({
   return (
     <>
       <button
-        onClick={() => setShowConfirm(true)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setShowConfirm(true);
+        }}
         disabled={isLoading}
         className={`font-mono text-xs px-2 py-1 border transition-colors cursor-pointer flex items-center gap-1 ${
           nextYanked
@@ -65,7 +68,6 @@ export function VersionManager({
             open
             aria-labelledby="version-manager-title"
             className="pointer-events-auto w-full max-w-sm border border-border-default bg-bg-elevated p-6 mx-4"
-            onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false); }}
           >
             <div className="flex items-center gap-3 mb-4">
               <div

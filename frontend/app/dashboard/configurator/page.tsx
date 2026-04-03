@@ -41,15 +41,15 @@ function parseApiError(error: unknown, fallback: string): string {
 }
 
 function getShareUrl(shareToken: string): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (typeof window !== "undefined" ? window.location.origin : "");
+  const hasBrowserWindow = typeof globalThis.window !== "undefined";
+  const runtimeOrigin = hasBrowserWindow ? globalThis.window.location.origin : "";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? runtimeOrigin;
 
   const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
   return `${normalizedBaseUrl}/configurator/share/${shareToken}`;
 }
 
-function PlatformChip({ platform }: { platform: ServerConfigPlatform }) {
+function PlatformChip({ platform }: { readonly platform: ServerConfigPlatform }) {
   if (platform === "windows") {
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-1 border border-border-default font-mono text-[11px] uppercase tracking-wider text-text-secondary">
@@ -160,6 +160,138 @@ export default function DashboardConfiguratorPage() {
     return null;
   }
 
+  function renderConfigsContent() {
+    if (isLoading) {
+      return (
+        <div className="p-6 space-y-3">
+          {[
+            "sk-config-row-a",
+            "sk-config-row-b",
+            "sk-config-row-c",
+          ].map((skeletonKey) => (
+            <div
+              key={skeletonKey}
+              className="h-20 bg-bg-surface border border-border-default animate-pulse"
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="p-6">
+          <p className="font-mono text-xs text-error">
+            Failed to load saved configurations.
+          </p>
+        </div>
+      );
+    }
+
+    if (configs.length === 0) {
+      return (
+        <div className="p-12 text-center">
+          <Wrench className="w-10 h-10 text-text-dim mx-auto mb-4" />
+          <p className="font-mono text-sm text-text-muted mb-2">
+            No server configurations yet
+          </p>
+          <p className="font-mono text-xs text-text-dim mb-6 max-w-sm mx-auto">
+            Build your first portable Pumpkin server bundle and share it with
+            your team.
+          </p>
+          <Button href="/configurator" className="justify-center">
+            <Plus className="w-3.5 h-3.5" />
+            Open Configurator
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="divide-y divide-border-default">
+        {configs.map((config) => {
+          const isDownloadingCurrent = downloadingConfigId === config.id;
+          const isCopyingCurrent = isCopyingConfigId === config.id;
+          const isRevokingCurrent = revokingConfigId === config.id;
+          const downloadLabel = isDownloadingCurrent ? "Downloading..." : "Download";
+          const copyLabel = isCopyingCurrent ? "Copying" : "Copy Link";
+          const revokeLabel = isRevokingCurrent ? "Revoking" : "Revoke";
+
+          return (
+            <article
+              key={config.id}
+              className="px-6 py-4 flex items-start justify-between gap-4 flex-wrap"
+            >
+              <div className="min-w-[280px] flex-1">
+                <h3 className="font-raleway font-bold text-sm text-text-primary">
+                  {config.name}
+                </h3>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <PlatformChip platform={config.platform} />
+                  <span className="inline-flex items-center px-2 py-1 border border-border-default font-mono text-[11px] uppercase tracking-wider text-text-secondary">
+                    Plugins: {config.plugin_count}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-1 border border-border-default font-mono text-[11px] uppercase tracking-wider text-text-secondary">
+                    Created: {formatDate(config.created_at)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <Link
+                  href={`/configurator?id=${config.id}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => handleDownload(config.id)}
+                  disabled={isDownloadingCurrent}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {downloadLabel}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopyShareLink(config)}
+                  disabled={isCopyingCurrent}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {copyLabel}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRotateShareToken(config.id)}
+                  disabled={isRevokingCurrent}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  {revokeLabel}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(config)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-danger/40 text-danger hover:bg-danger/10 transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar />
@@ -204,120 +336,13 @@ export default function DashboardConfiguratorPage() {
             </span>
           </div>
 
-          {isLoading ? (
-            <div className="p-6 space-y-3">
-              {[
-                "sk-config-row-a",
-                "sk-config-row-b",
-                "sk-config-row-c",
-              ].map((skeletonKey) => (
-                <div
-                  key={skeletonKey}
-                  className="h-20 bg-bg-surface border border-border-default animate-pulse"
-                />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="p-6">
-              <p className="font-mono text-xs text-error">
-                Failed to load saved configurations.
-              </p>
-            </div>
-          ) : configs.length === 0 ? (
-            <div className="p-12 text-center">
-              <Wrench className="w-10 h-10 text-text-dim mx-auto mb-4" />
-              <p className="font-mono text-sm text-text-muted mb-2">
-                No server configurations yet
-              </p>
-              <p className="font-mono text-xs text-text-dim mb-6 max-w-sm mx-auto">
-                Build your first portable Pumpkin server bundle and share it with
-                your team.
-              </p>
-              <Button href="/configurator" className="justify-center">
-                <Plus className="w-3.5 h-3.5" />
-                Open Configurator
-              </Button>
-            </div>
-          ) : (
-            <div className="divide-y divide-border-default">
-              {configs.map((config) => (
-                <article
-                  key={config.id}
-                  className="px-6 py-4 flex items-start justify-between gap-4 flex-wrap"
-                >
-                  <div className="min-w-[280px] flex-1">
-                    <h3 className="font-raleway font-bold text-sm text-text-primary">
-                      {config.name}
-                    </h3>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <PlatformChip platform={config.platform} />
-                      <span className="inline-flex items-center px-2 py-1 border border-border-default font-mono text-[11px] uppercase tracking-wider text-text-secondary">
-                        Plugins: {config.plugin_count}
-                      </span>
-                      <span className="inline-flex items-center px-2 py-1 border border-border-default font-mono text-[11px] uppercase tracking-wider text-text-secondary">
-                        Created: {formatDate(config.created_at)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
-                    <Link
-                      href={`/configurator?id=${config.id}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      Edit
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(config.id)}
-                      disabled={downloadingConfigId === config.id}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      {downloadingConfigId === config.id ? "Downloading..." : "Download"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleCopyShareLink(config)}
-                      disabled={isCopyingConfigId === config.id}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      {isCopyingConfigId === config.id ? "Copying" : "Copy Link"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleRotateShareToken(config.id)}
-                      disabled={revokingConfigId === config.id}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border-default text-text-muted hover:text-text-primary hover:border-border-hover transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      {revokingConfigId === config.id ? "Revoking" : "Revoke"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(config)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-danger/40 text-danger hover:bg-danger/10 transition-colors font-mono text-xs uppercase tracking-wider cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Delete
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+          {renderConfigsContent()}
         </div>
       </main>
 
       {deleteTarget && (
-        <div
-          role="dialog"
+        <dialog
+          open
           aria-modal="true"
           className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center px-4"
         >
@@ -348,7 +373,7 @@ export default function DashboardConfiguratorPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       <Footer />

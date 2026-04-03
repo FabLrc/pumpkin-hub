@@ -46,14 +46,59 @@ function toSlugFallback(pluginName: string, pluginId: string): string {
   const normalized = pluginName
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-");
+    .replaceAll(/[^a-z0-9\s-]/g, "")
+    .replaceAll(/\s+/g, "-");
 
   if (normalized.length > 0) {
     return normalized;
   }
 
   return `plugin-${pluginId.slice(0, 8)}`;
+}
+
+interface PresetPluginData {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+interface PresetVersionsData {
+  versions: Array<{ id: string; version: string; is_yanked: boolean }>;
+}
+
+function buildPresetPluginItem(
+  presetPlugin: PresetPluginData | null | undefined,
+  presetVersions: PresetVersionsData | null | undefined,
+): ConfigPluginItem | null {
+  if (!presetPlugin || !presetVersions) {
+    return null;
+  }
+
+  const latestVersion = presetVersions.versions.find((version) => !version.is_yanked);
+  if (!latestVersion) {
+    return null;
+  }
+
+  return {
+    plugin_id: presetPlugin.id,
+    plugin_slug: presetPlugin.slug,
+    plugin_name: presetPlugin.name,
+    version_id: latestVersion.id,
+    version: latestVersion.version,
+    is_auto_dep: false,
+  };
+}
+
+function getSaveButtonLabel(isSaving: boolean, isEditMode: boolean): string {
+  if (isSaving) {
+    return "Sauvegarde...";
+  }
+
+  if (isEditMode) {
+    return "Mettre a jour la configuration";
+  }
+
+  return "Sauvegarder la configuration";
 }
 
 export default function ConfiguratorPage() {
@@ -103,19 +148,17 @@ export default function ConfiguratorPage() {
   }, [configId, loadedConfig]);
 
   useEffect(() => {
-    if (presetPluginAddedRef.current) return;
-    if (!presetPlugin || !presetVersions) return;
-    const latestVersion = presetVersions.versions.find((v) => !v.is_yanked);
-    if (!latestVersion) return;
+    if (presetPluginAddedRef.current) {
+      return;
+    }
+
+    const presetPluginItem = buildPresetPluginItem(presetPlugin, presetVersions);
+    if (!presetPluginItem) {
+      return;
+    }
+
     presetPluginAddedRef.current = true;
-    setPlugins([{
-      plugin_id: presetPlugin.id,
-      plugin_slug: presetPlugin.slug,
-      plugin_name: presetPlugin.name,
-      version_id: latestVersion.id,
-      version: latestVersion.version,
-      is_auto_dep: false,
-    }]);
+    setPlugins([presetPluginItem]);
   }, [presetPlugin, presetVersions]);
 
   const manualSelections = useMemo(
@@ -238,6 +281,125 @@ export default function ConfiguratorPage() {
 
   const isBusy = isValidating || isDownloading || isSaving;
   const isEditMode = Boolean(configId);
+  const saveButtonLabel = getSaveButtonLabel(isSaving, isEditMode);
+
+  function renderConfiguratorBody() {
+    if (configId && isLoadingConfig && !loadedConfig) {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {["sk-cfg-left", "sk-cfg-right"].map((skeletonKey) => (
+            <div
+              key={skeletonKey}
+              className="h-[460px] border border-border-default bg-bg-surface animate-pulse"
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (configError) {
+      return (
+        <div className="border border-error/30 bg-error/5 p-4 font-mono text-xs text-error">
+          Impossible de charger cette configuration. Verifie ID dans URL.
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <section className="space-y-4">
+          <PluginPicker
+            onAdd={handleAddPlugin}
+            excludedPluginIds={plugins.map((plugin) => plugin.plugin_id)}
+          />
+        </section>
+
+        <section className="space-y-4">
+          <div className="border border-border-default bg-bg-elevated p-4">
+            <label
+              htmlFor="config-name"
+              className="block font-mono text-xs text-text-muted uppercase tracking-widest mb-2"
+            >
+              Nom de configuration
+            </label>
+            <input
+              id="config-name"
+              type="text"
+              maxLength={100}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="w-full px-3 py-2 bg-bg-base border border-border-default focus:border-accent outline-none font-mono text-sm text-text-primary placeholder:text-text-dim transition-colors"
+              placeholder="Mon serveur survie"
+            />
+          </div>
+
+          <div className="border border-border-default bg-bg-elevated p-4">
+            <p className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
+              Plateforme
+            </p>
+
+            <div className="grid grid-cols-3 gap-2">
+              {PLATFORM_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setPlatform(option.value)}
+                  className={`px-3 py-2 border font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer ${
+                    platform === option.value
+                      ? "border-accent bg-accent text-black font-bold"
+                      : "border-border-default text-text-secondary hover:border-border-hover"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-3 font-mono text-[11px] text-text-dim">
+              Seul le binaire Pumpkin change selon la plateforme.
+            </p>
+          </div>
+
+          <ConfigPluginList plugins={plugins} onRemove={handleRemovePlugin} />
+
+          <div className="border border-border-default bg-bg-elevated p-4 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={handleValidate}
+                disabled={isBusy}
+                variant="ghost"
+              >
+                {isValidating ? "Validation..." : "Valider"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDownload}
+                disabled={isBusy}
+              >
+                <Download className="w-3.5 h-3.5" />
+                {isDownloading ? "Preparation..." : "Telecharger"}
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={isBusy}
+              className="w-full justify-center"
+            >
+              <Save className="w-3.5 h-3.5" />
+              {saveButtonLabel}
+            </Button>
+
+            <p className="font-mono text-[11px] text-text-dim">
+              {manualSelections.length} plugin(s) manuel(s) selectionne(s).
+            </p>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   if (!isLoadingUser && !user) {
     return null;
@@ -269,117 +431,7 @@ export default function ConfiguratorPage() {
           </div>
         </div>
 
-        {configId && isLoadingConfig && !loadedConfig ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {["sk-cfg-left", "sk-cfg-right"].map((skeletonKey) => (
-              <div
-                key={skeletonKey}
-                className="h-[460px] border border-border-default bg-bg-surface animate-pulse"
-              />
-            ))}
-          </div>
-        ) : configError ? (
-          <div className="border border-error/30 bg-error/5 p-4 font-mono text-xs text-error">
-            Impossible de charger cette configuration. Verifie ID dans URL.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <section className="space-y-4">
-              <PluginPicker
-                onAdd={handleAddPlugin}
-                excludedPluginIds={plugins.map((plugin) => plugin.plugin_id)}
-              />
-            </section>
-
-            <section className="space-y-4">
-              <div className="border border-border-default bg-bg-elevated p-4">
-                <label
-                  htmlFor="config-name"
-                  className="block font-mono text-xs text-text-muted uppercase tracking-widest mb-2"
-                >
-                  Nom de configuration
-                </label>
-                <input
-                  id="config-name"
-                  type="text"
-                  maxLength={100}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  className="w-full px-3 py-2 bg-bg-base border border-border-default focus:border-accent outline-none font-mono text-sm text-text-primary placeholder:text-text-dim transition-colors"
-                  placeholder="Mon serveur survie"
-                />
-              </div>
-
-              <div className="border border-border-default bg-bg-elevated p-4">
-                <p className="font-mono text-xs text-text-muted uppercase tracking-widest mb-3">
-                  Plateforme
-                </p>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {PLATFORM_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setPlatform(option.value)}
-                      className={`px-3 py-2 border font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer ${
-                        platform === option.value
-                          ? "border-accent bg-accent text-black font-bold"
-                          : "border-border-default text-text-secondary hover:border-border-hover"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                <p className="mt-3 font-mono text-[11px] text-text-dim">
-                  Seul le binaire Pumpkin change selon la plateforme.
-                </p>
-              </div>
-
-              <ConfigPluginList plugins={plugins} onRemove={handleRemovePlugin} />
-
-              <div className="border border-border-default bg-bg-elevated p-4 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleValidate}
-                    disabled={isBusy}
-                    variant="ghost"
-                  >
-                    {isValidating ? "Validation..." : "Valider"}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleDownload}
-                    disabled={isBusy}
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    {isDownloading ? "Preparation..." : "Telecharger"}
-                  </Button>
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isBusy}
-                  className="w-full justify-center"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  {isSaving
-                    ? "Sauvegarde..."
-                    : isEditMode
-                      ? "Mettre a jour la configuration"
-                      : "Sauvegarder la configuration"}
-                </Button>
-
-                <p className="font-mono text-[11px] text-text-dim">
-                  {manualSelections.length} plugin(s) manuel(s) selectionne(s).
-                </p>
-              </div>
-            </section>
-          </div>
-        )}
+        {renderConfiguratorBody()}
       </main>
       <Footer />
     </>

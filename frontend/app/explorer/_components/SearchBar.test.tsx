@@ -97,7 +97,7 @@ describe("SearchBar", () => {
     });
   });
 
-  it("shows listbox when suggestions are open", async () => {
+  it("shows suggestions container when suggestions are open", async () => {
     mockUseSWR.mockReturnValue({
       data: [{ name: "PluginAlpha", slug: "plugin-alpha" }],
       isLoading: false,
@@ -108,7 +108,7 @@ describe("SearchBar", () => {
     await user.type(screen.getByRole("combobox"), "plug");
 
     await waitFor(() => {
-      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      expect(document.getElementById("search-suggestions")).toBeInTheDocument();
     });
   });
 
@@ -197,11 +197,14 @@ describe("SearchBar", () => {
     await user.type(input, "plug");
 
     await waitFor(() => {
-      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      expect(document.getElementById("search-suggestions")).toBeInTheDocument();
     });
 
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(document.getElementById("search-suggestions")).not.toBeInTheDocument();
+    });
   });
 
   // ── Loading state ─────────────────────────────────────────────────────

@@ -283,11 +283,7 @@ function VersionRow({
     version.pumpkin_version_min,
     version.pumpkin_version_max,
   );
-  const versionTextClass = version.is_yanked
-    ? "text-text-dim line-through"
-    : isLatest
-      ? "text-text-primary"
-      : "text-text-dim";
+  const versionTextClass = getVersionTextClass(version.is_yanked, isLatest);
   const publishedDate = new Date(version.published_at).toLocaleDateString(
     "en-US",
     { year: "numeric", month: "short", day: "numeric" },
@@ -350,10 +346,7 @@ function VersionRow({
         </div>
 
         {/* Status indicator + actions */}
-        <div
-          className="col-span-2 flex items-center gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="col-span-2 flex items-center gap-2">
           {version.is_yanked ? (
             <span className="w-2 h-2 bg-red-400 inline-block" title="Yanked" />
           ) : (
@@ -408,6 +401,14 @@ function VersionRow({
       )}
     </div>
   );
+}
+
+function getVersionTextClass(isYanked: boolean, isLatest: boolean): string {
+  if (isYanked) {
+    return "text-text-dim line-through";
+  }
+
+  return isLatest ? "text-text-primary" : "text-text-dim";
 }
 
 /** Formats the Pumpkin compatibility range from min/max fields. */
