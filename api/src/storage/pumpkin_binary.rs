@@ -276,12 +276,7 @@ fn select_asset_for_platform<'a>(
     assets: &'a [GitHubAsset],
     platform: &str,
 ) -> Option<&'a GitHubAsset> {
-    let platform_marker = match platform {
-        "windows" => "windows",
-        "linux" => "linux",
-        "macos" => "macos",
-        _ => platform,
-    };
+    let platform_marker = platform;
 
     assets
         .iter()
