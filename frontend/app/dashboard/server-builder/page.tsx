@@ -341,8 +341,8 @@ export default function DashboardServerBuilderPage() {
       </main>
 
       {deleteTarget && (
-        <dialog
-          open
+        <div
+          role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center px-4"
         >
@@ -373,7 +373,7 @@ export default function DashboardServerBuilderPage() {
               </Button>
             </div>
           </div>
-        </dialog>
+        </div>
       )}
 
       <Footer />
