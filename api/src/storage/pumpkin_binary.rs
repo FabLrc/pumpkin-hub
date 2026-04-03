@@ -195,7 +195,9 @@ impl PumpkinBinaryCache {
             .user_agent("pumpkin-hub-api/0.1")
             .timeout(std::time::Duration::from_secs(10))
             .build()
-            .map_err(|e| FetchAssetError::Unreachable(format!("Failed to build HTTP client: {e}")))?;
+            .map_err(|e| {
+                FetchAssetError::Unreachable(format!("Failed to build HTTP client: {e}"))
+            })?;
 
         let mut req = client.get(GITHUB_RELEASES_URL);
         if let Some(token) = github_token {
@@ -214,19 +216,20 @@ impl PumpkinBinaryCache {
             )));
         }
 
-        let release: GitHubRelease = response
-            .json()
-            .await
-            .map_err(|e| FetchAssetError::Unreachable(format!("Failed to parse GitHub release JSON: {e}")))?;
+        let release: GitHubRelease = response.json().await.map_err(|e| {
+            FetchAssetError::Unreachable(format!("Failed to parse GitHub release JSON: {e}"))
+        })?;
 
         let asset = release
             .assets
             .iter()
             .find(|a| a.name.contains(platform))
-            .ok_or_else(|| FetchAssetError::NoAsset(format!(
-                "No Pumpkin binary available for platform '{platform}': \
+            .ok_or_else(|| {
+                FetchAssetError::NoAsset(format!(
+                    "No Pumpkin binary available for platform '{platform}': \
                  the latest Pumpkin release does not include a '{platform}' binary"
-            )))?;
+                ))
+            })?;
 
         Ok((asset.updated_at.clone(), asset.browser_download_url.clone()))
     }
