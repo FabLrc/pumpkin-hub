@@ -56,7 +56,7 @@ oauth2 = "5"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 # JWT authentication
-jsonwebtoken = "9"
+jsonwebtoken = "10"
 
 # Cookie support
 axum-extra = { version = "0.10", features = ["cookie"] }
