@@ -47,9 +47,12 @@ export function PluginPicker({
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setIsSearchOpen(false);
+      const clickedInsidePicker = rootRef.current?.contains(event.target as Node);
+      if (clickedInsidePicker) {
+        return;
       }
+
+      setIsSearchOpen(false);
     }
 
     document.addEventListener("mousedown", handleOutsideClick);
@@ -116,6 +119,87 @@ export function PluginPicker({
     setIsSearchOpen(false);
   }
 
+  function renderSearchResults() {
+    if (!shouldSearch) {
+      return (
+        <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
+          Tapez au moins 2 caracteres pour lancer la recherche.
+        </div>
+      );
+    }
+
+    if (isSearchLoading) {
+      return (
+        <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
+          Recherche en cours...
+        </div>
+      );
+    }
+
+    if (hits.length === 0) {
+      return (
+        <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
+          Aucun plugin correspondant.
+        </div>
+      );
+    }
+
+    return (
+      <ul className="list-none m-0 p-0 max-h-72 overflow-y-auto">
+        {hits.map((hit) => (
+          <li key={hit.id}>
+            <button
+              type="button"
+              onClick={() => handleSelectPlugin(hit)}
+              className="w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 hover:bg-bg-surface transition-colors cursor-pointer"
+            >
+              <div className="font-raleway text-sm text-text-primary">
+                {hit.name}
+              </div>
+              <div className="font-mono text-[11px] text-text-dim uppercase tracking-wider">
+                by {hit.author_username}
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  function renderVersionSelection() {
+    if (isVersionsLoading) {
+      return (
+        <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
+          Chargement des versions...
+        </div>
+      );
+    }
+
+    if (availableVersions.length === 0) {
+      return (
+        <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
+          Aucune version active disponible.
+        </div>
+      );
+    }
+
+    return (
+      <ul className="list-none m-0 p-0">
+        {availableVersions.map((version) => (
+          <li key={version.id}>
+            <button
+              type="button"
+              onClick={() => handleSelectVersion(version.id, version.version)}
+              className="w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 hover:bg-accent/10 hover:text-accent transition-colors font-mono text-xs text-text-secondary cursor-pointer"
+            >
+              v{version.version}
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <div ref={rootRef} className="border border-border-default bg-bg-elevated">
       <div className="border-b border-border-default px-4 py-3">
@@ -146,38 +230,7 @@ export function PluginPicker({
 
           {isSearchOpen && (
             <div className="absolute left-0 right-0 top-full mt-px z-20 border border-border-default bg-bg-elevated">
-              {!shouldSearch ? (
-                <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
-                  Tapez au moins 2 caracteres pour lancer la recherche.
-                </div>
-              ) : isSearchLoading ? (
-                <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
-                  Recherche en cours...
-                </div>
-              ) : hits.length === 0 ? (
-                <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
-                  Aucun plugin correspondant.
-                </div>
-              ) : (
-                <ul className="list-none m-0 p-0 max-h-72 overflow-y-auto">
-                  {hits.map((hit) => (
-                    <li key={hit.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectPlugin(hit)}
-                        className="w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 hover:bg-bg-surface transition-colors cursor-pointer"
-                      >
-                        <div className="font-raleway text-sm text-text-primary">
-                          {hit.name}
-                        </div>
-                        <div className="font-mono text-[11px] text-text-dim uppercase tracking-wider">
-                          by {hit.author_username}
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {renderSearchResults()}
             </div>
           )}
         </div>
@@ -212,29 +265,7 @@ export function PluginPicker({
           </p>
 
           <div className="border border-border-default bg-bg-base max-h-56 overflow-y-auto">
-            {isVersionsLoading ? (
-              <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
-                Chargement des versions...
-              </div>
-            ) : availableVersions.length === 0 ? (
-              <div className="px-3 py-2.5 font-mono text-xs text-text-dim">
-                Aucune version active disponible.
-              </div>
-            ) : (
-              <ul className="list-none m-0 p-0">
-                {availableVersions.map((version) => (
-                  <li key={version.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectVersion(version.id, version.version)}
-                      className="w-full text-left px-3 py-2.5 border-b border-border-default last:border-b-0 hover:bg-accent/10 hover:text-accent transition-colors font-mono text-xs text-text-secondary cursor-pointer"
-                    >
-                      v{version.version}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {renderVersionSelection()}
           </div>
         </div>
       )}

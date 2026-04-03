@@ -102,7 +102,8 @@ function extractFilenameFromDisposition(
 ): string | null {
   if (!contentDisposition) return null;
 
-  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const utf8FilenamePattern = /filename\*=UTF-8''([^;]+)/i;
+  const utf8Match = utf8FilenamePattern.exec(contentDisposition);
   if (utf8Match?.[1]) {
     try {
       return decodeURIComponent(utf8Match[1].trim());
@@ -111,13 +112,19 @@ function extractFilenameFromDisposition(
     }
   }
 
-  const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  const filenamePattern = /filename="?([^";]+)"?/i;
+  const filenameMatch = filenamePattern.exec(contentDisposition);
   return filenameMatch?.[1]?.trim() ?? null;
 }
 
 function triggerBrowserDownload(blob: Blob, filename: string): void {
-  if (typeof window === "undefined" || typeof document === "undefined") {
-    throw new Error("Browser download can only run in a client environment.");
+  if (
+    typeof globalThis.window === "undefined" ||
+    typeof globalThis.document === "undefined"
+  ) {
+    throw new TypeError(
+      "Browser download can only run in a client environment.",
+    );
   }
 
   const objectUrl = URL.createObjectURL(blob);

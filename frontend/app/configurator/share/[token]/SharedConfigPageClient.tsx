@@ -12,7 +12,7 @@ import { useCurrentUser } from "@/lib/hooks";
 import type { PluginSelection, ServerConfigResponse } from "@/lib/types";
 
 interface SharedConfigPageClientProps {
-  config: ServerConfigResponse;
+  readonly config: ServerConfigResponse;
 }
 
 function parseApiError(error: unknown, fallback: string): string {

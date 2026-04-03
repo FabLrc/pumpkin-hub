@@ -57,7 +57,6 @@ export function ReportModal({
       aria-modal="true"
       aria-labelledby="report-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-0 max-w-none w-full h-full border-0"
-      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
     >
       {/* Backdrop */}
       <button

@@ -171,6 +171,27 @@ export function ChangelogTab({ plugin }: ChangelogTabProps) {
     );
   }
 
+  function renderChangelogBody() {
+    if (isEditing) {
+      return (
+        <ChangelogEditor
+          editContent={editContent}
+          error={error}
+          isSaving={isSaving}
+          onContentChange={setEditContent}
+          onSave={handleSave}
+          onCancel={handleCancelEdit}
+        />
+      );
+    }
+
+    if (hasContent) {
+      return <ChangelogView content={changelog.content} />;
+    }
+
+    return <EmptyChangelog isOwner={isOwner} />;
+  }
+
   return (
     <div className="space-y-4">
       {/* Header with source badge and edit button */}
@@ -194,20 +215,7 @@ export function ChangelogTab({ plugin }: ChangelogTabProps) {
         )}
       </div>
 
-      {isEditing ? (
-        <ChangelogEditor
-          editContent={editContent}
-          error={error}
-          isSaving={isSaving}
-          onContentChange={setEditContent}
-          onSave={handleSave}
-          onCancel={handleCancelEdit}
-        />
-      ) : hasContent ? (
-        <ChangelogView content={changelog.content} />
-      ) : (
-        <EmptyChangelog isOwner={isOwner} />
-      )}
+      {renderChangelogBody()}
     </div>
   );
 }
@@ -264,6 +272,68 @@ function processParagraph(trimmed: string, state: FormatState): void {
   state.htmlParts.push(`<p>${inlineFormat(trimmed)}</p>`);
 }
 
+function handleCodeFenceLine(line: string, state: FormatState): boolean {
+  if (!line.trim().startsWith("```")) {
+    return false;
+  }
+
+  const result = processCodeFence(
+    line,
+    state.inCodeBlock,
+    state.codeBuffer,
+    state.codeLanguage,
+    state.inList,
+  );
+  state.htmlParts.push(...result.parts);
+  state.inCodeBlock = result.inCodeBlock;
+  state.codeBuffer = result.codeBuffer;
+  state.codeLanguage = result.codeLanguage;
+  state.inList = result.inList;
+  return true;
+}
+
+function handleCodeBlockContentLine(line: string, state: FormatState): boolean {
+  if (!state.inCodeBlock) {
+    return false;
+  }
+
+  state.codeBuffer.push(line);
+  return true;
+}
+
+function handleEmptyLine(trimmed: string, state: FormatState): boolean {
+  if (trimmed !== "") {
+    return false;
+  }
+
+  if (state.inList) {
+    state.htmlParts.push("</ul>");
+    state.inList = false;
+  }
+
+  return true;
+}
+
+function handleHeadingLine(trimmed: string, state: FormatState): boolean {
+  const headingResult = processHeading(trimmed, state.inList);
+  if (headingResult === null) {
+    return false;
+  }
+
+  state.htmlParts.push(...headingResult.parts);
+  state.inList = headingResult.inList;
+  return true;
+}
+
+function handleListLine(trimmed: string, state: FormatState): boolean {
+  if (!(trimmed.startsWith("- ") || trimmed.startsWith("* "))) {
+    return false;
+  }
+
+  processListItem(trimmed, state);
+  return true;
+}
+
 function formatChangelog(raw: string): string {
   const lines = raw.split("\n");
   const state: FormatState = {
@@ -275,40 +345,25 @@ function formatChangelog(raw: string): string {
   };
 
   for (const line of lines) {
-    if (line.trim().startsWith("```")) {
-      const result = processCodeFence(line, state.inCodeBlock, state.codeBuffer, state.codeLanguage, state.inList);
-      state.htmlParts.push(...result.parts);
-      state.inCodeBlock = result.inCodeBlock;
-      state.codeBuffer = result.codeBuffer;
-      state.codeLanguage = result.codeLanguage;
-      state.inList = result.inList;
+    if (handleCodeFenceLine(line, state)) {
       continue;
     }
 
-    if (state.inCodeBlock) {
-      state.codeBuffer.push(line);
+    if (handleCodeBlockContentLine(line, state)) {
       continue;
     }
 
     const trimmed = line.trim();
 
-    if (trimmed === "") {
-      if (state.inList) {
-        state.htmlParts.push("</ul>");
-        state.inList = false;
-      }
+    if (handleEmptyLine(trimmed, state)) {
       continue;
     }
 
-    const headingResult = processHeading(trimmed, state.inList);
-    if (headingResult !== null) {
-      state.htmlParts.push(...headingResult.parts);
-      state.inList = headingResult.inList;
+    if (handleHeadingLine(trimmed, state)) {
       continue;
     }
 
-    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-      processListItem(trimmed, state);
+    if (handleListLine(trimmed, state)) {
       continue;
     }
 

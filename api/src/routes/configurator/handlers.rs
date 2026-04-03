@@ -55,6 +55,20 @@ struct ServerConfigSummaryRow {
     updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, FromRow)]
+struct RequiredDependencyRow {
+    dependency_plugin_id: Uuid,
+    dependency_plugin_name: String,
+    is_active: bool,
+    version_req: String,
+}
+
+#[derive(Debug, FromRow)]
+struct AvailableVersionRow {
+    id: Uuid,
+    version: String,
+}
+
 // ── Internal Helpers ──────────────────────────────────────────────────────────
 
 /// Loads the plugin entries for a given configuration.
@@ -208,6 +222,63 @@ pub(crate) async fn insert_config_plugins(
 
 // ── Dependency Resolution ─────────────────────────────────────────────────────
 
+async fn fetch_required_dependencies(
+    pool: &PgPool,
+    version_id: Uuid,
+) -> Result<Vec<RequiredDependencyRow>, AppError> {
+    sqlx::query_as(
+        "SELECT pd.dependency_plugin_id,
+                p.name   AS dependency_plugin_name,
+                p.is_active,
+                pd.version_req
+         FROM plugin_dependencies pd
+         JOIN plugins p ON p.id = pd.dependency_plugin_id
+         WHERE pd.version_id = $1 AND pd.is_optional = false",
+    )
+    .bind(version_id)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)
+}
+
+async fn fetch_available_versions(
+    pool: &PgPool,
+    plugin_id: Uuid,
+) -> Result<Vec<AvailableVersionRow>, AppError> {
+    sqlx::query_as(
+        "SELECT id, version FROM versions
+         WHERE plugin_id = $1 AND is_yanked = false
+         ORDER BY published_at DESC",
+    )
+    .bind(plugin_id)
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)
+}
+
+fn resolve_version_for_requirement<'a>(
+    available: &'a [AvailableVersionRow],
+    version_req: &str,
+) -> Option<&'a AvailableVersionRow> {
+    if let Ok(req) = semver::VersionReq::parse(version_req) {
+        return available.iter().find(|version| {
+            semver::Version::parse(&version.version)
+                .map(|semantic_version| req.matches(&semantic_version))
+                .unwrap_or(false)
+        });
+    }
+
+    available.first()
+}
+
+async fn has_wasm_binary_for_version(pool: &PgPool, version_id: Uuid) -> Result<bool, AppError> {
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM binaries WHERE version_id = $1)")
+        .bind(version_id)
+        .fetch_one(pool)
+        .await
+        .map_err(AppError::internal)
+}
+
 /// BFS over `plugin_dependencies WHERE is_optional = false`, starting from the
 /// version IDs in `user_selections`.
 ///
@@ -233,27 +304,7 @@ pub(crate) async fn resolve_required_plugins(
     let mut missing_binary: Vec<String> = Vec::new();
 
     while let Some(version_id) = queue.pop_front() {
-        #[derive(FromRow)]
-        struct DepRow {
-            dependency_plugin_id: Uuid,
-            dependency_plugin_name: String,
-            is_active: bool,
-            version_req: String,
-        }
-
-        let deps: Vec<DepRow> = sqlx::query_as(
-            "SELECT pd.dependency_plugin_id,
-                    p.name   AS dependency_plugin_name,
-                    p.is_active,
-                    pd.version_req
-             FROM plugin_dependencies pd
-             JOIN plugins p ON p.id = pd.dependency_plugin_id
-             WHERE pd.version_id = $1 AND pd.is_optional = false",
-        )
-        .bind(version_id)
-        .fetch_all(pool)
-        .await
-        .map_err(AppError::internal)?;
+        let deps = fetch_required_dependencies(pool, version_id).await?;
 
         for dep in deps {
             // Skip plugins already covered by the user's selections or a previous BFS step.
@@ -269,34 +320,11 @@ pub(crate) async fn resolve_required_plugins(
                 )));
             }
 
-            // Fetch all non-yanked versions ordered newest-first.
-            #[derive(FromRow)]
-            struct VerRow {
-                id: Uuid,
-                version: String,
-            }
-
-            let available: Vec<VerRow> = sqlx::query_as(
-                "SELECT id, version FROM versions
-                 WHERE plugin_id = $1 AND is_yanked = false
-                 ORDER BY published_at DESC",
-            )
-            .bind(dep.dependency_plugin_id)
-            .fetch_all(pool)
-            .await
-            .map_err(AppError::internal)?;
+            let available = fetch_available_versions(pool, dep.dependency_plugin_id).await?;
 
             // Pick the newest version that satisfies the semver requirement.
             // Falls back to the absolute newest if the requirement string is not valid semver.
-            let resolved = if let Ok(req) = semver::VersionReq::parse(&dep.version_req) {
-                available.iter().find(|v| {
-                    semver::Version::parse(&v.version)
-                        .map(|sv| req.matches(&sv))
-                        .unwrap_or(false)
-                })
-            } else {
-                available.first()
-            };
+            let resolved = resolve_version_for_requirement(&available, &dep.version_req);
 
             let resolved = resolved.ok_or_else(|| {
                 AppError::UnprocessableEntity(format!(
@@ -308,12 +336,7 @@ pub(crate) async fn resolve_required_plugins(
             let resolved_version_id = resolved.id;
 
             // Verify the resolved version has a .wasm binary.
-            let has_binary: bool =
-                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM binaries WHERE version_id = $1)")
-                    .bind(resolved_version_id)
-                    .fetch_one(pool)
-                    .await
-                    .map_err(AppError::internal)?;
+            let has_binary = has_wasm_binary_for_version(pool, resolved_version_id).await?;
 
             if has_binary {
                 // Enqueue so we also resolve *its* required deps transitively.

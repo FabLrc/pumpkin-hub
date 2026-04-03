@@ -31,6 +31,7 @@ export function StarRating({
     <div
       role="radiogroup"
       aria-label="Star rating"
+      tabIndex={readonly ? -1 : 0}
       className="inline-flex items-center gap-0.5"
       onMouseLeave={() => !readonly && setHoverValue(0)}
     >

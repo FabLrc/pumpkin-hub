@@ -1,10 +1,14 @@
 name: Build & Deploy Docker Images
 
 on:
-  workflow_run:
-    workflows: ["Intégration Continue (CI)"]
-    branches: [master]
-    types: [completed]
+  push:
+    branches:
+      - master
+    paths:
+      - 'frontend/**'
+      - 'api/**'
+      - 'frontend/Dockerfile'
+      - 'api/Dockerfile'
 
 env:
   REGISTRY: ghcr.io
@@ -17,7 +21,6 @@ jobs:
   build-frontend:
     name: Build image Frontend
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       packages: write
@@ -40,7 +43,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          dockerfile: ./frontend/Dockerfile
+          file: ./frontend/Dockerfile
           push: true
           tags: |
             ${{ env.FRONTEND_IMAGE }}:latest
@@ -60,7 +63,6 @@ jobs:
   build-api:
     name: Build image API Rust
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       packages: write
@@ -83,7 +85,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./api
-          dockerfile: ./api/Dockerfile
+          file: ./api/Dockerfile
           push: true
           tags: |
             ${{ env.API_IMAGE }}:latest

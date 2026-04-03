@@ -59,7 +59,7 @@ describe("dashboard configurator page", () => {
       value: clipboard,
       configurable: true,
     });
-    Object.defineProperty(window.navigator, "clipboard", {
+    Object.defineProperty(globalThis.navigator, "clipboard", {
       value: clipboard,
       configurable: true,
     });
