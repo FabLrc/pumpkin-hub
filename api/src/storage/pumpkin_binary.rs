@@ -8,7 +8,8 @@ use crate::error::AppError;
 
 use super::ObjectStorage;
 
-const GITHUB_RELEASES_URL: &str = "https://api.github.com/repos/Pumpkin-MC/Pumpkin/releases/latest";
+const GITHUB_NIGHTLY_RELEASE_URL: &str =
+    "https://api.github.com/repos/Pumpkin-MC/Pumpkin/releases/tags/nightly";
 
 /// S3 user-metadata key used to track which GitHub asset version is cached.
 /// The SDK prefixes it with `x-amz-meta-` automatically.
@@ -199,7 +200,9 @@ impl PumpkinBinaryCache {
                 FetchAssetError::Unreachable(format!("Failed to build HTTP client: {e}"))
             })?;
 
-        let mut req = client.get(GITHUB_RELEASES_URL);
+        let mut req = client
+            .get(GITHUB_NIGHTLY_RELEASE_URL)
+            .header("Accept", "application/vnd.github+json");
         if let Some(token) = github_token {
             req = req.header("Authorization", format!("Bearer {token}"));
         }
@@ -210,9 +213,11 @@ impl PumpkinBinaryCache {
             .map_err(|e| FetchAssetError::Unreachable(format!("GitHub API request failed: {e}")))?;
 
         if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            let details = body.chars().take(180).collect::<String>();
             return Err(FetchAssetError::Unreachable(format!(
-                "GitHub API returned HTTP {}",
-                response.status().as_u16()
+                "GitHub API returned HTTP {status} for nightly release endpoint ({details})"
             )));
         }
 
@@ -220,16 +225,18 @@ impl PumpkinBinaryCache {
             FetchAssetError::Unreachable(format!("Failed to parse GitHub release JSON: {e}"))
         })?;
 
-        let asset = release
-            .assets
-            .iter()
-            .find(|a| a.name.contains(platform))
-            .ok_or_else(|| {
-                FetchAssetError::NoAsset(format!(
-                    "No Pumpkin binary available for platform '{platform}': \
-                 the latest Pumpkin release does not include a '{platform}' binary"
-                ))
-            })?;
+        let asset = select_asset_for_platform(&release.assets, platform).ok_or_else(|| {
+            let available_assets = release
+                .assets
+                .iter()
+                .map(|a| a.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            FetchAssetError::NoAsset(format!(
+                "No Pumpkin binary available for platform '{platform}' in nightly release. \
+                 Available assets: {available_assets}"
+            ))
+        })?;
 
         Ok((asset.updated_at.clone(), asset.browser_download_url.clone()))
     }
@@ -263,6 +270,46 @@ impl PumpkinBinaryCache {
             .map(|b| b.to_vec())
             .map_err(AppError::internal)
     }
+}
+
+fn select_asset_for_platform<'a>(
+    assets: &'a [GitHubAsset],
+    platform: &str,
+) -> Option<&'a GitHubAsset> {
+    let platform_marker = match platform {
+        "windows" => "windows",
+        "linux" => "linux",
+        "macos" => "macos",
+        _ => platform,
+    };
+
+    assets
+        .iter()
+        .filter_map(|asset| {
+            let name_lower = asset.name.to_ascii_lowercase();
+            if !name_lower.contains(platform_marker) {
+                return None;
+            }
+
+            let mut score = 0;
+            // Prefer x64 builds because architecture is not part of the API contract yet.
+            if name_lower.contains("x64")
+                || name_lower.contains("x86_64")
+                || name_lower.contains("amd64")
+            {
+                score += 100;
+            }
+            if name_lower.contains("arm64") || name_lower.contains("aarch64") {
+                score += 50;
+            }
+            if platform == "windows" && name_lower.ends_with(".exe") {
+                score += 20;
+            }
+
+            Some((asset, score))
+        })
+        .max_by_key(|(_, score)| *score)
+        .map(|(asset, _)| asset)
 }
 
 impl Default for PumpkinBinaryCache {
