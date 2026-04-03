@@ -27,6 +27,12 @@ interface ConfigPluginItem {
   is_auto_dep: boolean;
 }
 
+interface SavedConfigSnapshot {
+  name: string;
+  platform: ServerConfigPlatform;
+  manualSelectionsKey: string;
+}
+
 const PLATFORM_OPTIONS: { value: ServerConfigPlatform; label: string }[] = [
   { value: "windows", label: "Windows" },
   { value: "linux", label: "Linux" },
@@ -95,10 +101,38 @@ function getSaveButtonLabel(isSaving: boolean, isEditMode: boolean): string {
   }
 
   if (isEditMode) {
-    return "Mettre a jour la configuration";
+    return "Mettre a jour la config";
   }
 
   return "Sauvegarder la configuration";
+}
+
+function buildSelectionsKey(
+  selections: Array<{ plugin_id: string; version_id: string }>,
+): string {
+  return selections
+    .map((selection) => `${selection.plugin_id}:${selection.version_id}`)
+    .sort()
+    .join("|");
+}
+
+function buildSnapshot(
+  configName: string,
+  configPlatform: ServerConfigPlatform,
+  configPlugins: ConfigPluginItem[],
+): SavedConfigSnapshot {
+  const manualSelections = configPlugins
+    .filter((plugin) => !plugin.is_auto_dep)
+    .map((plugin) => ({
+      plugin_id: plugin.plugin_id,
+      version_id: plugin.version_id,
+    }));
+
+  return {
+    name: configName.trim(),
+    platform: configPlatform,
+    manualSelectionsKey: buildSelectionsKey(manualSelections),
+  };
 }
 
 export default function ConfiguratorPage() {
@@ -126,6 +160,7 @@ export default function ConfiguratorPage() {
   const [isValidating, setIsValidating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [savedSnapshot, setSavedSnapshot] = useState<SavedConfigSnapshot | null>(null);
 
   useEffect(() => {
     if (!isLoadingUser && !user) {
@@ -136,6 +171,7 @@ export default function ConfiguratorPage() {
   useEffect(() => {
     if (!configId) {
       hydratedConfigIdRef.current = null;
+      setSavedSnapshot(null);
       return;
     }
 
@@ -144,6 +180,9 @@ export default function ConfiguratorPage() {
       setName(loadedConfig.name);
       setPlatform(loadedConfig.platform);
       setPlugins(loadedConfig.plugins);
+      setSavedSnapshot(
+        buildSnapshot(loadedConfig.name, loadedConfig.platform, loadedConfig.plugins),
+      );
     }
   }, [configId, loadedConfig]);
 
@@ -171,6 +210,28 @@ export default function ConfiguratorPage() {
         })),
     [plugins],
   );
+
+  const trimmedName = name.trim();
+  const manualSelectionsKey = useMemo(
+    () => buildSelectionsKey(manualSelections),
+    [manualSelections],
+  );
+
+  const hasConfigChanged = useMemo(() => {
+    if (!configId) {
+      return true;
+    }
+
+    if (!savedSnapshot) {
+      return false;
+    }
+
+    return (
+      savedSnapshot.name !== trimmedName ||
+      savedSnapshot.platform !== platform ||
+      savedSnapshot.manualSelectionsKey !== manualSelectionsKey
+    );
+  }, [configId, manualSelectionsKey, platform, savedSnapshot, trimmedName]);
 
   function handleAddPlugin(
     pluginId: string,
@@ -242,7 +303,6 @@ export default function ConfiguratorPage() {
   }
 
   async function handleSave() {
-    const trimmedName = name.trim();
     if (!trimmedName) {
       toast.error("Le nom de configuration est obligatoire.");
       return;
@@ -261,6 +321,9 @@ export default function ConfiguratorPage() {
         setName(updated.name);
         setPlatform(updated.platform);
         setPlugins(updated.plugins);
+        setSavedSnapshot(
+          buildSnapshot(updated.name, updated.platform, updated.plugins),
+        );
         hydratedConfigIdRef.current = updated.id;
         toast.success("Configuration mise a jour.");
       } else {
@@ -268,6 +331,9 @@ export default function ConfiguratorPage() {
         setName(created.name);
         setPlatform(created.platform);
         setPlugins(created.plugins);
+        setSavedSnapshot(
+          buildSnapshot(created.name, created.platform, created.plugins),
+        );
         hydratedConfigIdRef.current = created.id;
         router.replace(`/configurator?id=${created.id}`);
         toast.success("Configuration sauvegardee.");
@@ -281,6 +347,7 @@ export default function ConfiguratorPage() {
 
   const isBusy = isValidating || isDownloading || isSaving;
   const isEditMode = Boolean(configId);
+  const isSaveDisabled = isBusy || (isEditMode && !hasConfigChanged);
   const saveButtonLabel = getSaveButtonLabel(isSaving, isEditMode);
 
   function renderConfiguratorBody() {
@@ -385,8 +452,8 @@ export default function ConfiguratorPage() {
             <Button
               type="button"
               onClick={handleSave}
-              disabled={isBusy}
-              className="w-full justify-center"
+              disabled={isSaveDisabled}
+              className="w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-3.5 h-3.5" />
               {saveButtonLabel}
@@ -410,11 +477,11 @@ export default function ConfiguratorPage() {
       <Navbar />
       <main className="max-w-6xl mx-auto px-6 py-12">
         <Link
-          href="/dashboard"
+          href="/dashboard/configurator"
           className="inline-flex items-center gap-2 text-xs font-mono text-text-dim hover:text-text-primary transition-colors mb-8"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to dashboard
+          My configs
         </Link>
 
         <div className="mb-8 flex items-center gap-3">
