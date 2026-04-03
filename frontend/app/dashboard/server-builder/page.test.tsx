@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import DashboardConfiguratorPage from "./page";
+import DashboardServerBuilderPage from "./page";
 
 const routerReplaceMock = vi.fn();
 const useCurrentUserMock = vi.fn();
@@ -50,7 +50,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-describe("dashboard configurator page", () => {
+describe("dashboard server builder page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -99,13 +99,13 @@ describe("dashboard configurator page", () => {
   it("redirects unauthenticated users", () => {
     useCurrentUserMock.mockReturnValue({ data: null, isLoading: false });
 
-    render(<DashboardConfiguratorPage />);
+    render(<DashboardServerBuilderPage />);
     expect(routerReplaceMock).toHaveBeenCalledWith("/auth/login");
   });
 
   it("copies share link to clipboard", async () => {
     const user = userEvent.setup();
-    render(<DashboardConfiguratorPage />);
+    render(<DashboardServerBuilderPage />);
 
     await user.click(screen.getByRole("button", { name: /Copy Link/i }));
 
@@ -129,7 +129,7 @@ describe("dashboard configurator page", () => {
 
   it("rotates share token and refreshes list", async () => {
     const user = userEvent.setup();
-    render(<DashboardConfiguratorPage />);
+    render(<DashboardServerBuilderPage />);
 
     await user.click(screen.getByRole("button", { name: /Revoke/i }));
 
@@ -139,7 +139,7 @@ describe("dashboard configurator page", () => {
 
   it("deletes configuration after modal confirmation", async () => {
     const user = userEvent.setup();
-    render(<DashboardConfiguratorPage />);
+    render(<DashboardServerBuilderPage />);
 
     await user.click(screen.getByRole("button", { name: /Delete/i }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
