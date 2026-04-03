@@ -1,12 +1,22 @@
 name: Intégration Continue (CI)
 
+# ── Branching strategy ─────────────────────────────────────────────────────
+#
+# develop  = branche de travail — tout push ou PR déclenche le CI complet.
+# master   = branche de production — reçoit uniquement des PR depuis develop.
+#            Le push sur master (merge d'un PR) relance le CI pour déclencher
+#            le workflow Docker (docker.yml → workflow_run).
+#
+# La protection de branche sur master interdit les push directs et exige
+# que les status checks « Validation du Frontend » et « Validation de l'API
+# Rust » soient au vert avant le merge.
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
   push:
     branches:
-      - master
       - develop
     paths:
       - 'frontend/**'
@@ -14,8 +24,8 @@ on:
       - '.github/workflows/ci.yml'
   pull_request:
     branches:
-      - master
       - develop
+      - master
     paths:
       - 'frontend/**'
       - 'api/**'
