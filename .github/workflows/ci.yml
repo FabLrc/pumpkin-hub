@@ -25,7 +25,6 @@ on:
   pull_request:
     branches:
       - develop
-      - master
     paths:
       - 'frontend/**'
       - 'api/**'
