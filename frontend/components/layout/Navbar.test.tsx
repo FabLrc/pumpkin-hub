@@ -71,7 +71,7 @@ describe("Navbar", () => {
 
     render(<Navbar />);
 
-    expect(screen.getByAltText("Pumpkin Hub logo")).toBeInTheDocument();
+    expect(screen.getByTestId("image-Pumpkin Hub logo")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Explorer" })).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Toggle menu" }));
