@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { LogOut, User, ChevronDown, LayoutDashboard, Shield, Menu, X, Wrench } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
 import { logout } from "@/lib/api";
@@ -34,11 +35,13 @@ export function Navbar() {
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-            <div className="w-7 h-7 bg-accent flex items-center justify-center">
-              <span className="text-black font-mono font-bold text-xs">
-                PH
-              </span>
-            </div>
+            <Image
+              src="/pumpkinhub_logo.png"
+              alt="Pumpkin Hub logo"
+              width={28}
+              height={28}
+              className="w-7 h-7 object-cover"
+            />
             <span className="font-raleway font-bold text-sm tracking-widest uppercase text-text-primary">
               Pumpkin Hub
             </span>
