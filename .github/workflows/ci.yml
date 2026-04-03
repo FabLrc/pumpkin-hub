@@ -1,5 +1,8 @@
 name: Intégration Continue (CI)
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches:
@@ -28,10 +31,10 @@ jobs:
 
     steps:
       - name: Checkout du code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configuration de Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'npm'
@@ -50,7 +53,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload de la couverture frontend
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
           path: frontend/coverage/lcov.info
@@ -83,7 +86,7 @@ jobs:
 
     steps:
       - name: Checkout du code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Toolchain Rust
         uses: dtolnay/rust-toolchain@stable
@@ -123,7 +126,7 @@ jobs:
           TEST_DATABASE_URL: postgres://pumpkin_user:ci_password@localhost:5432/pumpkin_hub_test
 
       - name: Upload de la couverture backend
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: api/lcov.info
@@ -136,24 +139,38 @@ jobs:
 
     steps:
       - name: Checkout du code (historique complet)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: Vérification de la configuration Sonar
+        id: sonar-secrets
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.SONAR_TOKEN }}" ] && [ -n "${{ secrets.SONAR_HOST_URL }}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SONAR_TOKEN ou SONAR_HOST_URL absent: analyse Sonar ignorée pour ce run."
+          fi
+
       - name: Téléchargement de la couverture frontend
-        uses: actions/download-artifact@v4
+        if: steps.sonar-secrets.outputs.enabled == 'true'
+        uses: actions/download-artifact@v8
         with:
           name: frontend-coverage
           path: frontend/coverage
 
       - name: Téléchargement de la couverture backend
-        uses: actions/download-artifact@v4
+        if: steps.sonar-secrets.outputs.enabled == 'true'
+        uses: actions/download-artifact@v8
         with:
           name: backend-coverage
           path: api
 
       - name: Analyse SonarQube
-        uses: SonarSource/sonarqube-scan-action@v6
+        if: steps.sonar-secrets.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
