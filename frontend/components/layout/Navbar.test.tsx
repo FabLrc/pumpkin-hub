@@ -15,7 +15,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/image", () => ({
   __esModule: true,
-  default: ({ src, alt, ...rest }: { src: string; alt: string; [key: string]: unknown }) => (
+  default: ({ alt, ...rest }: { alt: string; [key: string]: unknown }) => (
     <div data-testid={`image-${alt}`} {...rest}>{alt}</div>
   ),
 }));
