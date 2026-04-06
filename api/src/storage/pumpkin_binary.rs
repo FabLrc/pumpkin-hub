@@ -176,9 +176,9 @@ impl PumpkinBinaryCache {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// S3 key for the cached Pumpkin binary.
-    /// Windows gets a `.exe` suffix; Linux and macOS do not.
+    /// Windows (x64 and ARM64) gets a `.exe` suffix; Linux and macOS do not.
     fn s3_key(platform: &str) -> String {
-        let filename = if platform == "windows" {
+        let filename = if platform.starts_with("windows") {
             "pumpkin-server.exe"
         } else {
             "pumpkin-server"
@@ -276,28 +276,34 @@ fn select_asset_for_platform<'a>(
     assets: &'a [GitHubAsset],
     platform: &str,
 ) -> Option<&'a GitHubAsset> {
-    let platform_marker = platform;
+    let (os_marker, want_arm) = if let Some(os) = platform.strip_suffix("-arm64") {
+        (os, true)
+    } else {
+        (platform, false)
+    };
 
     assets
         .iter()
         .filter_map(|asset| {
             let name_lower = asset.name.to_ascii_lowercase();
-            if !name_lower.contains(platform_marker) {
+            if !name_lower.contains(os_marker) {
+                return None;
+            }
+
+            let is_arm = name_lower.contains("arm64") || name_lower.contains("aarch64");
+            let is_x64 = name_lower.contains("x64")
+                || name_lower.contains("x86_64")
+                || name_lower.contains("amd64");
+
+            if want_arm && !is_arm {
+                return None;
+            }
+            if !want_arm && !is_x64 {
                 return None;
             }
 
             let mut score = 0;
-            // Prefer x64 builds because architecture is not part of the API contract yet.
-            if name_lower.contains("x64")
-                || name_lower.contains("x86_64")
-                || name_lower.contains("amd64")
-            {
-                score += 100;
-            }
-            if name_lower.contains("arm64") || name_lower.contains("aarch64") {
-                score += 50;
-            }
-            if platform == "windows" && name_lower.ends_with(".exe") {
+            if os_marker == "windows" && name_lower.ends_with(".exe") {
                 score += 20;
             }
 

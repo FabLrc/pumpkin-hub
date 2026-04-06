@@ -10,7 +10,8 @@ const NAME_MAX_LENGTH: usize = 100;
 const MAX_PLUGINS_PER_CONFIG: usize = 50;
 const MAX_CONFIGS_PER_USER: i64 = 20;
 
-pub const VALID_PLATFORMS: &[&str] = &["windows", "linux", "macos"];
+pub const VALID_PLATFORMS: &[&str] =
+    &["windows", "linux", "macos", "windows-arm64", "linux-arm64", "macos-arm64"];
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────
 

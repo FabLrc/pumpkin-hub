@@ -34,9 +34,12 @@ interface SavedConfigSnapshot {
 }
 
 const PLATFORM_OPTIONS: { value: ServerConfigPlatform; label: string }[] = [
-  { value: "windows", label: "Windows" },
-  { value: "linux", label: "Linux" },
-  { value: "macos", label: "macOS" },
+  { value: "windows", label: "Windows x64" },
+  { value: "windows-arm64", label: "Windows ARM64" },
+  { value: "linux", label: "Linux x64" },
+  { value: "linux-arm64", label: "Linux ARM64" },
+  { value: "macos", label: "macOS x64" },
+  { value: "macos-arm64", label: "macOS ARM64" },
 ];
 
 function parseApiError(error: unknown, fallback: string): string {
@@ -405,7 +408,7 @@ export default function ServerBuilderPage() {
               Plateforme
             </p>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {PLATFORM_OPTIONS.map((option) => (
                 <button
                   key={option.value}
