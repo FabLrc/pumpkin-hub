@@ -198,7 +198,13 @@ export interface BinaryDownloadResponse {
 
 // ── Server Builder Types ────────────────────────────────────────────────
 
-export type ServerConfigPlatform = "windows" | "linux" | "macos";
+export type ServerConfigPlatform =
+  | "windows"
+  | "linux"
+  | "macos"
+  | "windows-arm64"
+  | "linux-arm64"
+  | "macos-arm64";
 
 export interface PluginSelection {
   plugin_id: string;
