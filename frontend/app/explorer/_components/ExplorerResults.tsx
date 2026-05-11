@@ -10,6 +10,7 @@ interface ExplorerResultsProps {
   readonly estimatedTotal: number | null;
   readonly processingTimeMs: number | null;
   readonly isLoading: boolean;
+  readonly error?: Error | undefined;
   readonly currentPage: number;
   readonly perPage: number;
   readonly onPageChange: (page: number) => void;
@@ -24,6 +25,7 @@ export function ExplorerResults({
   estimatedTotal,
   processingTimeMs,
   isLoading,
+  error,
   currentPage,
   perPage,
   onPageChange,
@@ -36,6 +38,13 @@ export function ExplorerResults({
   const totalPages = Math.max(1, Math.ceil(totalHits / perPage));
 
   function renderContent() {
+    if (error) {
+      return (
+        <div className={viewMode === "grid" ? "col-span-full" : ""}>
+          <ErrorState />
+        </div>
+      );
+    }
     if (isLoading) {
       return <LoadingSkeleton viewMode={viewMode} />;
     }
@@ -274,6 +283,25 @@ function LoadingSkeleton({ viewMode }: { readonly viewMode: ViewMode }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Error State ────────────────────────────────────────────────────────────
+
+function ErrorState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 border border-border-default bg-bg-elevated/30">
+      <div className="w-16 h-16 border border-border-default bg-bg-surface flex items-center justify-center mb-6">
+        <span className="font-mono text-2xl text-error">!</span>
+      </div>
+      <h3 className="font-raleway font-bold text-lg text-text-primary mb-2">
+        Search failed
+      </h3>
+      <p className="font-mono text-xs text-text-dim max-w-sm text-center">
+        Could not load search results. Please check your connection and try
+        again.
+      </p>
     </div>
   );
 }

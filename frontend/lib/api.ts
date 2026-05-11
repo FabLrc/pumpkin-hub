@@ -57,6 +57,7 @@ import type {
   VersionsListResponse,
   YankVersionRequest,
 } from "./types";
+import { ApiError } from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -74,7 +75,8 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "Unknown error");
-    throw new Error(`API ${response.status}: ${errorBody}`);
+    const serverMessage = parseJsonError(errorBody);
+    throw new ApiError(response.status, serverMessage);
   }
 
   if (response.status === 204 || response.headers.get("content-length") === "0") {
@@ -95,7 +97,8 @@ async function apiFetchBlob(
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "Unknown error");
-    throw new Error(`API ${response.status}: ${errorBody}`);
+    const serverMessage = parseJsonError(errorBody);
+    throw new ApiError(response.status, serverMessage);
   }
 
   return { blob: await response.blob(), headers: response.headers };
@@ -154,6 +157,26 @@ async function downloadFromApi(
     fallbackFilename;
 
   triggerBrowserDownload(blob, filename);
+}
+
+/** Attempt to extract `{ "error": "..." }` from a JSON string. */
+function parseJsonError(body: string): string {
+  try {
+    const parsed = JSON.parse(body);
+    return typeof parsed?.error === "string" ? parsed.error : body;
+  } catch {
+    return body;
+  }
+}
+
+/**
+ * Extract a user-facing error message from any error type.
+ * Returns the structured API message for ApiError, the `.message` for Error, or fallback.
+ */
+export function parseApiError(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.serverMessage;
+  if (error instanceof Error) return error.message;
+  return fallback;
 }
 
 // ── SWR-compatible fetcher ────────────────────────────────────────────────
@@ -244,7 +267,7 @@ export async function uploadPluginIcon(
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "Unknown error");
-    throw new Error(`API ${response.status}: ${errorBody}`);
+    throw new ApiError(response.status, parseJsonError(errorBody));
   }
 
   return response.json() as Promise<PluginResponse>;
@@ -258,7 +281,7 @@ export async function deletePluginIcon(slug: string): Promise<void> {
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "Unknown error");
-    throw new Error(`API ${response.status}: ${errorBody}`);
+    throw new ApiError(response.status, parseJsonError(errorBody));
   }
 }
 
@@ -372,7 +395,7 @@ export async function uploadAvatar(file: File): Promise<UserProfile> {
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "Unknown error");
-    throw new Error(`API ${response.status}: ${errorBody}`);
+    throw new ApiError(response.status, parseJsonError(errorBody));
   }
 
   return response.json() as Promise<UserProfile>;
@@ -474,12 +497,12 @@ export async function uploadBinary(
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(JSON.parse(xhr.responseText) as BinaryUploadResponse);
       } else {
-        reject(new Error(`API ${xhr.status}: ${xhr.responseText}`));
+        reject(new ApiError(xhr.status, parseJsonError(xhr.responseText)));
       }
     });
 
     xhr.addEventListener("error", () => {
-      reject(new Error("Network error during binary upload"));
+      reject(new ApiError(0, "Network error during binary upload"));
     });
 
     xhr.send(formData);
@@ -1109,15 +1132,15 @@ export async function uploadMedia(
         try {
           resolve(JSON.parse(xhr.responseText) as MediaUploadResponse);
         } catch {
-          reject(new Error("Upload failed: invalid server response"));
+          reject(new ApiError(0, "Upload failed: invalid server response"));
         }
       } else {
-        reject(new Error(`Upload failed: ${xhr.status} ${xhr.responseText}`));
+        reject(new ApiError(xhr.status, parseJsonError(xhr.responseText)));
       }
     };
 
-    xhr.onerror = () => reject(new Error("Network error during upload"));
-    xhr.onabort = () => reject(new Error("Upload was cancelled"));
+    xhr.onerror = () => reject(new ApiError(0, "Network error during upload"));
+    xhr.onabort = () => reject(new ApiError(0, "Upload was cancelled"));
     xhr.send(formData);
   });
 }

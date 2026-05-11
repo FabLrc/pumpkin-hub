@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, AlertCircle, CheckCircle, Mail } from "lucide-react";
-import { verifyEmail } from "@/lib/api";
+import { verifyEmail, parseApiError } from "@/lib/api";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -28,12 +28,7 @@ function VerifyEmailContent() {
       })
       .catch((err) => {
         setStatus("error");
-        const message =
-          err instanceof Error ? err.message : "Verification failed";
-        const match = /"error":\s*"([^"]+)"/.exec(message);
-        setErrorMessage(
-          match ? match[1] : "Invalid or expired verification link.",
-        );
+        setErrorMessage(parseApiError(err, "Invalid or expired verification link."));
       });
   }, [token, router]);
 

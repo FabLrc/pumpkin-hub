@@ -21,8 +21,6 @@ RUN mkdir -p src \
 # Compilation réelle
 COPY src ./src
 COPY migrations ./migrations
-# Nécessite que `cargo sqlx prepare` ait été exécuté (.sqlx/ présent dans le repo)
-ENV SQLX_OFFLINE=true
 RUN cargo build --release --locked
 
 # ---- Stage 2 : runner ----

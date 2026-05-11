@@ -23,6 +23,8 @@ const mockVerifyEmail = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   verifyEmail: (...args: unknown[]) => mockVerifyEmail(...args),
+  parseApiError: (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback,
 }));
 
 describe("VerifyEmailPage", () => {
@@ -60,7 +62,7 @@ describe("VerifyEmailPage", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Invalid or expired verification link."),
+        screen.getByText("Token expired"),
       ).toBeInTheDocument();
     });
   });

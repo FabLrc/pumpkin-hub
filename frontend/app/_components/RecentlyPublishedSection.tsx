@@ -7,13 +7,31 @@ import { PluginIcon } from "@/components/ui";
 import { formatTimeAgo } from "@/components/ui/PluginCard";
 
 export function RecentlyPublishedSection() {
-  const { data, isLoading } = usePlugins({
+  const { data, isLoading, error } = usePlugins({
     sort_by: "created_at",
     order: "desc",
     per_page: 3,
   });
 
   const plugins = data?.data ?? [];
+
+  if (error) {
+    return (
+      <section className="border-t border-border-default">
+        <div className="max-w-7xl mx-auto px-6 py-14">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="h-px w-8 bg-accent" />
+            <span className="font-mono text-xs text-accent tracking-widest uppercase">
+              Recently Published
+            </span>
+          </div>
+          <p className="font-mono text-xs text-error">
+            Could not load recently published plugins.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   if (!isLoading && plugins.length === 0) return null;
 

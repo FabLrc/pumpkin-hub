@@ -6,6 +6,7 @@ import { getCategoryIcon } from "@/lib/category-icons";
 import { useCategories } from "@/lib/hooks";
 import type { PluginFormData, FieldError } from "@/lib/validation";
 import { validatePluginForm, PLUGIN_RULES } from "@/lib/validation";
+import { parseApiError } from "@/lib/api";
 import type { CategoryResponse } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { formatMarkdown } from "@/lib/markdown";
@@ -76,10 +77,7 @@ export function PluginForm({
     try {
       await onSubmit(form);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = /"error":\s*"([^"]+)"/.exec(message);
-      setServerError(match ? match[1] : message);
+      setServerError(parseApiError(err, "An unexpected error occurred"));
     }
   }
 

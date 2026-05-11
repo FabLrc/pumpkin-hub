@@ -28,6 +28,8 @@ vi.mock("@/lib/api", () => ({
   registerWithEmail: (...args: unknown[]) => mockRegisterWithEmail(...args),
   loginWithEmail: (...args: unknown[]) => mockLoginWithEmail(...args),
   getAuthMePath: () => "/api/v1/auth/me",
+  parseApiError: (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback,
 }));
 
 const mockUseCurrentUser = vi.fn();

@@ -24,6 +24,8 @@ const mockResetPassword = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   resetPassword: (...args: unknown[]) => mockResetPassword(...args),
+  parseApiError: (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback,
 }));
 
 describe("ResetPasswordPage", () => {

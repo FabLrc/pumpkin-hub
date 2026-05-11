@@ -6,6 +6,8 @@ import { isNewPlugin } from "@/components/ui/PluginCard";
 
 interface TrendingSectionProps {
   readonly plugins: PluginSummary[];
+  readonly isLoading?: boolean;
+  readonly error?: Error | undefined;
 }
 
 function formatDownloads(count: number): string {
@@ -15,9 +17,27 @@ function formatDownloads(count: number): string {
   return String(count);
 }
 
-export function TrendingSection({ plugins }: TrendingSectionProps) {
+export function TrendingSection({ plugins, isLoading, error }: TrendingSectionProps) {
   const featured = plugins[0];
   const rest = plugins.slice(1, 5);
+
+  if (error && !isLoading) {
+    return (
+      <section className="border-t border-border-default">
+        <div className="max-w-7xl mx-auto px-6 py-20">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-px w-8 bg-accent" />
+            <span className="font-mono text-xs text-accent tracking-widest uppercase">
+              Trending this week
+            </span>
+          </div>
+          <p className="font-mono text-xs text-error mt-4">
+            Could not load trending plugins. Please try again later.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="border-t border-border-default">

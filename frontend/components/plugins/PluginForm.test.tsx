@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ApiError } from "@/lib/types";
 import { PluginForm } from "./PluginForm";
 
 vi.mock("@/lib/hooks", () => ({
@@ -67,7 +68,7 @@ describe("PluginForm", () => {
     const user = userEvent.setup();
     const onSubmit = vi
       .fn()
-      .mockRejectedValue(new Error('{"error":"slug already exists"}'));
+      .mockRejectedValue(new ApiError(422, "slug already exists"));
 
     render(
       <PluginForm

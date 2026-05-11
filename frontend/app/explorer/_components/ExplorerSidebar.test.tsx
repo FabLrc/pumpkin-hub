@@ -96,7 +96,7 @@ describe("ExplorerSidebar", () => {
     );
     // Click the first "All" button (category section)
     const allButtons = screen.getAllByText("All");
-    await user.click(allButtons[0]);
+    await user.click(allButtons[0]!);
     expect(defaultProps.onCategoryChange).toHaveBeenCalledWith(undefined);
   });
 

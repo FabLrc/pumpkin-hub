@@ -215,7 +215,7 @@ describe("lib/api", () => {
       createMockResponse({ ok: false, status: 422, textData: "validation failed" }),
     );
 
-    await expect(api.fetchPlugins()).rejects.toThrow("API 422: validation failed");
+    await expect(api.fetchPlugins()).rejects.toThrow("validation failed");
   });
 
   it("uses swrFetcher as thin proxy", async () => {
@@ -243,7 +243,7 @@ describe("lib/api", () => {
     );
 
     const file = new File(["avatar"], "avatar.png", { type: "image/png" });
-    await expect(api.uploadAvatar(file)).rejects.toThrow("API 500: upload failed");
+    await expect(api.uploadAvatar(file)).rejects.toThrow("upload failed");
   });
 
   it("uploads binary via XHR and forwards progress", async () => {
@@ -261,7 +261,7 @@ describe("lib/api", () => {
     (MockXMLHttpRequest as { nextResponseText: string }).nextResponseText = "bad request";
 
     const file = new File(["bin"], "plugin.wasm");
-    await expect(api.uploadBinary("slug", "1.0.0", file)).rejects.toThrow("API 400: bad request");
+    await expect(api.uploadBinary("slug", "1.0.0", file)).rejects.toThrow("bad request");
   });
 
   it("rejects binary upload on network error", async () => {
@@ -287,7 +287,7 @@ describe("lib/api", () => {
     (MockXMLHttpRequest as { nextResponseText: string }).nextResponseText = "too large";
 
     const file = new File(["img"], "preview.png");
-    await expect(api.uploadMedia("slug", file)).rejects.toThrow("Upload failed: 413 too large");
+    await expect(api.uploadMedia("slug", file)).rejects.toThrow("too large");
   });
 
   it("rejects media upload on network error", async () => {

@@ -140,8 +140,31 @@ pub fn build_app(
             state_for_middleware,
             auth::api_key_middleware::api_key_middleware,
         ))
+        .layer(axum_middleware::from_fn(security_headers))
         .layer(DefaultBodyLimit::max(body_limit))
         .layer(middleware)
+}
+
+/// Middleware that adds security-related response headers.
+async fn security_headers(
+    request: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+    headers.insert(
+        axum::http::HeaderName::from_static("x-frame-options"),
+        axum::http::HeaderValue::from_static("DENY"),
+    );
+    headers.insert(
+        axum::http::HeaderName::from_static("x-content-type-options"),
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        axum::http::HeaderName::from_static("referrer-policy"),
+        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    response
 }
 
 fn build_cors_layer(config: &Config) -> CorsLayer {

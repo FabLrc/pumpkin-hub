@@ -16,6 +16,8 @@ const mockForgotPassword = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   forgotPassword: (...args: unknown[]) => mockForgotPassword(...args),
+  parseApiError: (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback,
 }));
 
 describe("ForgotPasswordPage", () => {

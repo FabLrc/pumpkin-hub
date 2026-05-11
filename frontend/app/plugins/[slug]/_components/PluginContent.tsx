@@ -945,7 +945,7 @@ function ConflictAlerts({ conflicts }: { readonly conflicts: DependencyConflict[
       </div>
 
       {conflicts.map((conflict) => {
-        const style = conflictStyles[conflict.conflict_type] ?? conflictStyles.no_matching_version;
+        const style = conflictStyles[conflict.conflict_type] ?? conflictStyles.no_matching_version!;
         return (
           <div
             key={`${conflict.conflict_type}-${conflict.dependency_plugin_name}`}

@@ -101,7 +101,7 @@ describe("VersionManager", () => {
     // The confirm button in the dialog says "Yank Version"
     const buttons = screen.getAllByRole("button", { name: /yank version/i });
     // The dialog confirm button (not the trigger)
-    await user.click(buttons[buttons.length - 1]);
+    await user.click(buttons[buttons.length - 1]!);
 
     await waitFor(() => {
       expect(yankVersionMock).toHaveBeenCalledWith("my-plugin", "1.0.0", {
@@ -122,7 +122,7 @@ describe("VersionManager", () => {
     );
     await user.click(screen.getByRole("button", { name: /restore/i }));
     const buttons = screen.getAllByRole("button", { name: /restore version/i });
-    await user.click(buttons[buttons.length - 1]);
+    await user.click(buttons[buttons.length - 1]!);
 
     await waitFor(() => {
       expect(yankVersionMock).toHaveBeenCalledWith("my-plugin", "1.0.0", {
@@ -146,7 +146,7 @@ describe("VersionManager", () => {
     );
     await user.click(screen.getByRole("button", { name: /yank/i }));
     const buttons = screen.getAllByRole("button", { name: /yank version/i });
-    await user.click(buttons[buttons.length - 1]);
+    await user.click(buttons[buttons.length - 1]!);
 
     expect(screen.getByText("Processing\u2026")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();

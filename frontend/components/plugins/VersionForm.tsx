@@ -5,6 +5,7 @@ import { AlertCircle, ChevronDown } from "lucide-react";
 import type { VersionFormData, FieldError } from "@/lib/validation";
 import { validateVersionForm, VERSION_RULES } from "@/lib/validation";
 import { usePumpkinVersions } from "@/lib/hooks";
+import { parseApiError } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
 interface VersionFormProps {
@@ -56,10 +57,7 @@ export function VersionForm({
     try {
       await onSubmit(form);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = /"error":\s*"([^"]+)"/.exec(message);
-      setServerError(match ? match[1] : message);
+      setServerError(parseApiError(err, "An unexpected error occurred"));
     }
   }
 

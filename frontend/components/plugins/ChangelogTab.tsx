@@ -430,8 +430,8 @@ function processHeading(trimmed: string, inList: boolean): HeadingResult | null 
   if (inList) {
     parts.push("</ul>");
   }
-  const level = headingMatch[1].length;
-  const text = headingMatch[2];
+  const level = headingMatch[1]!.length;
+  const text = headingMatch[2]!;
   const versionPattern = /^\[[\d.]+\]/;
   const extraClass = versionPattern.test(text) ? ' class="changelog-version"' : "";
   parts.push(`<h${level}${extraClass}>${inlineFormat(text)}</h${level}>`);

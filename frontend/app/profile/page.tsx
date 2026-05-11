@@ -15,7 +15,7 @@ import {
 import { Navbar, Footer } from "@/components/layout";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks";
-import { updateProfile, uploadAvatar, getAuthMePath } from "@/lib/api";
+import { updateProfile, uploadAvatar, getAuthMePath, parseApiError } from "@/lib/api";
 import { mutate } from "swr";
 
 const DISPLAY_NAME_MAX = 100;
@@ -87,10 +87,7 @@ function AvatarSection({
       toast.success("Avatar updated successfully!");
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = /"error":\s*"([^"]+)"/.exec(message);
-      const errorMsg = match ? match[1] : message;
+      const errorMsg = parseApiError(err, "An unexpected error occurred");
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -243,10 +240,7 @@ export default function ProfilePage() {
       toast.success("Profile updated successfully!");
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = /"error":\s*"([^"]+)"/.exec(message);
-      const errorMsg = match ? match[1] : message;
+      const errorMsg = parseApiError(err, "An unexpected error occurred");
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
