@@ -1,4 +1,4 @@
-import { http, HttpResponse, type StrictResponse } from "msw";
+import { http, HttpResponse } from "msw";
 
 const API_BASE = "http://localhost:8080/api/v1";
 

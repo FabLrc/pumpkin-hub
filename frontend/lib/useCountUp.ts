@@ -40,10 +40,12 @@ export function useCountUp(target: number, inView: boolean, duration = 1500): nu
   const [count, setCount] = useState(!hasIntersectionObserver ? target : 0);
   const animatedRef = useRef(false);
 
-  // Keep count in sync when target changes in no-IO environments
+  // Keep count in sync when target changes in no-IO environments.
+  // This is an intentional exception to "no setState in effects": the effect is
+  // solely for synchronising state with a prop when animation is not possible.
   useEffect(() => {
     if (!hasIntersectionObserver) {
-      setCount(target);
+      setCount(target); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [target]);
 
