@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { LogOut, User, ChevronDown, LayoutDashboard, Shield, Menu, X, Wrench } from "lucide-react";
 import { useCurrentUser } from "@/lib/hooks";
 import { logout } from "@/lib/api";
@@ -18,6 +19,15 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  function navLinkClass(href: string, accent = false) {
+    const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+    if (accent) {
+      return `transition-colors ${isActive ? "text-accent-light" : "text-accent hover:text-accent-light"}`;
+    }
+    return `transition-colors border-b-2 pb-px ${isActive ? "border-accent text-text-primary" : "border-transparent text-text-subtle hover:text-text-primary"}`;
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -52,31 +62,22 @@ export function Navbar() {
         </div>
 
         {/* Nav links — desktop only */}
-        <div className="hidden md:flex items-center gap-8 text-xs font-raleway font-semibold tracking-widest uppercase text-text-subtle">
-          <Link
-            href="/explorer"
-            className="hover:text-text-primary transition-colors"
-          >
+        <div className="hidden md:flex items-center gap-8 text-xs font-raleway font-semibold tracking-widest uppercase">
+          <Link href="/explorer" className={navLinkClass("/explorer")}>
             Explorer
           </Link>
           <a
             href="https://fablrc.github.io/pumpkin-hub/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-text-primary transition-colors"
+            className="text-text-subtle hover:text-text-primary transition-colors border-b-2 border-transparent pb-px"
           >
             Docs
           </a>
-          <Link
-            href="/server-builder"
-            className="hover:text-text-primary transition-colors"
-          >
+          <Link href="/server-builder" className={navLinkClass("/server-builder")}>
             Server Builder
           </Link>
-          <Link
-            href="/plugins/new"
-            className="text-accent hover:text-accent-light transition-colors"
-          >
+          <Link href="/plugins/new" className={navLinkClass("/plugins/new", true)}>
             Submit Plugin
           </Link>
         </div>

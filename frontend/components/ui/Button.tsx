@@ -22,7 +22,7 @@ type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent hover:bg-accent-dark text-black font-bold",
+    "bg-accent hover:bg-accent-dark hover:-translate-y-px text-black font-bold",
   ghost:
     "border border-border-default hover:border-border-hover text-text-muted hover:text-text-primary",
 };
@@ -33,7 +33,7 @@ export function Button({
   className = "",
   ...props
 }: ButtonProps) {
-  const baseClasses = `font-mono text-xs px-4 py-2 transition-colors inline-flex items-center gap-2 cursor-pointer ${VARIANT_STYLES[variant]} ${className}`;
+  const baseClasses = `font-mono text-xs px-4 py-2 transition active:scale-[0.98] active:translate-y-px inline-flex items-center gap-2 cursor-pointer ${VARIANT_STYLES[variant]} ${className}`;
 
   if ("href" in props && props.href) {
     return (
