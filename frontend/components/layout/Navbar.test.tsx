@@ -21,7 +21,8 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@/lib/hooks", () => ({ useCurrentUser: () => useCurrentUserMock() }));
-vi.mock("@/lib/api", () => ({ logout: () => logoutMock() }));
+vi.mock("@/lib/api", () => ({ logout: () => logoutMock(), parseApiError: (err: unknown, fallback: string) => err instanceof Error ? err.message : fallback }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 vi.mock("@/components/notifications/NotificationBell", () => ({ NotificationBell: () => <div>NotificationBell</div> }));
 
 describe("Navbar", () => {

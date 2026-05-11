@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Raleway, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { SWRProvider } from "@/components/providers/SWRProvider";
 import "./globals.css";
 
 const raleway = Raleway({
@@ -66,7 +67,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${raleway.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen scanline antialiased">
-        {children}
+        <SWRProvider>{children}</SWRProvider>
         <Toaster
           theme="dark"
           position="bottom-right"

@@ -44,8 +44,13 @@ impl IntoResponse for AppError {
             AppError::Conflict(msg) => (StatusCode::CONFLICT, msg.clone()),
             AppError::ServiceUnavailable(msg) => (StatusCode::SERVICE_UNAVAILABLE, msg.clone()),
             AppError::Internal(err) => {
-                // Log the root cause server-side, never expose it to the client.
+                // Log the root cause and its chain server-side, never expose to the client.
                 tracing::error!(%err, "Internal server error");
+                let mut source = err.source();
+                while let Some(s) = source {
+                    tracing::debug!(source = %s, "error chain");
+                    source = s.source();
+                }
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "An unexpected error occurred".to_string(),

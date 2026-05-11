@@ -43,6 +43,6 @@ export const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
 
 /** Resolves a category icon string to a Lucide component, with Tag fallback. */
 export function getCategoryIcon(icon: string | null): LucideIcon {
-  if (icon && icon in CATEGORY_ICON_MAP) return CATEGORY_ICON_MAP[icon];
+  if (icon && icon in CATEGORY_ICON_MAP) return CATEGORY_ICON_MAP[icon]!;
   return Tag;
 }

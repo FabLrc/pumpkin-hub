@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ApiError } from "@/lib/types";
 import { VersionForm } from "./VersionForm";
 
 vi.mock("@/lib/hooks", () => ({
@@ -52,7 +53,7 @@ describe("VersionForm", () => {
 
   it("extracts API error payload for display", async () => {
     const user = userEvent.setup();
-    const onSubmit = vi.fn().mockRejectedValue(new Error('{"error":"version already exists"}'));
+    const onSubmit = vi.fn().mockRejectedValue(new ApiError(422, "version already exists"));
 
     render(<VersionForm onSubmit={onSubmit} isSubmitting={false} onCancel={vi.fn()} />);
 

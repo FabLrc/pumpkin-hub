@@ -36,7 +36,7 @@ export function ExplorerContent() {
     return () => { document.body.style.overflow = ""; };
   }, [isMobileFilterOpen]);
 
-  const { data, isLoading } = useSearch({
+  const { data, isLoading, error } = useSearch({
     q: searchQuery || undefined,
     category,
     pumpkin_version: pumpkinVersion,
@@ -111,6 +111,7 @@ export function ExplorerContent() {
         estimatedTotal={data?.estimated_total_hits ?? null}
         processingTimeMs={data?.processing_time_ms ?? null}
         isLoading={isLoading}
+        error={error}
         currentPage={page}
         perPage={DEFAULT_PER_PAGE}
         onPageChange={handlePageChange}

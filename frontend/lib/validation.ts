@@ -29,13 +29,14 @@ function isValidSemver(value: string): boolean {
   if (buildParts.length > 1) return false; // more than one '+' sign
 
   if (buildParts.length === 1) {
-    const buildIdentifiers = buildParts[0].split(".");
+    const buildIdentifiers = buildParts[0]!.split(".");
     if (buildIdentifiers.some((id) => !SEMVER_BUILD_ID.test(id) || id === ""))
       return false;
   }
 
   // Split pre-release from core
-  const [core, ...preParts] = withoutBuild.split("-");
+  const core = withoutBuild!.split("-")[0]!;
+  const preParts = withoutBuild!.split("-").slice(1);
   if (preParts.length > 0) {
     const preRelease = preParts.join("-");
     const preIdentifiers = preRelease.split(".");
@@ -189,7 +190,9 @@ function compareSemver(a: string, b: string): number {
   const partsA = a.split(".").map(Number);
   const partsB = b.split(".").map(Number);
   for (let i = 0; i < 3; i++) {
-    if (partsA[i] !== partsB[i]) return partsA[i] - partsB[i];
+    const a = partsA[i] ?? 0;
+    const b = partsB[i] ?? 0;
+    if (a !== b) return a - b;
   }
   return 0;
 }

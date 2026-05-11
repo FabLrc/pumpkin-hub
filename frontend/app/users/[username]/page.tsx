@@ -13,7 +13,8 @@ import {
   Shield,
 } from "lucide-react";
 import { Navbar, Footer } from "@/components/layout";
-import { PluginCard, formatDownloads } from "@/components/ui/PluginCard";
+import { formatDownloads } from "@/lib/formatters";
+import { PluginCard } from "@/components/ui/PluginCard";
 import {
   fetchAuthorProfile,
   fetchAuthorPlugins,
@@ -164,7 +165,12 @@ export default function AuthorProfilePage() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User className="w-10 h-10 text-text-dim" />
+                <span
+                  className="font-raleway font-black text-2xl text-accent select-none"
+                  aria-hidden="true"
+                >
+                  {author.username.slice(0, 2).toUpperCase()}
+                </span>
               )}
             </div>
 

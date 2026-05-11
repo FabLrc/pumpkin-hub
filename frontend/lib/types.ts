@@ -1,6 +1,19 @@
 // ── API Types ─────────────────────────────────────────────────────────────
 // Mirror of the Rust API DTOs for type-safe frontend consumption.
 
+/** Structured API error returned by the backend. */
+export class ApiError extends Error {
+  public readonly status: number;
+  public readonly serverMessage: string;
+
+  constructor(status: number, serverMessage: string) {
+    super(serverMessage);
+    this.name = "ApiError";
+    this.status = status;
+    this.serverMessage = serverMessage;
+  }
+}
+
 export interface UserProfile {
   id: string;
   username: string;

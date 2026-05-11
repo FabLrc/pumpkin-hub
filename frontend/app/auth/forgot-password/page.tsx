@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, AlertCircle, CheckCircle, Mail } from "lucide-react";
-import { forgotPassword } from "@/lib/api";
+import { forgotPassword, parseApiError } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -20,10 +20,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email);
       setSuccess(true);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = /"error":\s*"([^"]+)"/.exec(message);
-      setError(match ? match[1] : message);
+      setError(parseApiError(err, "An unexpected error occurred"));
     } finally {
       setIsSubmitting(false);
     }

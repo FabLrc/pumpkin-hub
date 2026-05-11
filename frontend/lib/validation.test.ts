@@ -137,7 +137,7 @@ describe("validatePluginForm", () => {
   it("returns error for invalid name", () => {
     const errors = validatePluginForm({ ...validForm, name: "ab" });
     expect(errors).toHaveLength(1);
-    expect(errors[0].field).toBe("name");
+    expect(errors[0]!.field).toBe("name");
   });
 
   it("returns error for invalid repository URL", () => {

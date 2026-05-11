@@ -11,6 +11,7 @@ import {
   registerWithEmail,
   loginWithEmail,
   getAuthMePath,
+  parseApiError,
 } from "@/lib/api";
 import { useCurrentUser } from "@/lib/hooks";
 import { mutate } from "swr";
@@ -50,11 +51,7 @@ export default function AuthPage() {
       await mutate(getAuthMePath());
       router.push("/");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      // Extract the JSON error message if present.
-      const match = /"error":\s*"([^"]+)"/.exec(message);
-      const errorMsg = match ? match[1] : message;
+      const errorMsg = parseApiError(err, "An unexpected error occurred");
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {

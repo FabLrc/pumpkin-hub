@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, AlertCircle, CheckCircle, Lock } from "lucide-react";
-import { resetPassword } from "@/lib/api";
+import { resetPassword, parseApiError } from "@/lib/api";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -47,10 +47,7 @@ function ResetPasswordForm() {
       setSuccess(true);
       setTimeout(() => router.push("/auth"), 3000);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      const match = /"error":\s*"([^"]+)"/.exec(message);
-      setError(match ? match[1] : message);
+      setError(parseApiError(err, "An unexpected error occurred"));
     } finally {
       setIsSubmitting(false);
     }

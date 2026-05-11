@@ -1443,8 +1443,58 @@ fn hex_encode(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
-    // ── slugify ─────────────────────────────────────────────────────────
+    // ── slugify (property-based) ─────────────────────────────────────────
+    // Invariants:
+    // 1. The result must only contain [a-z0-9-].
+    // 2. Multiple consecutive hyphens are collapsed into one.
+    // 3. Leading/trailing hyphens are stripped.
+    // 4. Slugify is idempotent: slugify(slugify(x)) == slugify(x).
+
+    proptest! {
+        #[test]
+        fn slugify_contains_only_allowed_chars(input: String) {
+            let slug = slugify(&input);
+            for c in slug.chars() {
+                assert!(c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-', "unexpected char '{c}' in slug '{slug}' from input '{input}'");
+            }
+        }
+
+        #[test]
+        fn slugify_no_consecutive_hyphens(input: String) {
+            let slug = slugify(&input);
+            assert!(!slug.contains("--"), "consecutive hyphens in slug '{slug}' from input '{input}'");
+        }
+
+        #[test]
+        fn slugify_no_leading_trailing_hyphens(input: String) {
+            let slug = slugify(&input);
+            if !slug.is_empty() {
+                assert!(!slug.starts_with('-'), "leading hyphen in slug '{slug}' from input '{input}'");
+                assert!(!slug.ends_with('-'), "trailing hyphen in slug '{slug}' from input '{input}'");
+            }
+        }
+
+        #[test]
+        fn slugify_idempotent(input: String) {
+            let once = slugify(&input);
+            let twice = slugify(&once);
+            assert_eq!(once, twice, "slugify not idempotent for input '{input}'");
+        }
+
+        #[test]
+        fn slugify_alphanumeric_preserved(input: String) {
+            let cleaned: String = input.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
+            if cleaned.is_empty() { return Ok(()); }
+            let slug = slugify(&input);
+            for c in cleaned.chars() {
+                assert!(slug.contains(c.to_ascii_lowercase()), "character '{c}' from input '{input}' not found in slug '{slug}'");
+            }
+        }
+    }
+
+    // ── slugify (deterministic) ─────────────────────────────────────────
 
     #[test]
     fn slugify_basic_name() {

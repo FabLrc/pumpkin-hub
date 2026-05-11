@@ -665,7 +665,11 @@ async fn upload_avatar(
             "No avatar file provided (expected multipart field named 'avatar')".to_string(),
         )
     })?;
-    let content_type = file_content_type.unwrap();
+    let content_type = file_content_type.ok_or_else(|| {
+        AppError::UnprocessableEntity(
+            "No avatar file provided (expected multipart field named 'avatar')".to_string(),
+        )
+    })?;
     let size_bytes = data.len() as i32;
 
     // Upsert binary data into the dedicated avatars table

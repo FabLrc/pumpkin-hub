@@ -1,6 +1,7 @@
 "use client";
 
 import { List, LayoutGrid, SlidersHorizontal } from "lucide-react";
+import { Pagination } from "@/components/ui";
 import type { SearchHit } from "@/lib/types";
 import type { ViewMode } from "@/lib/useViewPreference";
 import { SearchHitCard } from "./SearchHitCard";
@@ -10,6 +11,7 @@ interface ExplorerResultsProps {
   readonly estimatedTotal: number | null;
   readonly processingTimeMs: number | null;
   readonly isLoading: boolean;
+  readonly error?: Error | undefined;
   readonly currentPage: number;
   readonly perPage: number;
   readonly onPageChange: (page: number) => void;
@@ -24,6 +26,7 @@ export function ExplorerResults({
   estimatedTotal,
   processingTimeMs,
   isLoading,
+  error,
   currentPage,
   perPage,
   onPageChange,
@@ -36,6 +39,13 @@ export function ExplorerResults({
   const totalPages = Math.max(1, Math.ceil(totalHits / perPage));
 
   function renderContent() {
+    if (error) {
+      return (
+        <div className={viewMode === "grid" ? "col-span-full" : ""}>
+          <ErrorState />
+        </div>
+      );
+    }
     if (isLoading) {
       return <LoadingSkeleton viewMode={viewMode} />;
     }
@@ -129,95 +139,13 @@ export function ExplorerResults({
       }>
         {renderContent()}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
-          />
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+        />
       </div>
     </main>
-  );
-}
-
-// ── Pagination ────────────────────────────────────────────────────────────
-
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  readonly currentPage: number;
-  readonly totalPages: number;
-  readonly onPageChange: (page: number) => void;
-}) {
-  function generatePageNumbers(): (number | "ellipsis-start" | "ellipsis-end")[] {
-    const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
-
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-      return pages;
-    }
-
-    pages.push(1);
-    if (currentPage > 3) pages.push("ellipsis-start");
-
-    const start = Math.max(2, currentPage - 1);
-    const end = Math.min(totalPages - 1, currentPage + 1);
-    for (let i = start; i <= end; i++) pages.push(i);
-
-    if (currentPage < totalPages - 2) pages.push("ellipsis-end");
-    pages.push(totalPages);
-
-    return pages;
-  }
-
-  return (
-    <div className="flex items-center justify-between pt-6 border-t border-border-default">
-      <span className="font-mono text-xs text-text-dim">
-        Page {currentPage} of {totalPages}
-      </span>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
-          className="page-btn font-mono text-xs border border-border-default text-text-dim px-3 py-1.5 hover:border-border-hover transition-colors disabled:opacity-30 cursor-pointer"
-        >
-          ←
-        </button>
-        {generatePageNumbers().map((pageNum) =>
-          pageNum === "ellipsis-start" || pageNum === "ellipsis-end" ? (
-            <span
-              key={pageNum}
-              className="font-mono text-xs text-text-dim px-1"
-            >
-              ···
-            </span>
-          ) : (
-            <button
-              key={pageNum}
-              onClick={() => onPageChange(pageNum)}
-              className={`page-btn font-mono text-xs border px-3 py-1.5 transition-colors cursor-pointer ${
-                pageNum === currentPage
-                  ? "active border-accent"
-                  : "border-border-default text-text-subtle hover:border-border-hover"
-              }`}
-            >
-              {pageNum}
-            </button>
-          ),
-        )}
-        <button
-          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
-          className="page-btn font-mono text-xs border border-border-default text-text-subtle px-3 py-1.5 hover:border-border-hover transition-colors disabled:opacity-30 cursor-pointer"
-        >
-          →
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -274,6 +202,25 @@ function LoadingSkeleton({ viewMode }: { readonly viewMode: ViewMode }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Error State ────────────────────────────────────────────────────────────
+
+function ErrorState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 border border-border-default bg-bg-elevated/30">
+      <div className="w-16 h-16 border border-border-default bg-bg-surface flex items-center justify-center mb-6">
+        <span className="font-mono text-2xl text-error">!</span>
+      </div>
+      <h3 className="font-raleway font-bold text-lg text-text-primary mb-2">
+        Search failed
+      </h3>
+      <p className="font-mono text-xs text-text-dim max-w-sm text-center">
+        Could not load search results. Please check your connection and try
+        again.
+      </p>
     </div>
   );
 }

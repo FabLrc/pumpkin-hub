@@ -1,0 +1,30 @@
+# Build outputs
+target/
+**/*.rs.bk
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# CI
+coverage/
+
+# Test artifacts
+tests/**/__snapshots__/
+*.profraw
+lcov.info

@@ -7,21 +7,12 @@ import { ArrowLeft, CopyPlus, Download, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Footer, Navbar } from "@/components/layout";
 import { Button } from "@/components/ui";
-import { createServerConfig, downloadPreview } from "@/lib/api";
+import { createServerConfig, downloadPreview, parseApiError } from "@/lib/api";
 import { useCurrentUser } from "@/lib/hooks";
 import type { PluginSelection, ServerConfigResponse } from "@/lib/types";
 
 interface SharedConfigPageClientProps {
   readonly config: ServerConfigResponse;
-}
-
-function parseApiError(error: unknown, fallback: string): string {
-  if (!(error instanceof Error)) {
-    return fallback;
-  }
-
-  const match = /"error":\s*"([^"]+)"/.exec(error.message);
-  return match?.[1] ?? error.message ?? fallback;
 }
 
 function toPluginSelection(config: ServerConfigResponse): PluginSelection[] {

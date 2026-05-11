@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
 import { Terminal } from "lucide-react";
 import Image from "next/image";
+import { useInView, useCountUp } from "@/lib/useCountUp";
 
 interface HeroSectionProps {
   readonly totalPlugins: number;
@@ -24,6 +25,11 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const isMac = useSyncExternalStore(noopSubscribe, getIsMacSnapshot, getIsMacServerSnapshot);
+
+  const { ref: statsRef, inView: statsInView } = useInView(0.3);
+  const animPlugins = useCountUp(totalPlugins, statsInView);
+  const animAuthors = useCountUp(totalAuthors, statsInView);
+  const animDownloads = useCountUp(totalDownloads, statsInView);
 
   const focusSearchInput = useCallback(() => {
     inputRef.current?.focus();
@@ -162,10 +168,10 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
         </div>
 
         {/* Stats row */}
-        <div className="mt-12 flex items-center gap-8 fade-up delay-4">
+        <div ref={statsRef} className="mt-12 flex items-center gap-8 fade-up delay-4">
           <div className="border-l-2 border-accent pl-4">
             <div className="font-mono text-2xl font-bold text-text-primary">
-              {totalPlugins > 0 ? totalPlugins.toLocaleString() : "—"}
+              {totalPlugins > 0 ? animPlugins.toLocaleString() : "—"}
             </div>
             <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Plugins
@@ -173,7 +179,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
           </div>
           <div className="border-l border-border-default pl-8">
             <div className="font-mono text-2xl font-bold text-text-primary">
-              {totalAuthors > 0 ? totalAuthors.toLocaleString() : "—"}
+              {totalAuthors > 0 ? animAuthors.toLocaleString() : "—"}
             </div>
             <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Authors
@@ -181,7 +187,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
           </div>
           <div className="border-l border-border-default pl-8">
             <div className="font-mono text-2xl font-bold text-text-primary">
-              {totalDownloads > 0 ? totalDownloads.toLocaleString() : "—"}
+              {totalDownloads > 0 ? animDownloads.toLocaleString() : "—"}
             </div>
             <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
               Downloads

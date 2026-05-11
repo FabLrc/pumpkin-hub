@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { PluginCard, formatDownloads, formatTimeAgo } from "./PluginCard";
+import { formatDownloads, formatTimeAgo } from "@/lib/formatters";
+import { PluginCard } from "./PluginCard";
 import type { PluginSummary } from "@/lib/types";
 
 vi.mock("next/link", () => ({
@@ -56,7 +57,7 @@ describe("formatDownloads", () => {
 
   it("formats thousands with 'k'", () => {
     expect(formatDownloads(1_000)).toBe("1k");
-    expect(formatDownloads(5_400)).toBe("5k");
+    expect(formatDownloads(5_400)).toBe("5.4k");
     expect(formatDownloads(999_999)).toBe("1000k");
   });
 

@@ -56,6 +56,10 @@ jobs:
       - name: Linter / Qualité du code
         run: npm run lint
 
+      - name: Audit des dépendances (npm)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
       - name: Vérification des Types
         run: npx tsc --noEmit
 
@@ -116,6 +120,14 @@ jobs:
 
       - name: Analyse statique (Clippy)
         run: cargo clippy -- -D warnings
+
+      - name: Audit des dépendances (cargo)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Scan des vulnérabilités
+        run: cargo audit
+        continue-on-error: true
 
       - name: Installation de sqlx-cli
         uses: taiki-e/install-action@v2

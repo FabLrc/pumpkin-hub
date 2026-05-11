@@ -39,11 +39,32 @@
 
 /* ── Base Styles ───────────────────────────────────────────────────────── */
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body {
   background-color: var(--color-bg-base);
   color: var(--color-text-secondary);
   font-family: var(--font-raleway);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── CTA Glow ──────────────────────────────────────────────────────────── */
+
+.cta-glow {
+  background: radial-gradient(circle, #f97316 0%, transparent 70%);
 }
 
 /* ── Noise Texture Overlay ─────────────────────────────────────────────── */

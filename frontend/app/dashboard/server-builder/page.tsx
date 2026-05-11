@@ -19,7 +19,7 @@ import {
 import { toast } from "sonner";
 import { Footer, Navbar } from "@/components/layout";
 import { Button } from "@/components/ui";
-import { deleteServerConfig, downloadServerConfig, rotateShareToken } from "@/lib/api";
+import { deleteServerConfig, downloadServerConfig, parseApiError, rotateShareToken } from "@/lib/api";
 import { useCurrentUser, useServerConfigs } from "@/lib/hooks";
 import type { ServerConfigPlatform, ServerConfigSummary } from "@/lib/types";
 
@@ -29,15 +29,6 @@ function formatDate(dateString: string): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function parseApiError(error: unknown, fallback: string): string {
-  if (!(error instanceof Error)) {
-    return fallback;
-  }
-
-  const match = /"error":\s*"([^"]+)"/.exec(error.message);
-  return match?.[1] ?? error.message ?? fallback;
 }
 
 function getShareUrl(shareToken: string): string {

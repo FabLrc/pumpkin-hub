@@ -3,28 +3,19 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 import { Badge } from "./Badge";
 import { PluginIcon } from "./PluginIcon";
+import { formatDownloads, formatTimeAgo } from "@/lib/formatters";
 
 interface PluginCardProps {
   readonly plugin: PluginSummary;
   readonly featured?: boolean;
 }
 
-export function formatDownloads(count: number): string {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-  if (count >= 1_000) return `${(count / 1_000).toFixed(0).replace(/\.0$/, "")}k`;
-  return String(count);
-}
+export { formatDownloads, formatTimeAgo };
 
-export function formatTimeAgo(dateString: string): string {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
 
-  if (diffInSeconds < 60) return "just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+export function isNewPlugin(createdAt: string): boolean {
+  return Date.now() - new Date(createdAt).getTime() < NEW_THRESHOLD_MS;
 }
 
 export function PluginCard({ plugin, featured = false }: PluginCardProps) {
@@ -46,7 +37,7 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
         {/* Main info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4 mb-1.5">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               {/* Stretched link: covers the entire card via ::after overlay */}
               <Link
                 href={`/plugins/${plugin.slug}`}
@@ -55,6 +46,11 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
                 {plugin.name}
               </Link>
               {featured && <Badge variant="orange">FEATURED</Badge>}
+              {!featured && isNewPlugin(plugin.created_at) && (
+                <span className="font-mono text-[9px] font-bold uppercase bg-white text-black px-1.5 py-0.5 leading-none">
+                  NEW
+                </span>
+              )}
             </div>
           </div>
 

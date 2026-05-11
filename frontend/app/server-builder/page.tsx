@@ -12,6 +12,7 @@ import { Button } from "@/components/ui";
 import {
   createServerConfig,
   downloadPreview,
+  parseApiError,
   updateServerConfig,
   validateServerConfig,
 } from "@/lib/api";
@@ -38,15 +39,6 @@ const PLATFORM_OPTIONS: { value: ServerConfigPlatform; label: string }[] = [
   { value: "linux", label: "Linux" },
   { value: "macos", label: "macOS" },
 ];
-
-function parseApiError(error: unknown, fallback: string): string {
-  if (!(error instanceof Error)) {
-    return fallback;
-  }
-
-  const match = /"error":\s*"([^"]+)"/.exec(error.message);
-  return match?.[1] ?? error.message ?? fallback;
-}
 
 function toSlugFallback(pluginName: string, pluginId: string): string {
   const normalized = pluginName
