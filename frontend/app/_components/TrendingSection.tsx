@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { PluginSummary } from "@/lib/types";
 import { PluginIcon } from "@/components/ui";
+import { isNewPlugin } from "@/components/ui/PluginCard";
 
 interface TrendingSectionProps {
   readonly plugins: PluginSummary[];
@@ -60,9 +61,16 @@ export function TrendingSection({ plugins }: TrendingSectionProps) {
                   featured
                   sizeClassName="w-12 h-12"
                 />
-                <span className="font-mono text-[10px] bg-accent/10 text-accent border border-accent/30 px-2 py-0.5 uppercase tracking-widest">
-                  #1 Trending
-                </span>
+                <div className="flex items-center gap-2">
+                  {isNewPlugin(featured.created_at) && (
+                    <span className="font-mono text-[9px] font-bold uppercase bg-white text-black px-1.5 py-0.5 leading-none">
+                      NEW
+                    </span>
+                  )}
+                  <span className="font-mono text-[10px] bg-accent/10 text-accent border border-accent/30 px-2 py-0.5 uppercase tracking-widest">
+                    #1 Trending
+                  </span>
+                </div>
               </div>
 
               <h3 className="font-raleway font-black text-2xl text-text-primary mb-2">
@@ -133,9 +141,16 @@ function SmallBentoCard({ plugin }: { readonly plugin: PluginSummary }) {
           sizeClassName="w-9 h-9"
         />
       </div>
-      <h3 className="font-raleway font-bold text-lg text-text-primary mb-1 truncate">
-        {plugin.name}
-      </h3>
+      <div className="flex items-center gap-2 mb-1">
+        <h3 className="font-raleway font-bold text-lg text-text-primary truncate">
+          {plugin.name}
+        </h3>
+        {isNewPlugin(plugin.created_at) && (
+          <span className="font-mono text-[9px] font-bold uppercase bg-white text-black px-1.5 py-0.5 leading-none shrink-0">
+            NEW
+          </span>
+        )}
+      </div>
       <p className="font-mono text-[10px] text-text-dim mb-3 truncate">
         by <span className="text-text-subtle">{plugin.author.username}</span>
       </p>

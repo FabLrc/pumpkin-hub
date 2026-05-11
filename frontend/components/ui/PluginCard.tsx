@@ -27,6 +27,12 @@ export function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+const NEW_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000;
+
+export function isNewPlugin(createdAt: string): boolean {
+  return Date.now() - new Date(createdAt).getTime() < NEW_THRESHOLD_MS;
+}
+
 export function PluginCard({ plugin, featured = false }: PluginCardProps) {
   const cardClasses = featured
     ? "plugin-card featured border border-accent/30 bg-bg-elevated/50"
@@ -46,7 +52,7 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
         {/* Main info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4 mb-1.5">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               {/* Stretched link: covers the entire card via ::after overlay */}
               <Link
                 href={`/plugins/${plugin.slug}`}
@@ -55,6 +61,11 @@ export function PluginCard({ plugin, featured = false }: PluginCardProps) {
                 {plugin.name}
               </Link>
               {featured && <Badge variant="orange">FEATURED</Badge>}
+              {!featured && isNewPlugin(plugin.created_at) && (
+                <span className="font-mono text-[9px] font-bold uppercase bg-white text-black px-1.5 py-0.5 leading-none">
+                  NEW
+                </span>
+              )}
             </div>
           </div>
 

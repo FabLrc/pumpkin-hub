@@ -8,6 +8,7 @@ import { TrendingSection } from "./_components/TrendingSection";
 import { FeaturesSection } from "./_components/FeaturesSection";
 import { CtaSection } from "./_components/CtaSection";
 import { Ticker } from "./_components/Ticker";
+import { RecentlyPublishedSection } from "./_components/RecentlyPublishedSection";
 
 export default function HomePage() {
   const { data: pluginsData } = usePlugins({
@@ -28,10 +29,11 @@ export default function HomePage() {
         totalAuthors={statsData?.total_authors ?? 0}
         totalDownloads={statsData?.total_downloads ?? 0}
       />
+      <RecentlyPublishedSection />
       <ServerBuilderSpotlight />
       <TrendingSection plugins={plugins} />
       <FeaturesSection />
-      <CtaSection />
+      <CtaSection authorsCount={statsData?.total_authors ?? 0} />
       <Footer />
     </>
   );
