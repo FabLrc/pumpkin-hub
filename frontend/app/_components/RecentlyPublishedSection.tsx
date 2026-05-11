@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { usePlugins } from "@/lib/hooks";
 import { PluginIcon } from "@/components/ui";
-import { formatTimeAgo } from "@/components/ui/PluginCard";
+import { formatTimeAgo } from "@/lib/formatters";
 
 export function RecentlyPublishedSection() {
   const { data, isLoading, error } = usePlugins({

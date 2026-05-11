@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { formatDownloads } from "@/lib/formatters";
 import type { PluginSummary } from "@/lib/types";
 import { PluginIcon } from "@/components/ui";
 import { isNewPlugin } from "@/components/ui/PluginCard";
@@ -8,13 +9,6 @@ interface TrendingSectionProps {
   readonly plugins: PluginSummary[];
   readonly isLoading?: boolean;
   readonly error?: Error | undefined;
-}
-
-function formatDownloads(count: number): string {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-  if (count >= 1_000)
-    return `${(count / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
-  return String(count);
 }
 
 export function TrendingSection({ plugins, isLoading, error }: TrendingSectionProps) {

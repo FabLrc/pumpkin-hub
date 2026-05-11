@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Flag, Trash2, EyeOff, Pencil, MoreVertical } from "lucide-react";
 import type { ReviewResponse } from "@/lib/types";
 import { StarRating } from "./StarRating";
-import { formatTimeAgo } from "@/components/ui/PluginCard";
+import { formatTimeAgo } from "@/lib/formatters";
 
 interface ReviewCardProps {
   readonly review: ReviewResponse;

@@ -6,7 +6,8 @@ import type { VersionFormData, FieldError } from "@/lib/validation";
 import { validateVersionForm, VERSION_RULES } from "@/lib/validation";
 import { usePumpkinVersions } from "@/lib/hooks";
 import { parseApiError } from "@/lib/api";
-import { Button } from "@/components/ui/Button";
+import { inputClasses } from "@/lib/helpers";
+import { Button, FormField } from "@/components/ui";
 
 interface VersionFormProps {
   readonly onSubmit: (data: VersionFormData) => Promise<void>;
@@ -186,52 +187,4 @@ export function VersionForm({
   );
 }
 
-// ── FormField ─────────────────────────────────────────────────────────────
 
-function FormField({
-  label,
-  htmlFor,
-  error,
-  hint,
-  required,
-  children,
-}: {
-  readonly label: string;
-  readonly htmlFor: string;
-  readonly error: string | null;
-  readonly hint?: string;
-  readonly required?: boolean;
-  readonly children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between mb-1">
-        <label
-          htmlFor={htmlFor}
-          className="block font-mono text-xs text-text-muted uppercase tracking-widest"
-        >
-          {label}
-          {required && <span className="text-accent ml-1">*</span>}
-        </label>
-        {hint && (
-          <span className="font-mono text-xs text-text-muted">{hint}</span>
-        )}
-      </div>
-      {children}
-      {error && (
-        <p className="mt-1 font-mono text-xs text-error flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── Style Helpers ─────────────────────────────────────────────────────────
-
-function inputClasses(error: string | null): string {
-  return `w-full px-3 py-2 bg-bg-surface border ${
-    error ? "border-error" : "border-border-default focus:border-accent"
-  } outline-none font-mono text-sm text-text-primary placeholder:text-text-dim transition-colors`;
-}

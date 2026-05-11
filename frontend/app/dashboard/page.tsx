@@ -25,15 +25,9 @@ import { toast } from "sonner";
 import { Navbar, Footer } from "@/components/layout";
 import { useCurrentUser, useAuthorPlugins, useAuthorDashboardStats, useUnreadCount } from "@/lib/hooks";
 import { resendVerification } from "@/lib/api";
+import { formatDownloads } from "@/lib/formatters";
 import { DownloadChart, GranularitySelector } from "@/components/ui/DownloadChart";
 import type { PluginSummary, DownloadGranularity } from "@/lib/types";
-
-function formatDownloads(count: number): string {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-  if (count >= 1_000)
-    return `${(count / 1_000).toFixed(0).replace(/\.0$/, "")}k`;
-  return String(count);
-}
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {

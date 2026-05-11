@@ -13,7 +13,8 @@ import {
   Shield,
 } from "lucide-react";
 import { Navbar, Footer } from "@/components/layout";
-import { PluginCard, formatDownloads } from "@/components/ui/PluginCard";
+import { formatDownloads } from "@/lib/formatters";
+import { PluginCard } from "@/components/ui/PluginCard";
 import {
   fetchAuthorProfile,
   fetchAuthorPlugins,

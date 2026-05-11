@@ -5,7 +5,7 @@ import { Star, Download } from "lucide-react";
 import { Badge, PluginIcon } from "@/components/ui";
 import type { SearchHit } from "@/lib/types";
 import type { ViewMode } from "@/lib/useViewPreference";
-import { formatDownloads, formatTimeAgo } from "@/components/ui/PluginCard";
+import { formatDownloads, formatTimeAgo } from "@/lib/formatters";
 
 interface SearchHitCardProps {
   readonly hit: SearchHit;
