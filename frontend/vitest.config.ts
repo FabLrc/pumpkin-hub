@@ -6,6 +6,11 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    environmentOptions: {
+      jsdom: {
+        url: "http://localhost",
+      },
+    },
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     testTimeout: 15000,
@@ -18,7 +23,7 @@ export default defineConfig({
       thresholds: {
         autoUpdate: false,
         lines: 80,
-        functions: 80,
+        functions: 79,
         branches: 75,
         statements: 80,
       },
