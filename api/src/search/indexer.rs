@@ -628,3 +628,44 @@ fn sanitize_filter_value(value: &str) -> String {
         .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == '_')
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn sanitize_filter_value_contains_only_allowed_chars(input: String) {
+            let result = sanitize_filter_value(&input);
+            for c in result.chars() {
+                assert!(c.is_alphanumeric() || c == '.' || c == '-' || c == '_',
+                    "unexpected char '{c}' in sanitized '{result}' from input '{input}'");
+            }
+        }
+
+        #[test]
+        fn sanitize_filter_value_strips_disallowed_chars(input: String) {
+            let result = sanitize_filter_value(&input);
+            let allowed: String = input.chars()
+                .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == '_')
+                .collect();
+            assert_eq!(result, allowed, "sanitize_filter_value mismatch");
+        }
+
+        #[test]
+        fn sanitize_filter_value_never_lengthens(input: String) {
+            let result = sanitize_filter_value(&input);
+            assert!(result.len() <= input.len(),
+                "sanitize_filter_value lengthened input '{input}' ({}) → '{result}' ({})",
+                input.len(), result.len());
+        }
+
+        #[test]
+        fn sanitize_filter_value_idempotent(input: String) {
+            let once = sanitize_filter_value(&input);
+            let twice = sanitize_filter_value(&once);
+            assert_eq!(once, twice, "sanitize_filter_value not idempotent");
+        }
+    }
+}

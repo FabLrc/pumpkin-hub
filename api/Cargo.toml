@@ -106,6 +106,9 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 # Combinators for running async futures concurrently (e.g. try_join_all)
 futures = "0.3"
 
+[dev-dependencies]
+proptest = "1"
+
 [profile.release]
 opt-level = 3
 lto = true
