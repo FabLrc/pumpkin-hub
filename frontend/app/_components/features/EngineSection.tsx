@@ -53,21 +53,21 @@ export function EngineSection() {
       <div className="absolute inset-0 grid-bg opacity-60 pointer-events-none" />
       <div className="absolute inset-0 scanline pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-6 py-24 md:py-32">
-        <div className="flex items-center gap-3 mb-12">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20 md:py-24 lg:py-32">
+        <div className="flex items-center gap-3 mb-8 sm:mb-12">
           <div className="h-px w-8 bg-accent" />
           <span className="font-mono text-xs text-accent tracking-widest uppercase">
             {"// 01 — the engine"}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 mb-16 md:mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 lg:gap-12 mb-12 md:mb-16 lg:mb-20">
           {/* Stat hero */}
-          <div className="md:col-span-7 border border-border-default p-8 md:p-12 bg-bg-elevated/40 relative">
-            <span className="absolute top-4 right-5 font-mono text-[10px] text-text-dim/60 tracking-widest uppercase">
+          <div className="lg:col-span-7 border border-border-default p-6 sm:p-8 md:p-10 lg:p-12 bg-bg-elevated/40 relative">
+            <span className="absolute top-3 right-4 sm:top-4 sm:right-5 font-mono text-[10px] text-text-dim/60 tracking-widest uppercase">
               {"// startup time"}
             </span>
-            <div className="font-raleway font-black text-accent leading-[0.85] text-[6rem] md:text-[9rem] mb-4">
+            <div className="font-raleway font-black text-accent leading-[0.85] text-[clamp(3.5rem,16vw,9rem)] mb-3 sm:mb-4">
               <AnimatedCounter target={5} suffix="ms" />
             </div>
             <h2
@@ -85,7 +85,7 @@ export function EngineSection() {
           </div>
 
           {/* Stats stack */}
-          <div className="md:col-span-5 border border-border-default bg-bg-elevated/40">
+          <div className="lg:col-span-5 border border-border-default bg-bg-elevated/40">
             {SECONDARY_STATS.map((s, i) => {
               const Icon = s.icon;
               const isLast = i === SECONDARY_STATS.length - 1;
