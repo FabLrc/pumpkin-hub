@@ -404,20 +404,23 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
         }}
       />
 
-      <div className="max-w-7xl mx-auto px-6 pt-24 pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 lg:pt-24 pb-14 sm:pb-16 lg:pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12 items-center">
           {/* Left column — text content */}
-          <div>
+          <div className="min-w-0">
             {/* Label */}
-            <div className="fade-up delay-1 flex items-center gap-3 mb-8">
-              <div className="h-px w-12 bg-accent" />
-              <span className="font-mono text-xs text-accent tracking-widest uppercase">
+            <div className="fade-up delay-1 flex items-center gap-3 mb-6 sm:mb-8">
+              <div className="h-px w-8 sm:w-12 bg-accent shrink-0" />
+              <span className="font-mono text-[10px] sm:text-xs text-accent tracking-widest uppercase">
                 The Official Pumpkin MC Registry
               </span>
             </div>
 
             {/* Main title */}
-            <h1 className="fade-up delay-2 font-raleway font-black text-6xl md:text-8xl leading-none tracking-tight text-text-primary mb-6 max-w-4xl">
+            <h1
+              className="fade-up delay-2 font-raleway font-black leading-none tracking-tight text-text-primary mb-5 sm:mb-6 max-w-4xl"
+              style={{ fontSize: "clamp(2.75rem, 11vw, 8rem)" }}
+            >
               FORGE YOUR
               <br />
               <span className="text-accent">SERVER.</span>
@@ -425,7 +428,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
               <span className="text-text-subtle">SHIP FAST.</span>
             </h1>
 
-            <p className="fade-up delay-3 font-raleway text-text-subtle text-lg max-w-xl mb-12 leading-relaxed">
+            <p className="fade-up delay-3 font-raleway text-text-subtle text-base sm:text-lg max-w-xl mb-8 sm:mb-12 leading-relaxed">
               The community registry for Pumpkin MC — the Minecraft server engine
               written in pure Rust. Browse, verify, and install plugins at the speed
               of compiled code.
@@ -433,7 +436,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
 
             {/* Command search bar */}
             <form onSubmit={handleSearchSubmit} className="fade-up delay-4 max-w-2xl glow-orange">
-              <div className="border border-border-hover bg-bg-elevated flex items-center gap-4 px-5 py-4 hover:border-border-hover transition-colors">
+              <div className="border border-border-hover bg-bg-elevated flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-4 hover:border-border-hover transition-colors">
                 <Terminal className="text-accent flex-shrink-0 w-[18px] h-[18px]" />
                 <input
                   ref={inputRef}
@@ -441,11 +444,11 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeydown}
-                  placeholder={`Search plugins, authors, tags... (${isMac ? "⌘" : "Ctrl+"}K)`}
-                  className="search-input flex-1 bg-transparent font-mono text-sm text-text-primary placeholder-text-dim border-0 outline-none"
+                  placeholder={`Search plugins... (${isMac ? "⌘" : "Ctrl+"}K)`}
+                  className="search-input min-w-0 flex-1 bg-transparent font-mono text-sm text-text-primary placeholder-text-dim border-0 outline-none"
                   aria-label="Search plugins"
                 />
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2 shrink-0">
                   <kbd className="font-mono text-[10px] text-text-dim border border-border-default px-1.5 py-0.5">
                     {isMac ? "⌘" : "Ctrl"}
                   </kbd>
@@ -456,11 +459,11 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
               </div>
               {/* Search suggestions */}
               <div className="border border-t-0 border-border-default bg-bg-elevated/80">
-                <div className="px-5 py-2 flex items-center gap-6">
-                  <span className="font-mono text-xs text-text-muted uppercase tracking-widest">
+                <div className="px-4 sm:px-5 py-2 flex items-center gap-3 sm:gap-6 overflow-x-auto">
+                  <span className="font-mono text-xs text-text-muted uppercase tracking-widest shrink-0">
                     Popular:
                   </span>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     {["#protection", "#economy", "#world-gen", "#auth"].map(
                       (tag) => (
                         <button
@@ -471,7 +474,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
                               `/explorer?q=${encodeURIComponent(tag.slice(1))}`,
                             )
                           }
-                          className="font-mono text-xs text-text-subtle hover:text-accent transition-colors px-2 py-0.5 border border-border-default hover:border-accent/50"
+                          className="font-mono text-xs text-text-subtle hover:text-accent transition-colors px-2 py-0.5 border border-border-default hover:border-accent/50 shrink-0"
                         >
                           {tag}
                         </button>
@@ -499,28 +502,31 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
         </div>
 
         {/* Stats row */}
-        <div ref={statsRef} className="mt-12 flex items-center gap-8 fade-up delay-4">
-          <div className="border-l-2 border-accent pl-4">
-            <div className="font-mono text-2xl font-bold text-text-primary">
+        <div
+          ref={statsRef}
+          className="mt-10 sm:mt-12 grid grid-cols-3 gap-3 sm:gap-6 lg:flex lg:items-center lg:gap-8 fade-up delay-4"
+        >
+          <div className="border-l-2 border-accent pl-3 sm:pl-4 min-w-0">
+            <div className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-text-primary truncate">
               {totalPlugins > 0 ? animPlugins.toLocaleString() : "—"}
             </div>
-            <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
+            <div className="font-mono text-[10px] sm:text-xs text-text-muted uppercase tracking-widest">
               Plugins
             </div>
           </div>
-          <div className="border-l border-border-default pl-8">
-            <div className="font-mono text-2xl font-bold text-text-primary">
+          <div className="border-l border-border-default pl-3 sm:pl-4 lg:pl-8 min-w-0">
+            <div className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-text-primary truncate">
               {totalAuthors > 0 ? animAuthors.toLocaleString() : "—"}
             </div>
-            <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
+            <div className="font-mono text-[10px] sm:text-xs text-text-muted uppercase tracking-widest">
               Authors
             </div>
           </div>
-          <div className="border-l border-border-default pl-8">
-            <div className="font-mono text-2xl font-bold text-text-primary">
+          <div className="border-l border-border-default pl-3 sm:pl-4 lg:pl-8 min-w-0">
+            <div className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-text-primary truncate">
               {totalDownloads > 0 ? animDownloads.toLocaleString() : "—"}
             </div>
-            <div className="font-mono text-xs text-text-muted uppercase tracking-widest">
+            <div className="font-mono text-[10px] sm:text-xs text-text-muted uppercase tracking-widest">
               Downloads
             </div>
           </div>

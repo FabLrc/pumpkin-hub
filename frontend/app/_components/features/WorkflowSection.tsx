@@ -73,18 +73,18 @@ export function WorkflowSection() {
       aria-labelledby="workflow-heading"
       className="border-t border-border-default bg-bg-elevated/30"
     >
-      <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
-        <div className="flex items-center gap-3 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20 md:py-24 lg:py-32">
+        <div className="flex items-center gap-3 mb-6 sm:mb-8">
           <div className="h-px w-8 bg-accent" />
           <span className="font-mono text-xs text-accent tracking-widest uppercase">
             {"// 02 — the workflow"}
           </span>
         </div>
 
-        <div className="mb-16 md:mb-20 max-w-3xl">
+        <div className="mb-10 sm:mb-14 md:mb-16 lg:mb-20 max-w-3xl">
           <h2
             id="workflow-heading"
-            className="font-raleway font-black text-3xl md:text-5xl text-text-primary mb-4"
+            className="font-raleway font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-text-primary mb-3 sm:mb-4"
           >
             Built for Server Admins
           </h2>
@@ -122,7 +122,7 @@ export function WorkflowSection() {
                     </p>
                   </div>
                 </div>
-                <div className="h-[320px] mt-4">
+                <div className="mt-4">
                   <StepPreview index={i} active />
                 </div>
               </div>
