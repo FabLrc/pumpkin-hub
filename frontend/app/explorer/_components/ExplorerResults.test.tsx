@@ -32,6 +32,7 @@ vi.mock("./SearchHitCard", () => ({
 vi.mock("lucide-react", () => ({
   List: (props: Record<string, unknown>) => <svg data-testid="list-icon" {...props} />,
   LayoutGrid: (props: Record<string, unknown>) => <svg data-testid="grid-icon" {...props} />,
+  SlidersHorizontal: (props: Record<string, unknown>) => <svg data-testid="sliders-icon" {...props} />,
 }));
 
 const makeHit = (id: string, name: string): SearchHit => ({
@@ -115,6 +116,51 @@ describe("ExplorerResults", () => {
 
   // ── Empty state ────────────────────────────────────────────────────────
 
+  it("shows error state when error is provided", () => {
+    render(
+      <ExplorerResults
+        {...defaultProps}
+        hits={[]}
+        estimatedTotal={0}
+        error={new Error("Network error")}
+      />,
+    );
+    expect(screen.getByText("Search failed")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Could not load search results/),
+    ).toBeInTheDocument();
+  });
+
+  it("shows mobile filter button with active filter count", () => {
+    const onMobileFilterOpen = vi.fn();
+    render(
+      <ExplorerResults
+        {...defaultProps}
+        estimatedTotal={2}
+        perPage={20}
+        hits={[makeHit("1", "Alpha")]}
+        onMobileFilterOpen={onMobileFilterOpen}
+        activeFilterCount={3}
+      />,
+    );
+    expect(screen.getByText("Filters")).toBeInTheDocument();
+    const badge = screen.getByText("3").closest(".bg-accent");
+    expect(badge).toBeInTheDocument();
+  });
+
+  it("does not show filter badge when activeFilterCount is 0", () => {
+    const onMobileFilterOpen = vi.fn();
+    render(
+      <ExplorerResults
+        {...defaultProps}
+        onMobileFilterOpen={onMobileFilterOpen}
+        activeFilterCount={0}
+      />,
+    );
+    expect(screen.getByText("Filters")).toBeInTheDocument();
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+
   it("shows empty state when no hits", () => {
     render(<ExplorerResults {...defaultProps} hits={[]} estimatedTotal={0} />);
     expect(screen.getByText("No plugins found")).toBeInTheDocument();
@@ -128,6 +174,19 @@ describe("ExplorerResults", () => {
   it("shows loading skeleton when isLoading", () => {
     const { container } = render(
       <ExplorerResults {...defaultProps} isLoading={true} hits={[]} />,
+    );
+    const pulses = container.querySelectorAll(".animate-pulse");
+    expect(pulses.length).toBeGreaterThan(0);
+  });
+
+  it("shows grid loading skeleton for grid view", () => {
+    const { container } = render(
+      <ExplorerResults
+        {...defaultProps}
+        isLoading={true}
+        hits={[]}
+        viewMode="grid"
+      />,
     );
     const pulses = container.querySelectorAll(".animate-pulse");
     expect(pulses.length).toBeGreaterThan(0);
