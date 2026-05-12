@@ -8,29 +8,33 @@ describe("FeaturesSection", () => {
     expect(screen.getByText("Why Pumpkin Hub")).toBeInTheDocument();
   });
 
-  it("renders all 3 feature headings", () => {
+  it("renders the 'Powered by Pumpkin' sub-heading", () => {
     render(<FeaturesSection />);
-    expect(screen.getByText("Zero-Cost Abstractions")).toBeInTheDocument();
-    expect(screen.getByText("Binary Verification")).toBeInTheDocument();
-    expect(screen.getByText("Cross-Architecture")).toBeInTheDocument();
+    expect(screen.getByText("Powered by Pumpkin")).toBeInTheDocument();
   });
 
-  it("shows performance stats", () => {
+  it("renders the 'Built for Server Admins' sub-heading", () => {
     render(<FeaturesSection />);
-    expect(screen.getByText("0.8ms")).toBeInTheDocument();
-    expect(screen.getByText("12x faster")).toBeInTheDocument();
+    expect(screen.getByText("Built for Server Admins")).toBeInTheDocument();
   });
 
-  it("shows architecture support grid", () => {
+  it("shows Pumpkin performance stats", () => {
     render(<FeaturesSection />);
-    expect(screen.getByText("x86_64")).toBeInTheDocument();
-    expect(screen.getByText("aarch64")).toBeInTheDocument();
-    expect(screen.getByText("RISC-V")).toBeInTheDocument();
-    expect(screen.getByText("WASM")).toBeInTheDocument();
+    expect(screen.getAllByText("~5ms").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("~100MB").length).toBeGreaterThan(0);
   });
 
-  it("shows verify command example", () => {
+  it("renders comparison table with metrics", () => {
     render(<FeaturesSection />);
-    expect(screen.getByText("# Verify a download")).toBeInTheDocument();
+    expect(screen.getAllByText("Pumpkin").length).toBeGreaterThan(0);
+    expect(screen.getByText("Paper")).toBeInTheDocument();
+    expect(screen.getByText("Vanilla")).toBeInTheDocument();
+  });
+
+  it("renders all 3 admin feature cards", () => {
+    render(<FeaturesSection />);
+    expect(screen.getByText("Server Builder")).toBeInTheDocument();
+    expect(screen.getByText("GitHub Auto-Publishing")).toBeInTheDocument();
+    expect(screen.getByText("WASM Everywhere")).toBeInTheDocument();
   });
 });

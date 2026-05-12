@@ -39,9 +39,9 @@ export default function HomePage() {
         </section>
       )}
       <RecentlyPublishedSection />
-      <ServerBuilderSpotlight />
-      <TrendingSection plugins={plugins} isLoading={pluginsLoading} error={pluginsError} />
       <FeaturesSection />
+      <TrendingSection plugins={plugins} isLoading={pluginsLoading} error={pluginsError} />
+      <ServerBuilderSpotlight />
       <CtaSection authorsCount={statsData?.total_authors ?? 0} />
       <Footer />
     </>
