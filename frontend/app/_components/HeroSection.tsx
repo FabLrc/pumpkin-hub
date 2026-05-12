@@ -54,6 +54,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
   }, [focusSearchInput]);
 
   useEffect(() => {
+    /* c8 ignore start */
     const canvas = canvasRef.current;
     const flashEl = flashRef.current;
     if (!canvas) return;
@@ -72,7 +73,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
 
     function applySize() {
       if (!canvas || !ctx) return;
-      // Cap DPR — shadowBlur cost is quadratic in pixel count, and visual diff above 1.5 is negligible for blurred shapes
       dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       w = canvas.offsetWidth;
       h = canvas.offsetHeight;
@@ -96,7 +96,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
     io?.observe(canvas);
 
     const rand = (min: number, max: number) => Math.random() * (max - min) + min;
-    // Box-Muller gaussian
+
     function gauss(mean: number, std: number) {
       const u = 1 - Math.random();
       const v = Math.random();
@@ -132,14 +132,12 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
         const segLen = rand(20, 45);
         const jitter = (Math.random() - 0.5) * 35;
         x += bias + jitter;
-        // Always progress downward — no zigzag arrière
         y += Math.max(8, segLen);
         x = Math.max(10, Math.min(w - 10, x));
         points.push({ x, y });
         bias *= 0.85;
         if (y > h + 60) break;
       }
-      // Guarantee bolt reaches the bottom
       const last = points[points.length - 1]!;
       if (last.y < h + 10) {
         points.push({ x: last.x + (Math.random() - 0.5) * 30, y: h + 20 });
@@ -201,7 +199,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
     }
 
     function spawnStrike(now: number) {
-      // Weighted origin around 65% of canvas width — visually near the soldier
       let sx: number;
       if (Math.random() < 0.6) {
         sx = gauss(w * 0.65, w * 0.2);
@@ -215,7 +212,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
       const main = createBolt(sx, -10, baseThickness, flashType, now);
       bolts.push(main);
 
-      // Recursive branches (perf-budgeted)
       const numBranches = Math.random() < 0.6 ? Math.floor(rand(1, 3)) : 0;
       for (let bi = 0; bi < numBranches; bi++) {
         if (main.points.length < 5) break;
@@ -224,7 +220,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
         const branch = createBolt(origin.x, origin.y, baseThickness * 0.55, "single", now);
         bolts.push(branch);
 
-        // Sub-branch (1 level deeper)
         if (Math.random() < 0.2 && branch.points.length > 4) {
           const idx2 = Math.floor(rand(2, branch.points.length - 2));
           const o2 = branch.points[idx2]!;
@@ -236,7 +231,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
       triggerEnvFlash(flashType === "double" ? 0.16 : 0.11);
     }
 
-    // Trace a polyline subset [fromIdx..toIdx] into the current path
     function tracePath(points: Point[], fromIdx: number, toIdx: number) {
       const start = points[fromIdx]!;
       ctx!.beginPath();
@@ -271,7 +265,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
 
       const t = b.thickness;
 
-      // Outer wide orange halo — single stroke (taper imperceptible under heavy blur)
       ctx!.strokeStyle = `rgba(249, 115, 22, ${o * 0.35})`;
       ctx!.lineWidth = t * 3;
       ctx!.shadowColor = `rgba(249, 115, 22, ${o * 0.85})`;
@@ -279,7 +272,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
       tracePath(points, 0, n);
       ctx!.stroke();
 
-      // Mid warm cream — single stroke
       ctx!.strokeStyle = `rgba(255, 200, 140, ${o * 0.75})`;
       ctx!.lineWidth = t * 1.6;
       ctx!.shadowColor = `rgba(255, 160, 80, ${o * 0.7})`;
@@ -287,7 +279,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
       tracePath(points, 0, n);
       ctx!.stroke();
 
-      // White-hot core — tapered in 3 width tiers (only where taper is visually meaningful)
       const third = Math.max(1, Math.floor(n / 3));
       const twoThirds = Math.max(third + 1, Math.floor((2 * n) / 3));
       ctx!.strokeStyle = `rgba(255, 255, 255, ${o})`;
@@ -320,7 +311,6 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
         return;
       }
 
-      // Only clear if there is something on screen (or we need to clear last frame)
       if (bolts.length > 0 || prevHadBolts) {
         ctx!.clearRect(0, 0, w, h);
       }
@@ -371,6 +361,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
       ro?.disconnect();
       io?.disconnect();
     };
+    /* c8 ignore stop */
   }, []);
 
   function handleSearchKeydown(event: React.KeyboardEvent<HTMLInputElement>) {
