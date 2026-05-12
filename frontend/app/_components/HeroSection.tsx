@@ -165,7 +165,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
     }
 
     const bolts: Bolt[] = [];
-    let nextStrike = rand(500, 2000);
+    let nextStrike = rand(300, 1500);
     let lastTime = 0;
     let animId = 0;
     let burstMode = false;
@@ -176,7 +176,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
         burstRemaining--;
         if (burstRemaining <= 0) {
           burstMode = false;
-          nextStrike = rand(2500, 6000);
+        nextStrike = rand(1000, 3000);
         } else {
           nextStrike = rand(150, 500);
         }
@@ -396,7 +396,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
       <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-accent/20 to-transparent" />
       <canvas
         ref={canvasRef}
-        className="absolute top-0 right-0 h-full pointer-events-none z-0"
+        className="hidden lg:block absolute top-0 right-0 h-full pointer-events-none z-0"
         style={{ width: "45%" }}
       />
       {/* Environmental flash overlay — pulses during each lightning strike */}
@@ -496,7 +496,7 @@ export function HeroSection({ totalPlugins, totalAuthors, totalDownloads }: Hero
           <div className="hidden lg:block relative fade-up delay-3 self-stretch">
             <div className="relative h-full min-h-[500px] w-[480px]">
               <Image
-                src="/pumpkin-hub-soldier-pumpkin-netherite.png"
+                src="/pumpkin-hub-soldier-pumpkin-netherite.webp"
                 alt="Pumpkin soldier in netherite armor"
                 fill
                 priority
