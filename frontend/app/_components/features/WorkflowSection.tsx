@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Package, GitBranch, FileCode } from "lucide-react";
 import { TerminalPreview } from "./TerminalPreview";
-import { FileTreePreview } from "./FileTreePreview";
+import { GithubWorkflowPreview } from "./GithubWorkflowPreview";
 import { DeployPreview } from "./DeployPreview";
 
 const STEPS = [
@@ -32,7 +32,7 @@ const STEPS = [
 
 function StepPreview({ index, active }: { index: number; active: boolean }) {
   if (index === 0) return <TerminalPreview active={active} />;
-  if (index === 1) return <FileTreePreview />;
+  if (index === 1) return <GithubWorkflowPreview active={active} />;
   return <DeployPreview />;
 }
 
@@ -194,7 +194,7 @@ export function WorkflowSection() {
           </div>
 
           <div className="col-span-7">
-            <div className="sticky top-24 h-[70vh] min-h-[480px]">
+            <div className="sticky top-24 h-[70vh] min-h-[560px]">
               <div key={active} className="h-full fade-up">
                 <StepPreview index={active} active />
               </div>
