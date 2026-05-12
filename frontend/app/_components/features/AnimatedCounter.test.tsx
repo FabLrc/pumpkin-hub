@@ -2,10 +2,6 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import { AnimatedCounter } from "./AnimatedCounter";
 
-afterAll(() => {
-  vi.useRealTimers();
-});
-
 describe("AnimatedCounter", () => {
   it("renders with prefix and suffix", () => {
     const { container } = render(<AnimatedCounter target={42} prefix="$" suffix="M" />);
@@ -27,6 +23,4 @@ describe("AnimatedCounter", () => {
     const span = container.querySelector("span");
     expect(span?.style.fontVariantNumeric).toBe("tabular-nums");
   });
-
-
 });
