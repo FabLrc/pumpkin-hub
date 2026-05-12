@@ -20,8 +20,12 @@ import {
   usePlugins,
   usePluginVersions,
   usePumpkinVersions,
+  usePublicStats,
   useReviews,
   useSearch,
+  useServerConfig,
+  useServerConfigByShare,
+  useServerConfigs,
   useUnreadCount,
 } from "./hooks";
 
@@ -113,6 +117,41 @@ describe("lib/hooks", () => {
 
     expect(getCall(2)![0]!).toBe("/plugins/slug/github");
     expect(getCall(3)![0]!).toBeNull();
+  });
+
+  it("builds public stats key", () => {
+    usePublicStats();
+    expect(getCall(0)![0]!).toBe("/stats");
+    expect(getCall(0)![2]!).toMatchObject({ dedupingInterval: 60000 });
+  });
+
+  it("builds server config keys with null guards", () => {
+    useServerConfigs();
+    useServerConfig("cfg-1");
+    useServerConfig(null);
+    useServerConfigByShare("token-abc");
+    useServerConfigByShare(null);
+
+    expect(getCall(0)![0]!).toBe("/server-configs");
+    expect(getCall(1)![0]!).toBe("/server-configs/cfg-1");
+    expect(getCall(2)![0]!).toBeNull();
+    expect(getCall(3)![0]!).toBe("/server-configs/share/token-abc");
+    expect(getCall(4)![0]!).toBeNull();
+  });
+
+  it("returns non-null configs array from useServerConfigs", () => {
+    const useSwrMock = vi.mocked(useSWR);
+    useSwrMock.mockReturnValueOnce({ data: undefined, isLoading: false } as ReturnType<typeof useSWR>);
+    const result = useServerConfigs();
+    expect(result.configs).toEqual([]);
+    expect(result.isLoading).toBe(false);
+
+    useSwrMock.mockReturnValueOnce({
+      data: { configs: [{ id: "cfg-1", name: "Test" }] },
+      isLoading: false,
+    } as ReturnType<typeof useSWR>);
+    const result2 = useServerConfigs();
+    expect(result2.configs).toHaveLength(1);
   });
 
   it("builds review/media/changelog keys", () => {

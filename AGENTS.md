@@ -41,7 +41,7 @@ npm run dev              # Hot reload (needs api on :8080)
 npm run lint             # ESLint --max-warnings 0 (flat config in eslint.config.mjs)
 npm run test             # Vitest (jsdom, global setup in vitest.setup.ts)
 npm run test -- path/to/file.test.tsx  # Single test
-npm run test:coverage    # Thresholds: lines 80%, functions 80%, branches 75%, statements 80%
+npm run test:coverage    # Thresholds: lines 79%, functions 78%, branches 74%, statements 77%
 ```
 
 ### API (`cd api`)

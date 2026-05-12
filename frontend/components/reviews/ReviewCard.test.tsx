@@ -127,6 +127,69 @@ describe("ReviewCard", () => {
     expect(onReport).toHaveBeenCalledOnce();
   });
 
+  it("shows (edited) when updated_at differs from created_at", () => {
+    const editedReview = {
+      ...baseReview,
+      updated_at: "2024-01-02T00:00:00Z",
+    };
+    render(
+      <ReviewCard
+        review={editedReview}
+        currentUserId={null}
+        isPluginAuthor={false}
+        isStaff={false}
+        onDelete={vi.fn()}
+        onReport={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/\(edited\)/)).toBeInTheDocument();
+  });
+
+  it("does not show (edited) when dates match", () => {
+    render(
+      <ReviewCard
+        review={baseReview}
+        currentUserId={null}
+        isPluginAuthor={false}
+        isStaff={false}
+        onDelete={vi.fn()}
+        onReport={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("(edited)")).not.toBeInTheDocument();
+  });
+
+  it("renders without title when title is empty", () => {
+    const noTitle = { ...baseReview, title: "" };
+    render(
+      <ReviewCard
+        review={noTitle}
+        currentUserId={null}
+        isPluginAuthor={false}
+        isStaff={false}
+        onDelete={vi.fn()}
+        onReport={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Works really well!")).toBeInTheDocument();
+  });
+
+  it("renders without body when body is empty", () => {
+    const noBody = { ...baseReview, body: "" };
+    render(
+      <ReviewCard
+        review={noBody}
+        currentUserId={null}
+        isPluginAuthor={false}
+        isStaff={false}
+        onDelete={vi.fn()}
+        onReport={vi.fn()}
+      />,
+    );
+    // Should render the title but not find the body
+    expect(screen.getByText("Great plugin")).toBeInTheDocument();
+  });
+
   it("uses avatar initials when no avatar_url", () => {
     render(
       <ReviewCard
