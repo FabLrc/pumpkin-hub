@@ -21,7 +21,7 @@ export function PreviewFrame({ label, children, className }: PreviewFrameProps) 
           {label}
         </span>
       </div>
-      <div className="flex-1 p-5 md:p-6 overflow-hidden">{children}</div>
+      <div className="flex-1 p-4 md:p-5 overflow-hidden">{children}</div>
     </div>
   );
 }
