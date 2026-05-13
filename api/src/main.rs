@@ -2,6 +2,7 @@ use pumpkin_hub_api::{
     config::Config,
     db,
     search::{PumpkinVersionFetcher, SearchService},
+    services::build_worker,
     storage::{pumpkin_binary::PumpkinBinaryCache, ObjectStorage},
 };
 
@@ -59,6 +60,15 @@ async fn main() {
     }
 
     let pumpkin_binary_cache = PumpkinBinaryCache::new();
+
+    // Spawn background build worker for PumpkinHub Studio
+    let studio_pool = pool.clone();
+    let studio_storage = storage.clone();
+    tokio::spawn(async move {
+        let config = build_worker::StudioConfig::default();
+        tracing::info!("Starting PumpkinHub Studio build worker");
+        build_worker::run_build_worker(studio_pool, studio_storage, config).await;
+    });
 
     let addr = config.server.address;
     tracing::info!(%addr, "Starting pumpkin-hub-api");

@@ -5,8 +5,9 @@ ENV RUST_ENV=development
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/* \
-    && cargo install cargo-watch
+RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /var/lib/apt/lists/* \
+    && cargo install cargo-watch \
+    && rustup target add wasm32-wasip1
 
 EXPOSE 8080
 

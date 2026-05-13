@@ -103,6 +103,9 @@ base64 = "0.22"
 # ZIP archive creation (server-config download bundles)
 zip = { version = "2", default-features = false, features = ["deflate"] }
 
+# Temp directories and files
+tempfile = "3"
+
 # Combinators for running async futures concurrently (e.g. try_join_all)
 futures = "0.3"
 
