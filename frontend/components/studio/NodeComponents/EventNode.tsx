@@ -6,6 +6,13 @@ import type { StudioNodeData } from "@/lib/types";
 
 type EventNodeProps = NodeProps<Node<StudioNodeData>>;
 
+const handleColors: Record<string, string> = {
+  player: "#f97316",
+  string: "#22c55e",
+  number: "#22c55e",
+  boolean: "#a855f7",
+};
+
 export function EventNode({ data, selected }: EventNodeProps) {
   return (
     <div
@@ -23,7 +30,22 @@ export function EventNode({ data, selected }: EventNodeProps) {
         {data.definition.description && (
           <p className="mb-1 opacity-60">{data.definition.description}</p>
         )}
-        <Handle type="source" position={Position.Bottom} className="!bg-white !w-2.5 !h-2.5" />
+        {data.definition.outputs.map((output) => (
+          <div key={output.id} className="flex items-center justify-between gap-2 py-0.5">
+            <span className="opacity-60">{output.label}</span>
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={output.id}
+              className="!w-2.5 !h-2.5 !border-2 !border-[#1a1a2e]"
+              style={{
+                backgroundColor: handleColors[output.output_type] || "#888",
+                position: "relative",
+                right: "-12px",
+              }}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -90,13 +90,19 @@ export const useStudioStore = create<StudioState>((set, get) => ({
 
   addNodeFromDefinition: (def, position) => {
     const validTypes = ["event", "action", "logic", "data", "math"];
+    const initialValues: Record<string, unknown> = {};
+    for (const param of def.parameters) {
+      if (param.default_value !== undefined) {
+        initialValues[param.id] = param.default_value;
+      }
+    }
     const node: StudioNode = {
       id: `${def.node_id}-${Date.now()}`,
       type: validTypes.includes(def.category) ? def.category : "default",
       position,
       data: {
         definition: def,
-        values: {},
+        values: initialValues,
         label: def.label,
         color: def.color,
       },

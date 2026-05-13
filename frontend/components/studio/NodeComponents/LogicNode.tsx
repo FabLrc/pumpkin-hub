@@ -48,28 +48,26 @@ export function LogicNode({ data, selected }: LogicNodeProps) {
         ))}
 
         {isConditional && (
-          <>
-            <div className="flex items-center gap-2 py-0.5">
-              <span className="text-[10px] text-[#22c55e]">✓ Vrai</span>
+          <div className="flex items-center justify-around gap-4 py-1 mt-1 border-t border-[#333]">
+            <div className="flex flex-col items-center gap-0.5">
               <Handle
                 type="source"
                 position={Position.Bottom}
                 id="true"
                 className="!w-2.5 !h-2.5 !bg-[#22c55e]"
-                style={{ left: "25%" }}
               />
+              <span className="text-[10px] text-[#22c55e]">Vrai</span>
             </div>
-            <div className="flex items-center gap-2 py-0.5">
-              <span className="text-[10px] text-red-400">✗ Faux</span>
+            <div className="flex flex-col items-center gap-0.5">
               <Handle
                 type="source"
                 position={Position.Bottom}
                 id="false"
                 className="!w-2.5 !h-2.5 !bg-red-400"
-                style={{ left: "25%" }}
               />
+              <span className="text-[10px] text-red-400">Faux</span>
             </div>
-          </>
+          </div>
         )}
 
         {!isConditional && (
