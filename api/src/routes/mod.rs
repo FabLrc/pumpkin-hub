@@ -14,6 +14,7 @@ pub(crate) mod plugins;
 mod reviews;
 mod search;
 mod stats;
+pub(crate) mod studio;
 mod users;
 
 use std::sync::Arc;
@@ -50,4 +51,5 @@ fn v1_routes(auth_governor: Arc<AppGovernorConfig>) -> Router<AppState> {
         .merge(admin::routes())
         .merge(github::routes())
         .merge(configurator::routes())
+        .merge(studio::routes())
 }
