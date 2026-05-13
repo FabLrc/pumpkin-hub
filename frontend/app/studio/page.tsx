@@ -80,7 +80,7 @@ export default function StudioPage() {
 
         {error && (
           <div className="text-xs text-red-400 text-center py-8">
-            Erreur lors du chargement des projets.
+            Impossible de charger vos projets. Vérifiez votre connexion au serveur.
           </div>
         )}
 

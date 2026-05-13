@@ -30,7 +30,9 @@ export default function EditStudioProjectPage() {
   } = useStudioStore();
 
   const { data, error, isLoading } = useSWR(
-    projectId && !projectId.startsWith("local-") ? `studio-project-${projectId}` : null,
+    projectId && !projectId.startsWith("local-") && projectId !== "new"
+      ? `studio-project-${projectId}`
+      : null,
     () => getStudioProject(projectId),
     { revalidateOnFocus: false },
   );

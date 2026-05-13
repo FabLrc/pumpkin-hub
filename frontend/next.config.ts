@@ -36,7 +36,9 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: ${imgSrcOrigins}`,
       "font-src 'self' data:",
-      "connect-src 'self' https: wss:",
+      `connect-src 'self' https: wss: ${
+        process.env.NEXT_PUBLIC_API_URL ?? ""
+      }`,
       "media-src 'none'",
       "object-src 'none'",
       "frame-src 'none'",

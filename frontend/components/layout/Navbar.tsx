@@ -77,6 +77,9 @@ export function Navbar() {
           <Link href="/server-builder" className={navLinkClass("/server-builder")}>
             Server Builder
           </Link>
+          <Link href="/studio" className={navLinkClass("/studio")}>
+            Studio
+          </Link>
           <Link href="/plugins/new" className={navLinkClass("/plugins/new", true)}>
             Submit Plugin
           </Link>
@@ -252,6 +255,13 @@ export function Navbar() {
               className="block py-3 text-text-subtle hover:text-text-primary transition-colors border-b border-border-default"
             >
               Server Builder
+            </Link>
+            <Link
+              href="/studio"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block py-3 text-text-subtle hover:text-text-primary transition-colors border-b border-border-default"
+            >
+              Studio
             </Link>
             <Link
               href="/plugins/new"
