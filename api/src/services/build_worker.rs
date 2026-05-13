@@ -41,14 +41,30 @@ pub struct StudioConfig {
     pub build_timeout_seconds: u64,
     pub s3_prefix: String,
     pub max_build_concurrency: u32,
+    pub max_artifact_size_bytes: u64,
 }
 
-impl Default for StudioConfig {
-    fn default() -> Self {
+impl StudioConfig {
+    pub fn from_env() -> Self {
+        let build_timeout = std::env::var("STUDIO_BUILD_TIMEOUT_SECONDS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(300);
+
+        let max_artifact = std::env::var("STUDIO_MAX_ARTIFACT_SIZE_BYTES")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(50 * 1024 * 1024); // 50MB default
+
         Self {
-            build_timeout_seconds: 300,
-            s3_prefix: "studio-builds".to_string(),
-            max_build_concurrency: 2,
+            build_timeout_seconds: build_timeout,
+            s3_prefix: std::env::var("STUDIO_S3_PREFIX")
+                .unwrap_or_else(|_| "studio-builds".to_string()),
+            max_build_concurrency: std::env::var("STUDIO_MAX_BUILD_CONCURRENCY")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(2),
+            max_artifact_size_bytes: max_artifact,
         }
     }
 }
@@ -98,6 +114,7 @@ async fn process_next_build(
         "Build worker picked up job"
     );
 
+    // Use RAII: TempDir auto-cleans on drop. Never call close() manually.
     let tmp_dir = tempfile::Builder::new()
         .prefix("pumpkin-build-")
         .tempdir()
@@ -106,114 +123,136 @@ async fn process_next_build(
     let build_path = tmp_dir.path().join(&job.project_slug);
     let src_path = build_path.join("src");
 
-    std::fs::create_dir_all(&src_path)
+    let result = try_build(&job, &build_path, &src_path, pool, storage, config).await;
+
+    // If the build failed AND we didn't already mark it as failed, mark it now.
+    // This catch covers S3 upload errors, unexpected panics, etc.
+    if let Err(ref e) = result {
+        let msg = format!("Build error: {e}");
+        // Non-blocking mark — ignore secondary errors
+        let _ = mark_build_failed(pool, job.id, &msg).await;
+    }
+
+    // tmp_dir drops here → RAII cleanup
+    result
+}
+
+async fn try_build(
+    job: &BuildJob,
+    build_path: &std::path::Path,
+    src_path: &std::path::Path,
+    pool: &PgPool,
+    storage: &ObjectStorage,
+    config: &StudioConfig,
+) -> Result<(), AppError> {
+    std::fs::create_dir_all(src_path)
         .map_err(|e| AppError::internal(std::io::Error::other(format!("mkdir src: {e}"))))?;
 
     let cargo_toml = generate_cargo_toml(&job.project_slug);
     std::fs::write(build_path.join("Cargo.toml"), &cargo_toml)
         .map_err(|e| AppError::internal(std::io::Error::other(format!("write Cargo.toml: {e}"))))?;
 
-    let source = match code_generator::generate_rust_source(&job.project_slug, &job.flow_data) {
-        Ok(s) => s,
-        Err(e) => {
-            mark_build_failed(pool, job.id, &format!("Code generation error: {e}")).await?;
-            let _ = tmp_dir.close();
-            return Ok(());
-        }
-    };
+    let source = code_generator::generate_rust_source(&job.project_slug, &job.flow_data)?;
 
     std::fs::write(src_path.join("lib.rs"), &source)
         .map_err(|e| AppError::internal(std::io::Error::other(format!("write lib.rs: {e}"))))?;
 
     let timeout_duration = std::time::Duration::from_secs(config.build_timeout_seconds);
-    let build_log = compile_wasm(&build_path, timeout_duration).await;
+    match compile_wasm(build_path, timeout_duration).await {
+        Err(log) => {
+            let msg = log.chars().take(5000).collect::<String>();
+            return Err(AppError::UnprocessableEntity(msg));
+        }
+        Ok(log) => {
+            let truncated_log = log.chars().take(10000).collect::<String>();
 
-    if let Err(ref log) = build_log {
-        mark_build_failed(pool, job.id, log).await?;
-        let _ = tmp_dir.close();
-        return Ok(());
+            let wasm_filename = format!("{}.wasm", job.project_slug.replace('-', "_"));
+            let wasm_path = build_path
+                .join("target")
+                .join("wasm32-wasip1")
+                .join("release")
+                .join(&wasm_filename);
+
+            if !wasm_path.exists() {
+                return Err(AppError::UnprocessableEntity(format!(
+                    "WASM binary not found after build\n{truncated_log}"
+                )));
+            }
+
+            let wasm_bytes = tokio::fs::read(&wasm_path)
+                .await
+                .map_err(|e| AppError::internal(std::io::Error::other(format!("read wasm: {e}"))))?;
+
+            if (wasm_bytes.len() as u64) > config.max_artifact_size_bytes {
+                return Err(AppError::UnprocessableEntity(format!(
+                    "WASM artifact too large ({} bytes, max {})",
+                    wasm_bytes.len(),
+                    config.max_artifact_size_bytes
+                )));
+            }
+
+            let checksum = {
+                use sha2::Digest;
+                let mut hasher = sha2::Sha256::new();
+                hasher.update(&wasm_bytes);
+                format!("{:x}", hasher.finalize())
+            };
+
+            let file_size = wasm_bytes.len() as i64;
+            let storage_key = format!(
+                "{}/{}/{}/{}",
+                config.s3_prefix, job.project_id, job.build_number, wasm_filename
+            );
+
+            // Upload to S3 — if this fails, the outer result handler in process_next_build
+            // will call mark_build_failed
+            storage
+                .put_object(&storage_key, wasm_bytes, "application/wasm")
+                .await
+                .map_err(|e| AppError::internal(std::io::Error::other(format!("s3 upload: {e}"))))?;
+
+            sqlx::query(
+                "UPDATE build_jobs
+                 SET status = 'success', logs = $2, artifact_storage_key = $3,
+                     artifact_checksum_sha256 = $4, artifact_file_size = $5,
+                     completed_at = now()
+                 WHERE id = $1",
+            )
+            .bind(job.id)
+            .bind(&truncated_log)
+            .bind(&storage_key)
+            .bind(&checksum)
+            .bind(file_size)
+            .execute(pool)
+            .await
+            .map_err(AppError::internal)?;
+
+            sqlx::query(
+                "UPDATE plugin_projects SET status = 'draft', updated_at = now() WHERE id = $1",
+            )
+            .bind(job.project_id)
+            .execute(pool)
+            .await
+            .map_err(AppError::internal)?;
+
+            cleanup_old_builds(pool, storage, job.project_id).await?;
+
+            tracing::info!(
+                build_id = %job.id,
+                project = %job.project_slug,
+                "Build completed successfully"
+            );
+
+            Ok(())
+        }
     }
-
-    let build_log = build_log.unwrap_or_default();
-
-    let wasm_filename = format!("{}.wasm", job.project_slug.replace('-', "_"));
-    let wasm_path = build_path
-        .join("target")
-        .join("wasm32-wasip1")
-        .join("release")
-        .join(&wasm_filename);
-
-    if !wasm_path.exists() {
-        let msg = format!("WASM binary not found after build\n{build_log}");
-        mark_build_failed(pool, job.id, &msg).await?;
-        let _ = tmp_dir.close();
-        return Ok(());
-    }
-
-    let wasm_bytes = tokio::fs::read(&wasm_path)
-        .await
-        .map_err(|e| AppError::internal(std::io::Error::other(format!("read wasm: {e}"))))?;
-
-    let checksum = {
-        use sha2::Digest;
-        let mut hasher = sha2::Sha256::new();
-        hasher.update(&wasm_bytes);
-        format!("{:x}", hasher.finalize())
-    };
-
-    let file_size = wasm_bytes.len() as i64;
-
-    let storage_key = format!(
-        "{}/{}/{}/{}",
-        config.s3_prefix, job.project_id, job.build_number, wasm_filename
-    );
-
-    storage
-        .put_object(&storage_key, wasm_bytes, "application/wasm")
-        .await
-        .map_err(|e| AppError::internal(std::io::Error::other(format!("s3 upload: {e}"))))?;
-
-    sqlx::query(
-        "UPDATE build_jobs
-         SET status = 'success', logs = $2, artifact_storage_key = $3,
-             artifact_checksum_sha256 = $4, artifact_file_size = $5,
-             completed_at = now()
-         WHERE id = $1",
-    )
-    .bind(job.id)
-    .bind(&build_log)
-    .bind(&storage_key)
-    .bind(&checksum)
-    .bind(file_size)
-    .execute(pool)
-    .await
-    .map_err(AppError::internal)?;
-
-    sqlx::query(
-        "UPDATE plugin_projects SET status = 'draft', updated_at = now() WHERE id = $1",
-    )
-    .bind(job.project_id)
-    .execute(pool)
-    .await
-    .map_err(AppError::internal)?;
-
-    cleanup_old_builds(pool, storage, job.project_id, config).await?;
-
-    tracing::info!(
-        build_id = %job.id,
-        project = %job.project_slug,
-        "Build completed successfully"
-    );
-
-    let _ = tmp_dir.close();
-    Ok(())
 }
 
 async fn mark_build_failed(pool: &PgPool, build_id: Uuid, error_message: &str) -> Result<(), AppError> {
     sqlx::query(
         "UPDATE build_jobs
          SET status = 'failed', error_message = $2, completed_at = now()
-         WHERE id = $1",
+         WHERE id = $1 AND status NOT IN ('success', 'failed')",
     )
     .bind(build_id)
     .bind(error_message)
@@ -267,7 +306,6 @@ async fn cleanup_old_builds(
     pool: &PgPool,
     storage: &ObjectStorage,
     project_id: Uuid,
-    _config: &StudioConfig,
 ) -> Result<(), AppError> {
     #[derive(FromRow)]
     struct OldBuildRow {

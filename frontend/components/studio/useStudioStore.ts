@@ -28,7 +28,6 @@ interface StudioState {
   buildStatus: "idle" | "queued" | "running" | "success" | "failed";
   buildErrorMessage: string | null;
   buildId: string | null;
-  buildLogs: string[];
   tutorialStep: number;
   isTutorialActive: boolean;
 
@@ -49,7 +48,6 @@ interface StudioState {
   setBuildStatus: (status: StudioState["buildStatus"]) => void;
   setBuildErrorMessage: (msg: string | null) => void;
   setBuildId: (id: string | null) => void;
-  setBuildLogs: (logs: string[]) => void;
   markSaved: () => void;
   setTutorialStep: (step: number) => void;
   setIsTutorialActive: (active: boolean) => void;
@@ -72,7 +70,6 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   buildStatus: "idle",
   buildErrorMessage: null,
   buildId: null,
-  buildLogs: [],
   tutorialStep: 0,
   isTutorialActive: false,
 
@@ -147,7 +144,6 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   setBuildStatus: (status) => set({ buildStatus: status }),
   setBuildErrorMessage: (msg) => set({ buildErrorMessage: msg }),
   setBuildId: (id) => set({ buildId: id }),
-  setBuildLogs: (logs) => set({ buildLogs: logs }),
   setTutorialStep: (step) => set({ tutorialStep: step }),
   setIsTutorialActive: (active) => set({ isTutorialActive: active }),
 
@@ -167,6 +163,5 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       buildStatus: "idle",
       buildErrorMessage: null,
       buildId: null,
-      buildLogs: [],
     }),
 }));

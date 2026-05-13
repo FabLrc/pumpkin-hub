@@ -10,6 +10,7 @@ struct FlowNode {
     id: String,
     #[serde(rename = "type")]
     node_type: String,
+    #[allow(dead_code)]
     position: Option<serde_json::Value>,
     data: FlowNodeData,
 }
@@ -213,6 +214,54 @@ fn generate_event_handler(
     handler_name: &str,
 ) -> Result<String, AppError> {
     let node_map: HashMap<&str, &FlowNode> = all_nodes.iter().map(|n| (n.id.as_str(), n)).collect();
+
+    // Cycle detection: build adjacency list and detect cycles via DFS
+    let adjacency: std::collections::HashMap<&str, Vec<&str>> = {
+        let mut map: std::collections::HashMap<&str, Vec<&str>> = std::collections::HashMap::new();
+        for edge in all_nodes.iter().flat_map(|n| edges_by_source.get(&n.id).into_iter().flatten()) {
+            let is_exec = matches!(edge.target_handle.as_deref(), Some("exec-in") | Some("true") | Some("false") | None);
+            if is_exec {
+                map.entry(edge.source.as_str()).or_default().push(edge.target.as_str());
+            }
+        }
+        map
+    };
+
+    let mut color: std::collections::HashMap<&str, u8> = std::collections::HashMap::new();
+    for node in all_nodes {
+        color.entry(node.id.as_str()).or_insert(0);
+    }
+
+    fn dfs_cycle<'a>(
+        node: &'a str,
+        adj: &std::collections::HashMap<&'a str, Vec<&'a str>>,
+        color: &mut std::collections::HashMap<&'a str, u8>,
+    ) -> Result<(), AppError> {
+        *color.get_mut(node).unwrap() = 1; // gray = in progress
+        if let Some(neighbors) = adj.get(node) {
+            for next in neighbors {
+                let c = *color.get(next).unwrap_or(&0);
+                if c == 1 {
+                    return Err(AppError::UnprocessableEntity(format!(
+                        "Cycle detected in flow graph involving node '{next}'. \
+                         Remove the circular connection and retry."
+                    )));
+                }
+                if c == 0 {
+                    dfs_cycle(next, adj, color)?;
+                }
+            }
+        }
+        *color.get_mut(node).unwrap() = 2; // black = done
+        Ok(())
+    }
+
+    for node in all_nodes {
+        if *color.get(node.id.as_str()).unwrap_or(&0) == 0 {
+            dfs_cycle(node.id.as_str(), &adjacency, &mut color)?;
+        }
+    }
+
     let mut statements = Vec::new();
     let mut visited = HashSet::new();
     let mut queue = VecDeque::new();
@@ -320,8 +369,11 @@ fn generate_node_code(
             Ok(format!("let {var_name} = {a} {op} {b};"))
         }
 
-        // ── Default ──
-        _ => Ok(format!("// unhandled node: {}", def.node_id)),
+        // ── Default — reject unknown nodes ──
+        _ => Err(AppError::UnprocessableEntity(format!(
+            "unknown node type '{}' is not supported by the code generator",
+            def.node_id
+        ))),
     }
 }
 

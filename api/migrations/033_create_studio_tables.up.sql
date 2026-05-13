@@ -62,3 +62,7 @@ CREATE TABLE build_jobs (
 CREATE INDEX idx_build_jobs_project_id ON build_jobs (project_id);
 CREATE INDEX idx_build_jobs_status ON build_jobs (status);
 CREATE INDEX idx_build_jobs_queued ON build_jobs (created_at) WHERE status = 'queued';
+
+-- Prevent concurrent active builds for the same project
+CREATE UNIQUE INDEX idx_build_jobs_active_per_project
+    ON build_jobs (project_id) WHERE status IN ('queued', 'running');

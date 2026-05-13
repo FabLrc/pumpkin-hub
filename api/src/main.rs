@@ -61,13 +61,47 @@ async fn main() {
 
     let pumpkin_binary_cache = PumpkinBinaryCache::new();
 
-    // Spawn background build worker for PumpkinHub Studio
+    // Spawn background build worker for PumpkinHub Studio with auto-restart on panic
     let studio_pool = pool.clone();
     let studio_storage = storage.clone();
     tokio::spawn(async move {
-        let config = build_worker::StudioConfig::default();
+        let cfg = build_worker::StudioConfig::from_env();
         tracing::info!("Starting PumpkinHub Studio build worker");
-        build_worker::run_build_worker(studio_pool, studio_storage, config).await;
+        loop {
+            let result = tokio::task::spawn({
+                let pool = studio_pool.clone();
+                let storage = studio_storage.clone();
+                let config = cfg.clone();
+                async move {
+                    build_worker::run_build_worker(pool, storage, config).await;
+                }
+            })
+            .await;
+
+            if let Err(panic_err) = result {
+                let msg = if panic_err.is_panic() {
+                    panic_err
+                        .try_into_panic()
+                        .ok()
+                        .and_then(|panic_box| {
+                            panic_box
+                                .downcast_ref::<&str>()
+                                .map(|s| s.to_string())
+                                .or_else(|| panic_box.downcast_ref::<String>().cloned())
+                        })
+                        .unwrap_or_else(|| "unknown panic".to_string())
+                } else {
+                    "worker cancelled".to_string()
+                };
+                tracing::error!(
+                    error = %msg,
+                    "Build worker panicked — restarting in 30s"
+                );
+                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            } else {
+                break; // clean exit
+            }
+        }
     });
 
     let addr = config.server.address;

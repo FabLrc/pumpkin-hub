@@ -472,6 +472,23 @@ pub async fn trigger_build(
 
     let project = project.ok_or(AppError::NotFound)?;
 
+    // Validate that the project has at least one node before enqueuing
+    let flow_has_nodes = sqlx::query_scalar::<_, serde_json::Value>(
+        "SELECT flow_data->'nodes' FROM plugin_projects WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_one(&state.db)
+    .await
+    .map_err(AppError::internal)
+    .map(|v| v.as_array().map_or(false, |a| !a.is_empty()))
+    .unwrap_or(false);
+
+    if !flow_has_nodes {
+        return Err(AppError::UnprocessableEntity(
+            "cannot build an empty project — add at least one node to the graph".into(),
+        ));
+    }
+
     // Increment build counter and create build job
     let new_build_number = project.build_count + 1;
 
