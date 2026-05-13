@@ -78,6 +78,27 @@ struct PublishedPluginCheck {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const PROJECT_SELECT_COLUMNS: &str = "id, name, slug, description, status,
+            pumpkin_version_min, pumpkin_version_max,
+            latest_build_id, build_count, published_plugin_id,
+            wit_snapshot_hash, created_at, updated_at";
+
+async fn fetch_project_for_user(
+    pool: &sqlx::PgPool,
+    project_id: Uuid,
+    user_id: Uuid,
+) -> Result<Option<ProjectRow>, AppError> {
+    let query = format!(
+        "SELECT {PROJECT_SELECT_COLUMNS} FROM plugin_projects WHERE id = $1 AND user_id = $2"
+    );
+    sqlx::query_as(&query)
+        .bind(project_id)
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(AppError::internal)
+}
+
 fn to_summary(row: ProjectSummaryRow) -> ProjectSummary {
     ProjectSummary {
         id: row.id,
@@ -314,21 +335,9 @@ pub async fn get_project(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ProjectDetailResponse>, AppError> {
-    let row: Option<ProjectRow> = sqlx::query_as(
-        "SELECT id, name, slug, description, status,
-                pumpkin_version_min, pumpkin_version_max,
-                latest_build_id, build_count, published_plugin_id,
-                wit_snapshot_hash, created_at, updated_at
-         FROM plugin_projects
-         WHERE id = $1 AND user_id = $2",
-    )
-    .bind(id)
-    .bind(auth.user_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(AppError::internal)?;
-
-    let row = row.ok_or(AppError::NotFound)?;
+    let row: ProjectRow = fetch_project_for_user(&state.db, id, auth.user_id)
+        .await?
+        .ok_or(AppError::NotFound)?;
 
     // Fetch flow_data separately (large JSONB)
     let flow_data: serde_json::Value = sqlx::query_scalar(
@@ -455,22 +464,9 @@ pub async fn trigger_build(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<TriggerBuildResponse>, AppError> {
-    // Verify ownership and project exists
-    let project: Option<ProjectRow> = sqlx::query_as(
-        "SELECT id, name, slug, description, status,
-                pumpkin_version_min, pumpkin_version_max,
-                latest_build_id, build_count, published_plugin_id,
-                wit_snapshot_hash, created_at, updated_at
-         FROM plugin_projects
-         WHERE id = $1 AND user_id = $2",
-    )
-    .bind(id)
-    .bind(auth.user_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(AppError::internal)?;
-
-    let project = project.ok_or(AppError::NotFound)?;
+    let project: ProjectRow = fetch_project_for_user(&state.db, id, auth.user_id)
+        .await?
+        .ok_or(AppError::NotFound)?;
 
     // Validate that the project has at least one node before enqueuing
     let flow_has_nodes = sqlx::query_scalar::<_, serde_json::Value>(
@@ -568,22 +564,9 @@ pub async fn get_publish_data(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<PublishDataResponse>, AppError> {
-    // Verify ownership
-    let project: Option<ProjectRow> = sqlx::query_as(
-        "SELECT id, name, slug, description, status,
-                pumpkin_version_min, pumpkin_version_max,
-                latest_build_id, build_count, published_plugin_id,
-                wit_snapshot_hash, created_at, updated_at
-         FROM plugin_projects
-         WHERE id = $1 AND user_id = $2",
-    )
-    .bind(id)
-    .bind(auth.user_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(AppError::internal)?;
-
-    let project = project.ok_or(AppError::NotFound)?;
+    let project: ProjectRow = fetch_project_for_user(&state.db, id, auth.user_id)
+        .await?
+        .ok_or(AppError::NotFound)?;
 
     let latest_build_id = project
         .latest_build_id

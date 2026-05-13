@@ -1,53 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { Terminal } from "lucide-react";
 import { useStudioStore } from "./useStudioStore";
 
-const POLL_MS = 3000;
-
 export function BuildStatus() {
-  const { buildStatus, buildErrorMessage, buildId, setBuildStatus, setBuildErrorMessage } =
-    useStudioStore();
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Independent poller: fetches build status even if Toolbar is not mounted
-  useEffect(() => {
-    if (!buildId || buildStatus === "success" || buildStatus === "failed") {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-      return;
-    }
-
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/studio/builds/${buildId}`,
-          { credentials: "include" },
-        );
-        const data = await res.json();
-        if (data.status === "success") {
-          setBuildStatus("success");
-        } else if (data.status === "failed") {
-          setBuildStatus("failed");
-          setBuildErrorMessage(data.error_message || "Échec de la compilation");
-        } else {
-          setBuildStatus(data.status);
-        }
-      } catch {
-        // network errors: keep current status, retry next poll
-      }
-    }, POLL_MS);
-
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    };
-  }, [buildId, buildStatus, setBuildStatus, setBuildErrorMessage]);
+  const { buildStatus, buildErrorMessage } = useStudioStore();
 
   if (buildStatus === "idle") return null;
 
