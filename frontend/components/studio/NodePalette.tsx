@@ -4,6 +4,7 @@ import useSWR from "swr";
 import type { StudioNodeDefinition } from "@/lib/types";
 import { fetchStudioNodes } from "@/lib/api";
 import { useStudioStore } from "./useStudioStore";
+import { DEFAULT_NODES } from "./defaultNodes";
 
 const categoryLabels: Record<string, string> = {
   event: "Événements",
@@ -19,7 +20,8 @@ export function NodePalette() {
   const { data } = useSWR("studio-nodes", fetchStudioNodes, { revalidateOnFocus: false });
   const addNodeFromDefinition = useStudioStore((s) => s.addNodeFromDefinition);
 
-  const nodes = data?.nodes ?? [];
+  const nodes: StudioNodeDefinition[] =
+    data?.nodes && data.nodes.length > 0 ? data.nodes : DEFAULT_NODES;
 
   const grouped = categoryOrder
     .map((cat) => ({

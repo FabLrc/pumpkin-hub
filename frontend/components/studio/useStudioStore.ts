@@ -89,9 +89,10 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   },
 
   addNodeFromDefinition: (def, position) => {
+    const validTypes = ["event", "action", "logic", "data", "math"];
     const node: StudioNode = {
       id: `${def.node_id}-${Date.now()}`,
-      type: def.category === "event" ? "event" : def.category === "action" ? "action" : "default",
+      type: validTypes.includes(def.category) ? def.category : "default",
       position,
       data: {
         definition: def,

@@ -1,0 +1,323 @@
+import type { StudioNodeDefinition } from "@/lib/types";
+
+export const DEFAULT_NODES: StudioNodeDefinition[] = [
+  // ── Events (orange) ─────────────────────────────────────────────────
+  {
+    node_id: "event.player-join",
+    category: "event",
+    label: "Player Join",
+    color: "#f97316",
+    description: "Déclenché quand un joueur rejoint le serveur",
+    parameters: [],
+    outputs: [{ id: "player", label: "Joueur", output_type: "player" }],
+  },
+  {
+    node_id: "event.player-leave",
+    category: "event",
+    label: "Player Leave",
+    color: "#f97316",
+    description: "Déclenché quand un joueur quitte le serveur",
+    parameters: [],
+    outputs: [{ id: "player", label: "Joueur", output_type: "player" }],
+  },
+  {
+    node_id: "event.player-chat",
+    category: "event",
+    label: "Player Chat",
+    color: "#f97316",
+    description: "Déclenché quand un joueur envoie un message",
+    parameters: [],
+    outputs: [
+      { id: "player", label: "Joueur", output_type: "player" },
+      { id: "message", label: "Message", output_type: "string" },
+    ],
+  },
+  {
+    node_id: "event.player-interact",
+    category: "event",
+    label: "Player Interact",
+    color: "#f97316",
+    description: "Déclenché quand un joueur interagit avec un bloc",
+    parameters: [],
+    outputs: [
+      { id: "player", label: "Joueur", output_type: "player" },
+      { id: "action", label: "Action", output_type: "string" },
+    ],
+  },
+  {
+    node_id: "event.block-break",
+    category: "event",
+    label: "Block Break",
+    color: "#f97316",
+    description: "Déclenché quand un bloc est cassé",
+    parameters: [],
+    outputs: [
+      { id: "player", label: "Joueur", output_type: "player" },
+      { id: "block", label: "Bloc", output_type: "string" },
+    ],
+  },
+  {
+    node_id: "event.player-move",
+    category: "event",
+    label: "Player Move",
+    color: "#f97316",
+    description: "Déclenché quand un joueur se déplace",
+    parameters: [],
+    outputs: [
+      { id: "player", label: "Joueur", output_type: "player" },
+    ],
+  },
+
+  // ── Actions (blue) ──────────────────────────────────────────────────
+  {
+    node_id: "action.broadcast",
+    category: "action",
+    label: "Broadcast",
+    color: "#3b82f6",
+    description: "Envoie un message à tous les joueurs",
+    parameters: [
+      { id: "message", label: "Message", param_type: "string", required: true },
+    ],
+    outputs: [],
+  },
+  {
+    node_id: "action.send-message",
+    category: "action",
+    label: "Send Message",
+    color: "#3b82f6",
+    description: "Envoie un message à un joueur spécifique",
+    parameters: [
+      { id: "player", label: "Joueur", param_type: "player", required: true },
+      { id: "message", label: "Message", param_type: "string", required: true },
+    ],
+    outputs: [],
+  },
+  {
+    node_id: "action.execute-command",
+    category: "action",
+    label: "Execute Command",
+    color: "#3b82f6",
+    description: "Exécute une commande console",
+    parameters: [
+      { id: "command", label: "Commande", param_type: "string", required: true },
+    ],
+    outputs: [],
+  },
+  {
+    node_id: "action.teleport",
+    category: "action",
+    label: "Teleport",
+    color: "#3b82f6",
+    description: "Téléporte un joueur à une position",
+    parameters: [
+      { id: "player", label: "Joueur", param_type: "player", required: true },
+      { id: "x", label: "X", param_type: "number", required: true, default_value: 0 },
+      { id: "y", label: "Y", param_type: "number", required: true, default_value: 64 },
+      { id: "z", label: "Z", param_type: "number", required: true, default_value: 0 },
+    ],
+    outputs: [],
+  },
+  {
+    node_id: "action.set-gamemode",
+    category: "action",
+    label: "Set Gamemode",
+    color: "#3b82f6",
+    description: "Change le mode de jeu d'un joueur",
+    parameters: [
+      { id: "player", label: "Joueur", param_type: "player", required: true },
+      {
+        id: "gamemode",
+        label: "Gamemode",
+        param_type: "select",
+        required: true,
+        options: ["survival", "creative", "adventure", "spectator"],
+      },
+    ],
+    outputs: [],
+  },
+  {
+    node_id: "action.spawn-particle",
+    category: "action",
+    label: "Spawn Particle",
+    color: "#3b82f6",
+    description: "Fait apparaître des particules",
+    parameters: [
+      { id: "particle", label: "Particle", param_type: "string", required: true },
+      { id: "x", label: "X", param_type: "number", required: true, default_value: 0 },
+      { id: "y", label: "Y", param_type: "number", required: true, default_value: 64 },
+      { id: "z", label: "Z", param_type: "number", required: true, default_value: 0 },
+    ],
+    outputs: [],
+  },
+
+  // ── Logic (purple) ──────────────────────────────────────────────────
+  {
+    node_id: "logic.if",
+    category: "logic",
+    label: "If",
+    color: "#a855f7",
+    description: "Branchement conditionnel",
+    parameters: [
+      { id: "condition", label: "Condition", param_type: "boolean", required: true },
+    ],
+    outputs: [],
+  },
+  {
+    node_id: "logic.and",
+    category: "logic",
+    label: "And",
+    color: "#a855f7",
+    description: "ET logique",
+    parameters: [
+      { id: "a", label: "A", param_type: "boolean", required: true },
+      { id: "b", label: "B", param_type: "boolean", required: true },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "boolean" }],
+  },
+  {
+    node_id: "logic.or",
+    category: "logic",
+    label: "Or",
+    color: "#a855f7",
+    description: "OU logique",
+    parameters: [
+      { id: "a", label: "A", param_type: "boolean", required: true },
+      { id: "b", label: "B", param_type: "boolean", required: true },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "boolean" }],
+  },
+  {
+    node_id: "logic.compare-string",
+    category: "logic",
+    label: "Compare String",
+    color: "#a855f7",
+    description: "Compare deux chaînes de caractères",
+    parameters: [
+      { id: "a", label: "A", param_type: "string", required: true },
+      { id: "b", label: "B", param_type: "string", required: true },
+      {
+        id: "operator",
+        label: "Opérateur",
+        param_type: "select",
+        required: true,
+        options: ["==", "!=", "contains"],
+        default_value: "==",
+      },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "boolean" }],
+  },
+  {
+    node_id: "logic.compare-number",
+    category: "logic",
+    label: "Compare Number",
+    color: "#a855f7",
+    description: "Compare deux nombres",
+    parameters: [
+      { id: "a", label: "A", param_type: "number", required: true },
+      { id: "b", label: "B", param_type: "number", required: true },
+      {
+        id: "operator",
+        label: "Opérateur",
+        param_type: "select",
+        required: true,
+        options: ["==", "!=", "<", ">", "<=", ">="],
+        default_value: "==",
+      },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "boolean" }],
+  },
+
+  // ── Math (amber) ────────────────────────────────────────────────────
+  {
+    node_id: "math.add",
+    category: "math",
+    label: "Add",
+    color: "#eab308",
+    description: "Addition : a + b",
+    parameters: [
+      { id: "a", label: "A", param_type: "number", required: true },
+      { id: "b", label: "B", param_type: "number", required: true },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "number" }],
+  },
+  {
+    node_id: "math.subtract",
+    category: "math",
+    label: "Subtract",
+    color: "#eab308",
+    description: "Soustraction : a - b",
+    parameters: [
+      { id: "a", label: "A", param_type: "number", required: true },
+      { id: "b", label: "B", param_type: "number", required: true },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "number" }],
+  },
+  {
+    node_id: "math.multiply",
+    category: "math",
+    label: "Multiply",
+    color: "#eab308",
+    description: "Multiplication : a × b",
+    parameters: [
+      { id: "a", label: "A", param_type: "number", required: true },
+      { id: "b", label: "B", param_type: "number", required: true },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "number" }],
+  },
+  {
+    node_id: "math.divide",
+    category: "math",
+    label: "Divide",
+    color: "#eab308",
+    description: "Division : a ÷ b",
+    parameters: [
+      { id: "a", label: "A", param_type: "number", required: true },
+      { id: "b", label: "B", param_type: "number", required: true },
+    ],
+    outputs: [{ id: "result", label: "Résultat", output_type: "number" }],
+  },
+
+  // ── Data (green) ─────────────────────────────────────────────────────
+  {
+    node_id: "data.string",
+    category: "data",
+    label: "String",
+    color: "#22c55e",
+    description: "Valeur texte",
+    parameters: [
+      { id: "value", label: "Texte", param_type: "string", required: true, default_value: "" },
+    ],
+    outputs: [{ id: "value", label: "Valeur", output_type: "string" }],
+  },
+  {
+    node_id: "data.number",
+    category: "data",
+    label: "Number",
+    color: "#22c55e",
+    description: "Valeur numérique",
+    parameters: [
+      { id: "value", label: "Nombre", param_type: "number", required: true, default_value: 0 },
+    ],
+    outputs: [{ id: "value", label: "Valeur", output_type: "number" }],
+  },
+  {
+    node_id: "data.boolean",
+    category: "data",
+    label: "Boolean",
+    color: "#22c55e",
+    description: "Vrai ou faux",
+    parameters: [
+      { id: "value", label: "Valeur", param_type: "boolean", required: true, default_value: true },
+    ],
+    outputs: [{ id: "value", label: "Valeur", output_type: "boolean" }],
+  },
+  {
+    node_id: "data.player",
+    category: "data",
+    label: "Player",
+    color: "#22c55e",
+    description: "Référence à un joueur (depuis un événement)",
+    parameters: [],
+    outputs: [{ id: "player", label: "Joueur", output_type: "player" }],
+  },
+];

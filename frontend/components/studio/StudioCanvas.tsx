@@ -7,16 +7,29 @@ import {
   Controls,
   MiniMap,
   BackgroundVariant,
+  ReactFlowProvider,
+  useReactFlow,
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { useStudioStore } from "./useStudioStore";
-import { EventNode, ActionNode } from "./NodeComponents";
+import {
+  EventNode,
+  ActionNode,
+  LogicNode,
+  DataNode,
+  MathNode,
+  DefaultNode,
+} from "./NodeComponents";
 
 const nodeTypes: NodeTypes = {
   event: EventNode,
   action: ActionNode,
+  logic: LogicNode,
+  data: DataNode,
+  math: MathNode,
+  default: DefaultNode,
 };
 
 const defaultEdgeOptions = {
@@ -25,8 +38,16 @@ const defaultEdgeOptions = {
 };
 
 export function StudioCanvas() {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode } =
-    useStudioStore();
+  const reactFlow = useReactFlow();
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    setSelectedNode,
+    addNodeFromDefinition,
+  } = useStudioStore();
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: unknown) => {
@@ -39,11 +60,40 @@ export function StudioCanvas() {
     setSelectedNode(null);
   }, [setSelectedNode]);
 
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const raw = event.dataTransfer.getData("application/studio-node");
+      if (!raw) return;
+      try {
+        const def = JSON.parse(raw);
+        const position = reactFlow.screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+        addNodeFromDefinition(def, position);
+      } catch {
+        // ignore malformed drag payload
+      }
+    },
+    [addNodeFromDefinition, reactFlow],
+  );
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }, []);
+
   return (
-    <div className="flex-1 h-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
+    <div
+      className="flex-1 h-full"
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+    >
+      <ReactFlowProvider>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -67,6 +117,7 @@ export function StudioCanvas() {
           maskColor="rgba(10, 10, 10, 0.7)"
         />
       </ReactFlow>
+      </ReactFlowProvider>
     </div>
   );
 }
