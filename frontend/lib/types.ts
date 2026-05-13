@@ -781,3 +781,112 @@ export interface ChangelogResponse {
 export interface UpdateChangelogRequest {
   content: string;
 }
+
+// ── Studio Types ──────────────────────────────────────────────────────────────
+
+export interface NodeParameter {
+  id: string;
+  label: string;
+  param_type: string;
+  options?: string[];
+  required: boolean;
+  default_value?: unknown;
+}
+
+export interface OutputDefinition {
+  id: string;
+  label: string;
+  output_type: string;
+}
+
+export interface StudioNodeDefinition {
+  node_id: string;
+  category: string;
+  label: string;
+  color: string;
+  description?: string;
+  parameters: NodeParameter[];
+  outputs: OutputDefinition[];
+}
+
+export interface NodeRegistryResponse {
+  nodes: StudioNodeDefinition[];
+  snapshot_hash: string;
+  fetched_at: string;
+}
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  status: string;
+  pumpkin_version_min: string | null;
+  pumpkin_version_max: string | null;
+  latest_build_id: string | null;
+  build_count: number;
+  published_plugin_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectListResponse {
+  projects: ProjectSummary[];
+}
+
+export interface ProjectDetailResponse {
+  project: ProjectSummary;
+  flow_data: Record<string, unknown>;
+  wit_snapshot_hash: string | null;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+  description?: string;
+  pumpkin_version_min?: string;
+  pumpkin_version_max?: string;
+}
+
+export interface UpdateProjectRequest {
+  name?: string;
+  description?: string;
+  flow_data?: Record<string, unknown>;
+  pumpkin_version_min?: string;
+  pumpkin_version_max?: string;
+}
+
+export interface BuildResponse {
+  id: string;
+  project_id: string;
+  build_number: number;
+  status: string;
+  logs: string | null;
+  artifact_checksum_sha256: string | null;
+  error_message: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface PublishDataResponse {
+  project_name: string;
+  project_slug: string;
+  description: string | null;
+  build_id: string;
+  download_url: string;
+  checksum_sha256: string;
+  file_size: number;
+}
+
+export interface TriggerBuildResponse {
+  build_id: string;
+  status: string;
+}
+
+// Studio React Flow node data
+export interface StudioNodeData extends Record<string, unknown> {
+  definition: StudioNodeDefinition;
+  values: Record<string, unknown>;
+  label: string;
+  color: string;
+}

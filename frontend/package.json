@@ -13,12 +13,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@xyflow/react": "^12.10.2",
     "lucide-react": "^0.577.0",
     "next": "16.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sonner": "^2.0.7",
-    "swr": "^2.4.1"
+    "swr": "^2.4.1",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

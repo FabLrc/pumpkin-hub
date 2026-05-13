@@ -56,6 +56,15 @@ import type {
   VersionResponse,
   VersionsListResponse,
   YankVersionRequest,
+  // Studio types
+  BuildResponse,
+  CreateProjectRequest,
+  NodeRegistryResponse,
+  ProjectDetailResponse,
+  ProjectListResponse,
+  PublishDataResponse,
+  TriggerBuildResponse,
+  UpdateProjectRequest,
 } from "./types";
 import { ApiError } from "./types";
 
@@ -1200,4 +1209,68 @@ export async function updateChangelog(
 
 export async function deleteChangelog(slug: string): Promise<void> {
   await apiFetch<void>(getChangelogPath(slug), { method: "DELETE" });
+}
+
+// ── Studio API ────────────────────────────────────────────────────────────────
+
+export async function fetchStudioNodes(): Promise<NodeRegistryResponse> {
+  return apiFetch<NodeRegistryResponse>("/studio/nodes");
+}
+
+export async function listStudioProjects(): Promise<ProjectListResponse> {
+  return apiFetch<ProjectListResponse>("/studio/projects");
+}
+
+export async function createStudioProject(
+  body: CreateProjectRequest,
+): Promise<ProjectDetailResponse> {
+  return apiFetch<ProjectDetailResponse>("/studio/projects", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getStudioProject(
+  id: string,
+): Promise<ProjectDetailResponse> {
+  return apiFetch<ProjectDetailResponse>(`/studio/projects/${encodeURIComponent(id)}`);
+}
+
+export async function updateStudioProject(
+  id: string,
+  body: UpdateProjectRequest,
+): Promise<ProjectDetailResponse> {
+  return apiFetch<ProjectDetailResponse>(
+    `/studio/projects/${encodeURIComponent(id)}`,
+    { method: "PUT", body: JSON.stringify(body) },
+  );
+}
+
+export async function deleteStudioProject(id: string): Promise<void> {
+  await apiFetch<void>(`/studio/projects/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function triggerStudioBuild(
+  id: string,
+): Promise<TriggerBuildResponse> {
+  return apiFetch<TriggerBuildResponse>(
+    `/studio/projects/${encodeURIComponent(id)}/build`,
+    { method: "POST" },
+  );
+}
+
+export async function getStudioBuildStatus(
+  id: string,
+): Promise<BuildResponse> {
+  return apiFetch<BuildResponse>(`/studio/builds/${encodeURIComponent(id)}`);
+}
+
+export async function getStudioPublishData(
+  id: string,
+): Promise<PublishDataResponse> {
+  return apiFetch<PublishDataResponse>(
+    `/studio/projects/${encodeURIComponent(id)}/publish-data`,
+  );
 }
