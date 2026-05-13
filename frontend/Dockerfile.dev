@@ -5,6 +5,7 @@ ENV NODE_ENV=development
 
 WORKDIR /app
 
+# Install dependencies at build time so the image is cached
 COPY package.json package-lock.json* ./
 RUN npm install
 
@@ -12,4 +13,7 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev:docker"]
+# Run npm install at container start too, so that newly added dependencies
+# (e.g. after git pull or package.json changes) are installed even if the
+# anonymous node_modules volume persists between rebuilds.
+CMD sh -c "npm install && npm run dev:docker"
