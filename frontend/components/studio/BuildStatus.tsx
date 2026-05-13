@@ -42,9 +42,13 @@ export function BuildStatus() {
               Compilation réussie !
             </pre>
           )}
-          {buildStatus === "failed" && buildErrorMessage && (
+          {buildStatus === "failed" && (
             <pre className="text-[10px] leading-4 text-red-400 font-mono whitespace-pre-wrap">
-              {buildErrorMessage}
+              {buildErrorMessage && !buildErrorMessage.includes("Failed to fetch")
+                ? buildErrorMessage
+                : buildStatus === "failed"
+                  ? "Connexion au serveur impossible."
+                  : buildErrorMessage}
             </pre>
           )}
         </div>

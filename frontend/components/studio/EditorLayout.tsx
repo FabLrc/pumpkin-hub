@@ -12,7 +12,7 @@ export function EditorLayout() {
     <>
       <Toolbar />
       <StudioErrorBoundary>
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className="flex flex-1 overflow-hidden min-w-[900px]">
           <NodePalette />
           <StudioCanvas />
           <PropertyPanel />

@@ -6,6 +6,8 @@ import { useStudioStore } from "./useStudioStore";
 export function PropertyPanel() {
   const selectedNode = useStudioStore((s) => s.selectedNode);
   const updateNodeValue = useStudioStore((s) => s.updateNodeValue);
+  const nodes = useStudioStore((s) => s.nodes);
+  const edges = useStudioStore((s) => s.edges);
 
   const handleChange = useCallback(
     (nodeId: string, paramId: string, paramType: string, rawValue: string) => {
@@ -20,12 +22,18 @@ export function PropertyPanel() {
 
   if (!selectedNode) {
     return (
-      <div className="w-64 bg-[#0a0a0a] border-l border-[#262626] flex-shrink-0">
+      <div className="w-48 lg:w-64 bg-[#0a0a0a] border-l border-[#262626] flex-shrink-0">
         <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#a3a3a3] border-b border-[#262626]">
           Propriétés
         </div>
-        <div className="p-4 text-xs text-[#666] text-center">
-          Sélectionnez un nœud pour éditer ses propriétés
+        <div className="p-3 text-xs text-[#666]">
+          <p className="mb-3">Sélectionnez un nœud pour éditer ses propriétés</p>
+          <div className="text-[10px] space-y-2 text-[#555] border-t border-[#262626] pt-3">
+            <p><span className="text-[#f97316]">{nodes.length}</span> nœud{nodes.length > 1 ? "s" : ""}</p>
+            <p><span className="text-[#f97316]">{edges.length}</span> connexion{edges.length > 1 ? "s" : ""}</p>
+            <p className="mt-2 text-[10px] text-[#444]">⌫ Supprimer</p>
+            <p className="text-[#444] text-[10px]">✲ Naviguer</p>
+          </div>
         </div>
       </div>
     );
@@ -34,7 +42,7 @@ export function PropertyPanel() {
   const { definition, values } = selectedNode.data;
 
   return (
-    <div className="w-64 bg-[#0a0a0a] border-l border-[#262626] overflow-y-auto flex-shrink-0">
+    <div className="w-48 lg:w-64 bg-[#0a0a0a] border-l border-[#262626] overflow-y-auto flex-shrink-0">
       <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#a3a3a3] border-b border-[#262626]">
         Propriétés
       </div>
@@ -42,9 +50,6 @@ export function PropertyPanel() {
         <div className="mb-3">
           <div className="text-[10px] uppercase tracking-widest text-[#666] mb-1">Nœud</div>
           <div className="text-xs text-[#e5e5e5] font-semibold">{definition.label}</div>
-          {definition.description && (
-            <div className="text-[10px] text-[#888] mt-0.5">{definition.description}</div>
-          )}
         </div>
 
         {definition.parameters.length > 0 && (

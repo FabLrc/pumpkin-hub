@@ -31,7 +31,7 @@ export function StudioLayout({ children, editorMode = false }: StudioLayoutProps
     <div className="flex flex-col h-screen bg-[#0f0f1a]">
       {showGuestBanner && (
         <div className="bg-[#f97316]/20 border-b border-[#f97316]/30 px-4 py-1.5 text-xs text-[#f97316] text-center flex-shrink-0">
-          Vous n&apos;êtes pas connecté. Vos modifications ne seront pas sauvegardées.
+          Mode invité — connectez-vous pour activer la sauvegarde automatique et la compilation.
         </div>
       )}
 

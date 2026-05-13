@@ -40,9 +40,9 @@ export function LogicNode({ data, selected }: LogicNodeProps) {
               type="target"
               position={Position.Left}
               id={param.id}
-              className="!w-2.5 !h-2.5"
+              className="!w-3 !h-3"
               style={{ backgroundColor: param.param_type === "boolean" ? "#a855f7" : "#22c55e" }}
-            />
+              title={`${param.label} (${param.param_type})`} />
             <span className="opacity-60">{param.label}</span>
           </div>
         ))}
@@ -54,7 +54,8 @@ export function LogicNode({ data, selected }: LogicNodeProps) {
                 type="source"
                 position={Position.Bottom}
                 id="true"
-                className="!w-2.5 !h-2.5 !bg-[#22c55e]"
+                className="!w-3 !h-3 !bg-[#22c55e]"
+                title="Vrai"
               />
               <span className="text-[10px] text-[#22c55e]">Vrai</span>
             </div>
@@ -63,7 +64,8 @@ export function LogicNode({ data, selected }: LogicNodeProps) {
                 type="source"
                 position={Position.Bottom}
                 id="false"
-                className="!w-2.5 !h-2.5 !bg-red-400"
+                className="!w-3 !h-3 !bg-red-400"
+                title="Faux"
               />
               <span className="text-[10px] text-red-400">Faux</span>
             </div>
@@ -71,7 +73,7 @@ export function LogicNode({ data, selected }: LogicNodeProps) {
         )}
 
         {!isConditional && (
-          <Handle type="source" position={Position.Bottom} id="result" className="!w-2.5 !h-2.5 !bg-[#a855f7]" />
+          <Handle type="source" position={Position.Bottom} id="result" className="!w-3 !h-3 !bg-[#a855f7]" title="Résultat" />
         )}
       </div>
     </div>

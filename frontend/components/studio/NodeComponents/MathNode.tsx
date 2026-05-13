@@ -26,13 +26,14 @@ export function MathNode({ data, selected }: MathNodeProps) {
               type="target"
               position={Position.Left}
               id={param.id}
-              className="!w-2.5 !h-2.5"
+              className="!w-3 !h-3"
               style={{ backgroundColor: "#22c55e" }}
+              title={`${param.label} (nombre)`}
             />
             <span className="opacity-60">{param.label}</span>
           </div>
         ))}
-        <Handle type="source" position={Position.Right} id="result" className="!w-2.5 !h-2.5 !bg-[#22c55e]" />
+        <Handle type="source" position={Position.Right} id="result" className="!w-3 !h-3 !bg-[#22c55e]" title="Résultat" />
       </div>
     </div>
   );

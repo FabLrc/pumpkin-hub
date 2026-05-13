@@ -39,8 +39,9 @@ export function DataNode({ data, selected }: DataNodeProps) {
               type="target"
               position={Position.Left}
               id={param.id}
-              className="!w-2.5 !h-2.5"
+              className="!w-3 !h-3"
               style={{ backgroundColor: handleColors[param.param_type] || "#888" }}
+              title={`${param.label} (${param.param_type})`}
             />
           </div>
         ))}
@@ -49,7 +50,7 @@ export function DataNode({ data, selected }: DataNodeProps) {
           type="source"
           position={Position.Right}
           id="value"
-          className="!w-2.5 !h-2.5"
+          className="!w-3 !h-3"
           style={{ backgroundColor: data.definition.outputs[0] ? handleColors[data.definition.outputs[0].output_type] || "#22c55e" : "#22c55e" }}
         />
       </div>

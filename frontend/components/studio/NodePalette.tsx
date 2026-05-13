@@ -37,7 +37,7 @@ export function NodePalette() {
   };
 
   return (
-    <div className="w-56 bg-[#0a0a0a] border-r border-[#262626] overflow-y-auto flex-shrink-0">
+    <div className="w-48 lg:w-56 bg-[#0a0a0a] border-r border-[#262626] overflow-y-auto flex-shrink-0">
       <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#a3a3a3] border-b border-[#262626]">
         Palette
       </div>

@@ -18,7 +18,7 @@ export function EventNode({ data, selected }: EventNodeProps) {
     <div
       className={`min-w-[180px] border ${
         selected ? "shadow-[0_0_0_2px_#f97316]" : "border-[#333]"
-      }`}
+      } group`}
     >
       <div
         className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white"
@@ -27,9 +27,6 @@ export function EventNode({ data, selected }: EventNodeProps) {
         {data.label}
       </div>
       <div className="bg-[#1a1a2e] px-3 py-2 text-xs text-[#e5e5e5]">
-        {data.definition.description && (
-          <p className="mb-1 opacity-60">{data.definition.description}</p>
-        )}
         {data.definition.outputs.map((output) => (
           <div key={output.id} className="flex items-center gap-2 py-0.5">
             <span className="opacity-60 flex-1">{output.label}</span>
@@ -37,10 +34,11 @@ export function EventNode({ data, selected }: EventNodeProps) {
               type="source"
               position={Position.Right}
               id={output.id}
-              className="!w-2.5 !h-2.5 !border-2 !border-[#1a1a2e] !mr-0"
+              className="!w-3 !h-3 !border-2 !border-[#1a1a2e]"
               style={{
                 backgroundColor: handleColors[output.output_type] || "#888",
               }}
+              title={`${output.label} (${output.output_type})`}
             />
           </div>
         ))}

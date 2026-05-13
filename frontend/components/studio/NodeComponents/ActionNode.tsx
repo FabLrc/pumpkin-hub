@@ -26,13 +26,14 @@ export function ActionNode({ data, selected }: ActionNodeProps) {
               type="target"
               position={Position.Left}
               id={param.id}
-              className="!w-2.5 !h-2.5"
+              className="!w-3 !h-3"
               style={{ backgroundColor: param.param_type === "string" ? "#22c55e" : "#a855f7" }}
+              title={`${param.label} (${param.param_type})`}
             />
             <span className="opacity-60">{param.label}</span>
           </div>
         ))}
-        <Handle type="source" position={Position.Bottom} id="exec" className="!bg-white !w-2.5 !h-2.5" />
+        <Handle type="source" position={Position.Bottom} id="exec" className="!bg-white !w-3 !h-3" title="Exécution" />
       </div>
     </div>
   );

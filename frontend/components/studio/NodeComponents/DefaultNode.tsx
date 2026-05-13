@@ -20,8 +20,8 @@ export function DefaultNode({ data, selected }: DefaultNodeProps) {
         {data.label}
       </div>
       <div className="bg-[#1a1a2e] px-3 py-2 text-xs text-[#e5e5e5]">
-        <Handle type="target" position={Position.Left} id="target-default" className="!w-2.5 !h-2.5 !bg-[#666]" />
-        <Handle type="source" position={Position.Right} id="source-default" className="!w-2.5 !h-2.5 !bg-[#666]" />
+        <Handle type="target" position={Position.Left} id="target-default" className="!w-3 !h-3 !bg-[#666]" title="Entrée" />
+        <Handle type="source" position={Position.Right} id="source-default" className="!w-3 !h-3 !bg-[#666]" title="Sortie" />
       </div>
     </div>
   );

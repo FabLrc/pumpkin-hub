@@ -98,7 +98,19 @@ export function CanvasContent() {
   }, []);
 
   return (
-    <div className="flex-1 h-full" onDrop={onDrop} onDragOver={onDragOver}>
+    <div className="flex-1 h-full relative" onDrop={onDrop} onDragOver={onDragOver}>
+      {nodes.length === 0 && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+          <div className="bg-[#0a0a0a]/80 border border-[#262626] px-6 py-4 text-center max-w-xs">
+            <p className="text-sm text-[#888] mb-2">
+              Canvas vide
+            </p>
+            <p className="text-xs text-[#555]">
+              Glissez des nœuds depuis la palette de gauche ou cliquez dessus pour les ajouter au canvas.
+            </p>
+          </div>
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
