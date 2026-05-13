@@ -41,6 +41,7 @@ interface StudioState {
   setSelectedNode: (node: StudioNode | null) => void;
   updateNodeValue: (nodeId: string, key: string, value: unknown) => void;
   setProjectId: (id: string | null) => void;
+  initProjectName: (name: string) => void;
   setProjectName: (name: string) => void;
   setDirty: (dirty: boolean) => void;
   setSaving: (saving: boolean) => void;
@@ -131,6 +132,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   },
 
   setProjectId: (id) => set({ projectId: id }),
+  initProjectName: (name) => set({ projectName: name }),
   setProjectName: (name) => set({ projectName: name, isDirty: true }),
   setDirty: (dirty) => set({ isDirty: dirty }),
   setSaving: (saving) => set({ isSaving: saving }),

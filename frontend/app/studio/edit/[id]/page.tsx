@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import useSWR from "swr";
 import { StudioLayout } from "@/components/studio/StudioLayout";
 import { EditorLayout } from "@/components/studio/EditorLayout";
@@ -18,7 +19,7 @@ export default function EditStudioProjectPage() {
   const {
     setProjectId,
     loadFlow,
-    setProjectName,
+    initProjectName,
     markSaved,
     setSaving,
     projectId: storeProjectId,
@@ -42,7 +43,7 @@ export default function EditStudioProjectPage() {
         if (raw) {
           try {
             const parsed = JSON.parse(raw);
-            setProjectName(parsed.name || "Nouveau projet");
+            initProjectName(parsed.name || "Nouveau projet");
             loadFlow(parsed.flow_data?.nodes || [], parsed.flow_data?.edges || []);
           } catch {
             // ignore malformed
@@ -50,38 +51,38 @@ export default function EditStudioProjectPage() {
         }
       }
     }
-  }, [projectId, storeProjectId, setProjectId, setProjectName, loadFlow]);
+  }, [projectId, storeProjectId, setProjectId, initProjectName, loadFlow]);
 
   useEffect(() => {
     if (data) {
-      setProjectName(data.project.name);
+      initProjectName(data.project.name);
       const flowData = data.flow_data as { nodes?: unknown[]; edges?: unknown[] } | undefined;
       loadFlow((flowData?.nodes as []) || [], (flowData?.edges as []) || []);
     }
-  }, [data, setProjectName, loadFlow]);
+  }, [data, initProjectName, loadFlow]);
 
   // Auto-save: debounced save when isDirty changes
   const doSave = useCallback(async () => {
-    if (!projectId || projectId.startsWith("local-")) {
+    if (!projectId) return;
+    if (projectId.startsWith("local-")) {
       localStorage.setItem(
         `studio-${projectId}`,
-        JSON.stringify({
-          name: projectName,
-          flow_data: { nodes, edges },
-        }),
+        JSON.stringify({ name: projectName, flow_data: { nodes, edges } }),
       );
       markSaved();
       return;
     }
     setSaving(true);
     try {
+      const serialized = JSON.parse(JSON.stringify({ nodes, edges }));
       await updateStudioProject(projectId, {
         name: projectName,
-        flow_data: { nodes: nodes as unknown as Record<string, unknown>[], edges: edges as unknown as Record<string, unknown>[] },
+        flow_data: serialized,
       });
       markSaved();
     } catch {
       setSaving(false);
+      toast.error("Échec de la sauvegarde automatique");
     }
   }, [projectId, projectName, nodes, edges, setSaving, markSaved]);
 

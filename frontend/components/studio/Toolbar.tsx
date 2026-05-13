@@ -1,12 +1,28 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { Trash2, Play, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useStudioStore } from "./useStudioStore";
 import { triggerStudioBuild, getStudioPublishData } from "@/lib/api";
 
+const POLL_INITIAL_MS = 2000;
+const POLL_MAX_MS = 30000;
+const POLL_TIMEOUT_MS = 120000;
+
 export function Toolbar() {
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollCountRef = useRef(0);
+
+  const cancelPoll = useCallback(() => {
+    if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    pollTimerRef.current = null;
+    pollCountRef.current = 0;
+  }, []);
+
+  // Cleanup polling on unmount
+  useEffect(() => cancelPoll, [cancelPoll]);
+
   const {
     projectName,
     setProjectName,
@@ -22,50 +38,74 @@ export function Toolbar() {
     setBuildId,
   } = useStudioStore();
 
+  const startPolling = useCallback(
+    (buildId: string) => {
+      pollCountRef.current = 0;
+
+      const poll = () => {
+        pollCountRef.current += 1;
+        const elapsed = pollCountRef.current * POLL_INITIAL_MS;
+        if (elapsed >= POLL_TIMEOUT_MS) {
+          setBuildStatus("failed");
+          setBuildErrorMessage("Le build a expiré");
+          toast.error("Le build a expiré");
+          return;
+        }
+
+        const delay = Math.min(POLL_INITIAL_MS * Math.pow(1.5, pollCountRef.current - 1), POLL_MAX_MS);
+
+        pollTimerRef.current = setTimeout(async () => {
+          try {
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/studio/builds/${buildId}`,
+              { credentials: "include" },
+            );
+            const status = await res.json();
+            if (status.status === "success") {
+              setBuildStatus("success");
+              toast.success("Compilation réussie !");
+            } else if (status.status === "failed") {
+              setBuildStatus("failed");
+              setBuildErrorMessage(status.error_message || "Échec de la compilation");
+              toast.error("Échec de la compilation");
+            } else if (status.status === "running") {
+              setBuildStatus("running");
+              poll(); // continue polling
+            } else {
+              poll(); // queued or other, keep polling
+            }
+          } catch {
+            setBuildStatus("failed");
+            setBuildErrorMessage("Erreur réseau pendant le build");
+            toast.error("Erreur réseau pendant le build");
+          }
+        }, delay);
+      };
+
+      poll();
+    },
+    [setBuildStatus, setBuildErrorMessage],
+  );
+
   const handleBuild = useCallback(async () => {
     if (!projectId || projectId.startsWith("local-")) {
       toast.error("Connectez-vous pour compiler un projet");
       return;
     }
+    cancelPoll();
     setBuildStatus("queued");
     setBuildErrorMessage(null);
     try {
       const result = await triggerStudioBuild(projectId);
       setBuildId(result.build_id);
-      setBuildStatus("queued");
       toast.success("Build ajouté à la file d'attente");
-
-      // Poll build status
-      const poll = setInterval(async () => {
-        try {
-          const status = await (
-            await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/studio/builds/${result.build_id}`,
-              { credentials: "include" },
-            )
-          ).json();
-          if (status.status === "success") {
-            setBuildStatus("success");
-            toast.success("Compilation réussie !");
-            clearInterval(poll);
-          } else if (status.status === "failed") {
-            setBuildStatus("failed");
-            setBuildErrorMessage(status.error_message || "Échec de la compilation");
-            toast.error("Échec de la compilation");
-            clearInterval(poll);
-          } else if (status.status === "running") {
-            setBuildStatus("running");
-          }
-        } catch {
-          clearInterval(poll);
-        }
-      }, 2000);
+      startPolling(result.build_id);
     } catch (err: unknown) {
       setBuildStatus("failed");
       setBuildErrorMessage(err instanceof Error ? err.message : "Échec de la compilation");
       toast.error("Échec de la compilation");
     }
-  }, [projectId, setBuildStatus, setBuildErrorMessage, setBuildId]);
+  }, [projectId, cancelPoll, setBuildStatus, setBuildErrorMessage, setBuildId, startPolling]);
 
   const handlePublish = useCallback(async () => {
     if (!projectId || projectId.startsWith("local-")) {
