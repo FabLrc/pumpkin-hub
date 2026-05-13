@@ -1,10 +1,22 @@
 "use client";
 
+import { useCallback } from "react";
 import { useStudioStore } from "./useStudioStore";
 
 export function PropertyPanel() {
   const selectedNode = useStudioStore((s) => s.selectedNode);
   const updateNodeValue = useStudioStore((s) => s.updateNodeValue);
+
+  const handleChange = useCallback(
+    (nodeId: string, paramId: string, paramType: string, rawValue: string) => {
+      let parsed: unknown = rawValue;
+      if (paramType === "number") {
+        parsed = rawValue === "" ? "" : Number(rawValue);
+      }
+      updateNodeValue(nodeId, paramId, parsed);
+    },
+    [updateNodeValue],
+  );
 
   if (!selectedNode) {
     return (
@@ -46,14 +58,38 @@ export function PropertyPanel() {
                   {param.label}
                   {param.required && <span className="text-[#f97316] ml-0.5">*</span>}
                 </label>
-                <input
-                  type={param.param_type === "number" ? "number" : "text"}
-                  value={(values[param.id] as string) ?? ""}
-                  onChange={(e) => updateNodeValue(selectedNode.id, param.id, e.target.value)}
-                  placeholder={param.label}
-                  className="w-full bg-[#1a1a2e] border border-[#333] px-2 py-1 text-xs 
-                             text-[#e5e5e5] placeholder:text-[#555] focus:outline-none focus:border-[#f97316]"
-                />
+                {param.param_type === "boolean" ? (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!values[param.id]}
+                      onChange={(e) => updateNodeValue(selectedNode.id, param.id, e.target.checked)}
+                      className="accent-[#f97316]"
+                    />
+                    <span className="text-[10px] text-[#888]">{param.label}</span>
+                  </label>
+                ) : param.options && param.options.length > 0 ? (
+                  <select
+                    value={(values[param.id] as string) ?? ""}
+                    onChange={(e) => handleChange(selectedNode.id, param.id, param.param_type, e.target.value)}
+                    className="w-full bg-[#1a1a2e] border border-[#333] px-2 py-1 text-xs 
+                               text-[#e5e5e5] focus:outline-none focus:border-[#f97316]"
+                  >
+                    <option value="">Sélectionner...</option>
+                    {param.options.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={param.param_type === "number" ? "number" : "text"}
+                    value={(values[param.id] as string | number) ?? ""}
+                    onChange={(e) => handleChange(selectedNode.id, param.id, param.param_type, e.target.value)}
+                    placeholder={param.label}
+                    className="w-full bg-[#1a1a2e] border border-[#333] px-2 py-1 text-xs 
+                               text-[#e5e5e5] placeholder:text-[#555] focus:outline-none focus:border-[#f97316]"
+                  />
+                )}
               </div>
             ))}
           </div>

@@ -9,6 +9,19 @@ use crate::error::AppError;
 const NAME_MAX_LENGTH: usize = 100;
 const DESCRIPTION_MAX_LENGTH: usize = 1000;
 
+/// Basic semver-like pattern: digits.digits.digits, or "nightly".
+fn is_valid_version_string(s: &str) -> bool {
+    let trimmed = s.trim();
+    if trimmed.eq_ignore_ascii_case("nightly") {
+        return true;
+    }
+    let parts: Vec<&str> = trimmed.split('.').collect();
+    if parts.len() != 3 {
+        return false;
+    }
+    parts.iter().all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
+}
+
 // ── Request DTOs ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -35,6 +48,20 @@ impl CreateProjectRequest {
                 return Err(AppError::UnprocessableEntity(format!(
                     "description exceeds maximum length of {DESCRIPTION_MAX_LENGTH} characters"
                 )));
+            }
+        }
+        if let Some(ref v) = self.pumpkin_version_min {
+            if !is_valid_version_string(v) {
+                return Err(AppError::UnprocessableEntity(
+                    "pumpkin_version_min must be 'nightly' or a valid semver (e.g. '1.0.0')".into(),
+                ));
+            }
+        }
+        if let Some(ref v) = self.pumpkin_version_max {
+            if !is_valid_version_string(v) {
+                return Err(AppError::UnprocessableEntity(
+                    "pumpkin_version_max must be 'nightly' or a valid semver (e.g. '1.0.0')".into(),
+                ));
             }
         }
         Ok(())
@@ -68,6 +95,37 @@ impl UpdateProjectRequest {
                 return Err(AppError::UnprocessableEntity(format!(
                     "description exceeds maximum length of {DESCRIPTION_MAX_LENGTH} characters"
                 )));
+            }
+        }
+        if let Some(ref flow) = self.flow_data {
+            if !flow.is_object() {
+                return Err(AppError::UnprocessableEntity(
+                    "flow_data must be a JSON object".into(),
+                ));
+            }
+            if !flow.get("nodes").map_or(false, |v| v.is_array()) {
+                return Err(AppError::UnprocessableEntity(
+                    "flow_data must contain a 'nodes' array".into(),
+                ));
+            }
+            if !flow.get("edges").map_or(false, |v| v.is_array()) {
+                return Err(AppError::UnprocessableEntity(
+                    "flow_data must contain an 'edges' array".into(),
+                ));
+            }
+        }
+        if let Some(ref v) = self.pumpkin_version_min {
+            if !is_valid_version_string(v) {
+                return Err(AppError::UnprocessableEntity(
+                    "pumpkin_version_min must be 'nightly' or a valid semver (e.g. '1.0.0')".into(),
+                ));
+            }
+        }
+        if let Some(ref v) = self.pumpkin_version_max {
+            if !is_valid_version_string(v) {
+                return Err(AppError::UnprocessableEntity(
+                    "pumpkin_version_max must be 'nightly' or a valid semver (e.g. '1.0.0')".into(),
+                ));
             }
         }
         Ok(())

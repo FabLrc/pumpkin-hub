@@ -25,7 +25,7 @@ export default function NewStudioProjectPage() {
         router.replace(`/studio/edit/${result.project.id}`, { scroll: false });
       } catch {
         // User is not logged in — work with localStorage only
-        const localId = `local-${Date.now()}`;
+        const localId = `local-${crypto.randomUUID()}`;
         setProjectId(localId);
         localStorage.setItem(
           `studio-${localId}`,

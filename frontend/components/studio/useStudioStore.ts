@@ -26,6 +26,8 @@ interface StudioState {
   isSaving: boolean;
   lastSavedAt: Date | null;
   buildStatus: "idle" | "queued" | "running" | "success" | "failed";
+  buildErrorMessage: string | null;
+  buildId: string | null;
   buildLogs: string[];
   tutorialStep: number;
   isTutorialActive: boolean;
@@ -44,7 +46,10 @@ interface StudioState {
   setSaving: (saving: boolean) => void;
   setLastSavedAt: (date: Date) => void;
   setBuildStatus: (status: StudioState["buildStatus"]) => void;
+  setBuildErrorMessage: (msg: string | null) => void;
+  setBuildId: (id: string | null) => void;
   setBuildLogs: (logs: string[]) => void;
+  markSaved: () => void;
   setTutorialStep: (step: number) => void;
   setIsTutorialActive: (active: boolean) => void;
   loadFlow: (nodes: StudioNode[], edges: Edge[]) => void;
@@ -64,6 +69,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   isSaving: false,
   lastSavedAt: null,
   buildStatus: "idle",
+  buildErrorMessage: null,
+  buildId: null,
   buildLogs: [],
   tutorialStep: 0,
   isTutorialActive: false,
@@ -129,11 +136,14 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   setSaving: (saving) => set({ isSaving: saving }),
   setLastSavedAt: (date) => set({ lastSavedAt: date }),
   setBuildStatus: (status) => set({ buildStatus: status }),
+  setBuildErrorMessage: (msg) => set({ buildErrorMessage: msg }),
+  setBuildId: (id) => set({ buildId: id }),
   setBuildLogs: (logs) => set({ buildLogs: logs }),
   setTutorialStep: (step) => set({ tutorialStep: step }),
   setIsTutorialActive: (active) => set({ isTutorialActive: active }),
 
-  loadFlow: (nodes, edges) => set({ nodes, edges, isDirty: false }),
+  loadFlow: (nodes, edges) => set({ nodes, edges, isDirty: false, lastSavedAt: new Date() }),
+  markSaved: () => set({ isDirty: false, isSaving: false, lastSavedAt: new Date() }),
 
   reset: () =>
     set({
@@ -146,6 +156,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       isSaving: false,
       lastSavedAt: null,
       buildStatus: "idle",
+      buildErrorMessage: null,
+      buildId: null,
       buildLogs: [],
     }),
 }));

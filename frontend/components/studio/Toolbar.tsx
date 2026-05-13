@@ -2,7 +2,9 @@
 
 import { useCallback } from "react";
 import { Trash2, Play, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { useStudioStore } from "./useStudioStore";
+import { triggerStudioBuild, getStudioPublishData } from "@/lib/api";
 
 export function Toolbar() {
   const {
@@ -11,19 +13,77 @@ export function Toolbar() {
     isDirty,
     isSaving,
     buildStatus,
+    buildErrorMessage,
+    projectId,
     removeSelected,
     selectedNode,
+    setBuildStatus,
+    setBuildErrorMessage,
+    setBuildId,
   } = useStudioStore();
 
-  const handleBuild = useCallback(() => {
-    // TODO Phase 3: trigger build via API
-    console.log("Build triggered");
-  }, []);
+  const handleBuild = useCallback(async () => {
+    if (!projectId || projectId.startsWith("local-")) {
+      toast.error("Connectez-vous pour compiler un projet");
+      return;
+    }
+    setBuildStatus("queued");
+    setBuildErrorMessage(null);
+    try {
+      const result = await triggerStudioBuild(projectId);
+      setBuildId(result.build_id);
+      setBuildStatus("queued");
+      toast.success("Build ajouté à la file d'attente");
 
-  const handlePublish = useCallback(() => {
-    // TODO Phase 4: redirect to publish form
-    console.log("Publish flow");
-  }, []);
+      // Poll build status
+      const poll = setInterval(async () => {
+        try {
+          const status = await (
+            await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/studio/builds/${result.build_id}`,
+              { credentials: "include" },
+            )
+          ).json();
+          if (status.status === "success") {
+            setBuildStatus("success");
+            toast.success("Compilation réussie !");
+            clearInterval(poll);
+          } else if (status.status === "failed") {
+            setBuildStatus("failed");
+            setBuildErrorMessage(status.error_message || "Échec de la compilation");
+            toast.error("Échec de la compilation");
+            clearInterval(poll);
+          } else if (status.status === "running") {
+            setBuildStatus("running");
+          }
+        } catch {
+          clearInterval(poll);
+        }
+      }, 2000);
+    } catch (err: unknown) {
+      setBuildStatus("failed");
+      setBuildErrorMessage(err instanceof Error ? err.message : "Échec de la compilation");
+      toast.error("Échec de la compilation");
+    }
+  }, [projectId, setBuildStatus, setBuildErrorMessage, setBuildId]);
+
+  const handlePublish = useCallback(async () => {
+    if (!projectId || projectId.startsWith("local-")) {
+      toast.error("Connectez-vous pour publier un projet");
+      return;
+    }
+    try {
+      const data = await getStudioPublishData(projectId);
+      const params = new URLSearchParams({
+        studio_project: projectId,
+        studio_build: data.build_id,
+        name: data.project_name,
+      });
+      window.location.href = `/plugins/new?${params}`;
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Impossible de publier");
+    }
+  }, [projectId]);
 
   const statusIndicator = () => {
     if (isSaving) return <span className="text-yellow-400 text-[10px]">Sauvegarde...</span>;
@@ -43,6 +103,17 @@ export function Toolbar() {
           placeholder="Nom du projet"
         />
         {statusIndicator()}
+        {buildStatus !== "idle" && (
+          <span className={`text-[10px] ${
+            buildStatus === "failed" ? "text-red-400" :
+            buildStatus === "success" ? "text-[#22c55e]" :
+            buildStatus === "running" ? "text-yellow-400" :
+            "text-[#a3a3a3]"
+          }`}>
+            Build: {buildStatus}
+            {buildErrorMessage && ` — ${buildErrorMessage}`}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-1">

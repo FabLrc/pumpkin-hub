@@ -574,7 +574,8 @@ pub async fn get_publish_data(
 
     let build: BuildRow = sqlx::query_as(
         "SELECT id, project_id, build_number, status, logs,
-                artifact_checksum_sha256, artifact_storage_key, error_message,
+                artifact_storage_key, artifact_checksum_sha256,
+                artifact_file_size, error_message,
                 created_at, started_at, completed_at
          FROM build_jobs
          WHERE id = $1",
@@ -619,36 +620,10 @@ pub async fn get_publish_data(
 
 /// `POST /api/v1/studio/projects/{id}/transfer-binary`
 /// Transfers the binary from studio-builds prefix to the plugins prefix for publishing.
-pub async fn transfer_binary(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path(id): Path<Uuid>,
-    Json(_body): Json<serde_json::Value>,
-) -> Result<Json<serde_json::Value>, AppError> {
-    // Verify ownership
-    let project: Option<PublishedPluginCheck> = sqlx::query_as(
-        "SELECT published_plugin_id
-         FROM plugin_projects
-         WHERE id = $1 AND user_id = $2",
-    )
-    .bind(id)
-    .bind(auth.user_id)
-    .fetch_optional(&state.db)
-    .await
-    .map_err(AppError::internal)?;
-
-    let _project = project.ok_or(AppError::NotFound)?;
-
-    // TODO: implement in Phase 4
-    // 1. Copy binary from studio-builds/{project_id}/ to plugins/{slug}/{version}/
-    // 2. Return the new storage key + metadata
-
-    tracing::warn!("transfer_binary not yet implemented (Phase 4)");
-
-    Ok(Json(serde_json::json!({
-        "message": "binary transfer endpoint ready (implementation pending Phase 4)",
-        "status": "placeholder"
-    })))
+pub async fn transfer_binary() -> Result<Json<serde_json::Value>, AppError> {
+    Err(AppError::UnprocessableEntity(
+        "binary transfer not yet implemented (Phase 4)".into(),
+    ))
 }
 
 // ── Storage extensions for studio ─────────────────────────────────────────────

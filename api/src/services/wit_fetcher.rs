@@ -45,9 +45,16 @@ pub async fn fetch_wit_snapshot() -> Result<WitSnapshot, AppError> {
     let mut files = HashMap::new();
     let mut hasher = sha2::Sha256::new();
 
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|e| AppError::internal(std::io::Error::other(format!("failed to build HTTP client: {e}"))))?;
+
     for filename in WIT_FILES {
         let url = format!("{PUMPKIN_WIT_BASE_URL}/{filename}");
-        let response = reqwest::get(&url)
+        let response = client
+            .get(&url)
+            .send()
             .await
             .map_err(|e| AppError::internal(std::io::Error::other(format!("failed to fetch {url}: {e}"))))?;
 
