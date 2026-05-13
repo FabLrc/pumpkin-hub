@@ -31,17 +31,15 @@ export function EventNode({ data, selected }: EventNodeProps) {
           <p className="mb-1 opacity-60">{data.definition.description}</p>
         )}
         {data.definition.outputs.map((output) => (
-          <div key={output.id} className="flex items-center justify-between gap-2 py-0.5">
-            <span className="opacity-60">{output.label}</span>
+          <div key={output.id} className="flex items-center gap-2 py-0.5">
+            <span className="opacity-60 flex-1">{output.label}</span>
             <Handle
               type="source"
               position={Position.Right}
               id={output.id}
-              className="!w-2.5 !h-2.5 !border-2 !border-[#1a1a2e]"
+              className="!w-2.5 !h-2.5 !border-2 !border-[#1a1a2e] !mr-0"
               style={{
                 backgroundColor: handleColors[output.output_type] || "#888",
-                position: "relative",
-                right: "-12px",
               }}
             />
           </div>

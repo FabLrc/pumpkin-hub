@@ -32,7 +32,7 @@ export function ActionNode({ data, selected }: ActionNodeProps) {
             <span className="opacity-60">{param.label}</span>
           </div>
         ))}
-        <Handle type="source" position={Position.Bottom} className="!bg-white !w-2.5 !h-2.5" />
+        <Handle type="source" position={Position.Bottom} id="exec" className="!bg-white !w-2.5 !h-2.5" />
       </div>
     </div>
   );

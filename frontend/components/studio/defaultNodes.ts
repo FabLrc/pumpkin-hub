@@ -87,7 +87,7 @@ export const DEFAULT_NODES: StudioNodeDefinition[] = [
     color: "#3b82f6",
     description: "Envoie un message à un joueur spécifique",
     parameters: [
-      { id: "player", label: "Joueur", param_type: "player", required: true },
+      { id: "player", label: "Joueur", param_type: "player", required: true, default_value: "" },
       { id: "message", label: "Message", param_type: "string", required: true },
     ],
     outputs: [],
@@ -110,7 +110,7 @@ export const DEFAULT_NODES: StudioNodeDefinition[] = [
     color: "#3b82f6",
     description: "Téléporte un joueur à une position",
     parameters: [
-      { id: "player", label: "Joueur", param_type: "player", required: true },
+      { id: "player", label: "Joueur", param_type: "player", required: true, default_value: "" },
       { id: "x", label: "X", param_type: "number", required: true, default_value: 0 },
       { id: "y", label: "Y", param_type: "number", required: true, default_value: 64 },
       { id: "z", label: "Z", param_type: "number", required: true, default_value: 0 },
@@ -124,7 +124,7 @@ export const DEFAULT_NODES: StudioNodeDefinition[] = [
     color: "#3b82f6",
     description: "Change le mode de jeu d'un joueur",
     parameters: [
-      { id: "player", label: "Joueur", param_type: "player", required: true },
+      { id: "player", label: "Joueur", param_type: "player", required: true, default_value: "" },
       {
         id: "gamemode",
         label: "Gamemode",
@@ -193,8 +193,8 @@ export const DEFAULT_NODES: StudioNodeDefinition[] = [
     color: "#a855f7",
     description: "Compare deux chaînes de caractères",
     parameters: [
-      { id: "a", label: "A", param_type: "string", required: true },
-      { id: "b", label: "B", param_type: "string", required: true },
+      { id: "a", label: "A", param_type: "string", required: true, default_value: "" },
+      { id: "b", label: "B", param_type: "string", required: true, default_value: "" },
       {
         id: "operator",
         label: "Opérateur",
@@ -213,8 +213,8 @@ export const DEFAULT_NODES: StudioNodeDefinition[] = [
     color: "#a855f7",
     description: "Compare deux nombres",
     parameters: [
-      { id: "a", label: "A", param_type: "number", required: true },
-      { id: "b", label: "B", param_type: "number", required: true },
+      { id: "a", label: "A", param_type: "number", required: true, default_value: 0 },
+      { id: "b", label: "B", param_type: "number", required: true, default_value: 0 },
       {
         id: "operator",
         label: "Opérateur",
