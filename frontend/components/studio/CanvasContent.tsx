@@ -22,6 +22,12 @@ import {
   DefaultNode,
 } from "./NodeComponents";
 
+const EXEC_HANDLES = new Set(["exec", "exec-in", "true", "false"]);
+
+function isExecHandle(handle: string | null | undefined): boolean {
+  return !!handle && EXEC_HANDLES.has(handle);
+}
+
 const nodeTypes: NodeTypes = {
   event: EventNode,
   action: ActionNode,
@@ -29,11 +35,6 @@ const nodeTypes: NodeTypes = {
   data: DataNode,
   math: MathNode,
   default: DefaultNode,
-};
-
-const defaultEdgeOptions = {
-  style: { stroke: "#f97316", strokeWidth: 2 },
-  animated: true,
 };
 
 function isTypeCompatible(sourceType: string, targetParamType: string): boolean {
@@ -51,13 +52,18 @@ export function CanvasContent() {
     const targetNode = nodes.find((n) => n.id === connection.target);
     if (!sourceNode || !targetNode) return false;
 
+    const sourceIsExec = isExecHandle(connection.sourceHandle);
+    const targetIsExec = isExecHandle(connection.targetHandle);
+
+    if (sourceIsExec && targetIsExec) return true;
+    if (sourceIsExec !== targetIsExec) return false;
+
     const sourceOutput = sourceNode.data.definition.outputs.find(
       (o) => o.id === connection.sourceHandle,
     );
     const targetParam = targetNode.data.definition.parameters.find(
       (p) => p.id === connection.targetHandle,
     );
-
     if (!sourceOutput || !targetParam) return true;
     return isTypeCompatible(sourceOutput.output_type, targetParam.param_type);
   }, [nodes]);
@@ -120,7 +126,6 @@ export function CanvasContent() {
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
-        defaultEdgeOptions={defaultEdgeOptions}
         isValidConnection={isValidConnection}
         fitView
         colorMode="dark"

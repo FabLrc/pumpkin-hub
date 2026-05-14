@@ -48,20 +48,23 @@ pub async fn fetch_wit_snapshot() -> Result<WitSnapshot, AppError> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
-        .map_err(|e| AppError::internal(std::io::Error::other(format!("failed to build HTTP client: {e}"))))?;
+        .map_err(|e| {
+            AppError::internal(std::io::Error::other(format!(
+                "failed to build HTTP client: {e}"
+            )))
+        })?;
 
     for filename in WIT_FILES {
         let url = format!("{PUMPKIN_WIT_BASE_URL}/{filename}");
-        let response = client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| AppError::internal(std::io::Error::other(format!("failed to fetch {url}: {e}"))))?;
+        let response = client.get(&url).send().await.map_err(|e| {
+            AppError::internal(std::io::Error::other(format!("failed to fetch {url}: {e}")))
+        })?;
 
-        let text = response
-            .text()
-            .await
-            .map_err(|e| AppError::internal(std::io::Error::other(format!("failed to read response body: {e}"))))?;
+        let text = response.text().await.map_err(|e| {
+            AppError::internal(std::io::Error::other(format!(
+                "failed to read response body: {e}"
+            )))
+        })?;
 
         hasher.update(filename.as_bytes());
         hasher.update(text.as_bytes());
@@ -83,9 +86,7 @@ pub async fn fetch_wit_snapshot() -> Result<WitSnapshot, AppError> {
 ///
 /// TODO Phase 5: implement full WIT → NodeDefinition mapping.
 #[allow(dead_code)]
-pub fn parse_wit_to_nodes(
-    snapshot: &WitSnapshot,
-) -> Result<Vec<NodeDefinition>, AppError> {
+pub fn parse_wit_to_nodes(snapshot: &WitSnapshot) -> Result<Vec<NodeDefinition>, AppError> {
     // Placeholder: returns an empty list
     // Phase 5 will use wit-parser to:
     // 1. Parse plugin.wit to discover all interface imports

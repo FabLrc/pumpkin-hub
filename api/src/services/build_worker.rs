@@ -157,7 +157,7 @@ async fn try_build(
     match compile_wasm(build_path, timeout_duration).await {
         Err(log) => {
             let msg = log.chars().take(5000).collect::<String>();
-            return Err(AppError::UnprocessableEntity(msg));
+            Err(AppError::UnprocessableEntity(msg))
         }
         Ok(log) => {
             let truncated_log = log.chars().take(10000).collect::<String>();
@@ -175,9 +175,9 @@ async fn try_build(
                 )));
             }
 
-            let wasm_bytes = tokio::fs::read(&wasm_path)
-                .await
-                .map_err(|e| AppError::internal(std::io::Error::other(format!("read wasm: {e}"))))?;
+            let wasm_bytes = tokio::fs::read(&wasm_path).await.map_err(|e| {
+                AppError::internal(std::io::Error::other(format!("read wasm: {e}")))
+            })?;
 
             if (wasm_bytes.len() as u64) > config.max_artifact_size_bytes {
                 return Err(AppError::UnprocessableEntity(format!(
@@ -205,7 +205,9 @@ async fn try_build(
             storage
                 .put_object(&storage_key, wasm_bytes, "application/wasm")
                 .await
-                .map_err(|e| AppError::internal(std::io::Error::other(format!("s3 upload: {e}"))))?;
+                .map_err(|e| {
+                    AppError::internal(std::io::Error::other(format!("s3 upload: {e}")))
+                })?;
 
             sqlx::query(
                 "UPDATE build_jobs
@@ -244,7 +246,11 @@ async fn try_build(
     }
 }
 
-async fn mark_build_failed(pool: &PgPool, build_id: Uuid, error_message: &str) -> Result<(), AppError> {
+async fn mark_build_failed(
+    pool: &PgPool,
+    build_id: Uuid,
+    error_message: &str,
+) -> Result<(), AppError> {
     sqlx::query(
         "UPDATE build_jobs
          SET status = 'failed', error_message = $2, completed_at = now()

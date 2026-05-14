@@ -46,10 +46,14 @@ pub fn is_event_node(node: &FlowNode) -> bool {
 /// Detects cycles in a directed graph using 3-color DFS.
 /// Returns Ok if acyclic, Err if a cycle is found.
 pub fn detect_cycle(adjacency: &HashMap<&str, Vec<&str>>) -> Result<(), AppError> {
-    // color: 0 = white, 1 = gray, 2 = black
     let mut color: HashMap<&str, u8> = HashMap::new();
     for node in adjacency.keys() {
         color.entry(node).or_insert(0);
+    }
+    for neighbors in adjacency.values() {
+        for n in neighbors {
+            color.entry(n).or_insert(0);
+        }
     }
 
     fn dfs<'a>(
@@ -58,7 +62,9 @@ pub fn detect_cycle(adjacency: &HashMap<&str, Vec<&str>>) -> Result<(), AppError
         color: &mut HashMap<&'a str, u8>,
     ) -> Result<(), AppError> {
         let entry = color.get_mut(node).ok_or_else(|| {
-            AppError::UnprocessableEntity(format!("internal error: node '{node}' not found during cycle detection"))
+            AppError::UnprocessableEntity(format!(
+                "internal error: node '{node}' not found during cycle detection"
+            ))
         })?;
         *entry = 1;
         if let Some(neighbors) = adj.get(node) {

@@ -25,14 +25,8 @@ pub fn routes() -> Router<AppState> {
                 .delete(handlers::delete_project),
         )
         // ── Build & publish
-        .route(
-            "/studio/projects/{id}/build",
-            post(handlers::trigger_build),
-        )
-        .route(
-            "/studio/builds/{id}",
-            get(handlers::get_build_status),
-        )
+        .route("/studio/projects/{id}/build", post(handlers::trigger_build))
+        .route("/studio/builds/{id}", get(handlers::get_build_status))
         .route(
             "/studio/projects/{id}/publish-data",
             get(handlers::get_publish_data),

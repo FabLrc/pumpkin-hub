@@ -19,7 +19,9 @@ fn is_valid_version_string(s: &str) -> bool {
     if parts.len() != 3 {
         return false;
     }
-    parts.iter().all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
+    parts
+        .iter()
+        .all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
 }
 
 // ── Request DTOs ──────────────────────────────────────────────────────────────
@@ -103,12 +105,12 @@ impl UpdateProjectRequest {
                     "flow_data must be a JSON object".into(),
                 ));
             }
-            if !flow.get("nodes").map_or(false, |v| v.is_array()) {
+            if !flow.get("nodes").is_some_and(|v| v.is_array()) {
                 return Err(AppError::UnprocessableEntity(
                     "flow_data must contain a 'nodes' array".into(),
                 ));
             }
-            if !flow.get("edges").map_or(false, |v| v.is_array()) {
+            if !flow.get("edges").is_some_and(|v| v.is_array()) {
                 return Err(AppError::UnprocessableEntity(
                     "flow_data must contain an 'edges' array".into(),
                 ));

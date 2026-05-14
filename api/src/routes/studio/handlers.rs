@@ -7,11 +7,7 @@ use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-use crate::{
-    auth::middleware::AuthUser,
-    error::AppError,
-    state::AppState,
-};
+use crate::{auth::middleware::AuthUser, error::AppError, state::AppState};
 
 use super::dto::{
     BuildResponse, CreateProjectRequest, NodeRegistryResponse, ProjectDetailResponse,
@@ -120,7 +116,13 @@ fn slugify(name: &str) -> String {
     let slug = name
         .to_lowercase()
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' { c } else { '-' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' {
+                c
+            } else {
+                '-'
+            }
+        })
         .collect::<String>();
     slug.trim_matches('-').to_string()
 }
@@ -129,13 +131,12 @@ async fn generate_unique_slug(pool: &sqlx::PgPool, base: &str) -> Result<String,
     let slug = slugify(base);
     let candidate = if slug.is_empty() { "project" } else { &slug };
 
-    let exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM plugin_projects WHERE slug = $1)",
-    )
-    .bind(candidate)
-    .fetch_one(pool)
-    .await
-    .map_err(AppError::internal)?;
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM plugin_projects WHERE slug = $1)")
+            .bind(candidate)
+            .fetch_one(pool)
+            .await
+            .map_err(AppError::internal)?;
 
     if !exists {
         return Ok(candidate.to_string());
@@ -143,13 +144,12 @@ async fn generate_unique_slug(pool: &sqlx::PgPool, base: &str) -> Result<String,
 
     for i in 1..100 {
         let candidate = format!("{}-{}", slug, i);
-        let exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM plugin_projects WHERE slug = $1)",
-        )
-        .bind(&candidate)
-        .fetch_one(pool)
-        .await
-        .map_err(AppError::internal)?;
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM plugin_projects WHERE slug = $1)")
+                .bind(&candidate)
+                .fetch_one(pool)
+                .await
+                .map_err(AppError::internal)?;
 
         if !exists {
             return Ok(candidate);
@@ -340,13 +340,12 @@ pub async fn get_project(
         .ok_or(AppError::NotFound)?;
 
     // Fetch flow_data separately (large JSONB)
-    let flow_data: serde_json::Value = sqlx::query_scalar(
-        "SELECT flow_data FROM plugin_projects WHERE id = $1",
-    )
-    .bind(id)
-    .fetch_one(&state.db)
-    .await
-    .map_err(AppError::internal)?;
+    let flow_data: serde_json::Value =
+        sqlx::query_scalar("SELECT flow_data FROM plugin_projects WHERE id = $1")
+            .bind(id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(AppError::internal)?;
 
     let summary = to_summary(ProjectSummaryRow {
         id: row.id,
@@ -406,13 +405,12 @@ pub async fn update_project(
 
     let row = row.ok_or(AppError::NotFound)?;
 
-    let flow_data: serde_json::Value = sqlx::query_scalar(
-        "SELECT flow_data FROM plugin_projects WHERE id = $1",
-    )
-    .bind(id)
-    .fetch_one(&state.db)
-    .await
-    .map_err(AppError::internal)?;
+    let flow_data: serde_json::Value =
+        sqlx::query_scalar("SELECT flow_data FROM plugin_projects WHERE id = $1")
+            .bind(id)
+            .fetch_one(&state.db)
+            .await
+            .map_err(AppError::internal)?;
 
     let summary = to_summary(ProjectSummaryRow {
         id: row.id,
@@ -476,7 +474,7 @@ pub async fn trigger_build(
     .fetch_one(&state.db)
     .await
     .map_err(AppError::internal)
-    .map(|v| v.as_array().map_or(false, |a| !a.is_empty()))
+    .map(|v| v.as_array().is_some_and(|a| !a.is_empty()))
     .unwrap_or(false);
 
     if !flow_has_nodes {

@@ -11,8 +11,36 @@ import {
   applyEdgeChanges,
   addEdge,
 } from "@xyflow/react";
+import type { CSSProperties } from "react";
 
 import type { StudioNodeDefinition, StudioNodeData } from "@/lib/types";
+
+const HANDLE_COLORS: Record<string, string> = {
+  player: "#0000FF",
+  string: "#FF00FF",
+  number: "#00FF00",
+  boolean: "#FF0000",
+};
+
+const EXEC_HANDLES = new Set(["exec", "exec-in", "true", "false"]);
+
+function isExecHandle(handle: string | null | undefined): boolean {
+  return !!handle && EXEC_HANDLES.has(handle);
+}
+
+function getEdgeStyle(
+  sourceNode: StudioNode | undefined,
+  sourceHandle: string | null | undefined,
+): CSSProperties {
+  if (!sourceHandle || isExecHandle(sourceHandle)) {
+    return { stroke: "#e5e5e5", strokeWidth: 1 };
+  }
+  const defs = sourceNode?.data?.definition?.outputs;
+  if (!defs) return { stroke: "#f97316", strokeWidth: 2 };
+  const output = defs.find((o) => o.id === sourceHandle);
+  const color = output ? HANDLE_COLORS[output.output_type] || "#f97316" : "#f97316";
+  return { stroke: color, strokeWidth: 2 };
+}
 
 type StudioNode = Node<StudioNodeData>;
 
@@ -82,7 +110,20 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   },
 
   onConnect: (connection) => {
-    set({ edges: addEdge(connection, get().edges), isDirty: true });
+    const nodes = get().nodes;
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+    const isExec = isExecHandle(connection.sourceHandle) && isExecHandle(connection.targetHandle);
+    const edge: Edge = {
+      id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
+      source: connection.source,
+      target: connection.target,
+      sourceHandle: connection.sourceHandle || null,
+      targetHandle: connection.targetHandle || null,
+      type: isExec ? "exec" : undefined,
+      animated: isExec,
+      style: getEdgeStyle(sourceNode, connection.sourceHandle),
+    };
+    set({ edges: addEdge(edge, get().edges), isDirty: true });
   },
 
   addNodeFromDefinition: (def, position) => {
