@@ -12,8 +12,6 @@ struct BuildJobRow {
     build_number: i32,
     #[sqlx(rename = "slug")]
     project_slug: String,
-    #[sqlx(rename = "name")]
-    project_name: String,
     flow_data: serde_json::Value,
 }
 
@@ -22,7 +20,6 @@ struct BuildJob {
     project_id: Uuid,
     build_number: i32,
     project_slug: String,
-    project_name: String,
     flow_data: serde_json::Value,
 }
 
@@ -86,8 +83,8 @@ async fn process_next_build(
                FOR UPDATE SKIP LOCKED
            )
            AND pp.id = bj.project_id
-           RETURNING bj.id, bj.project_id, bj.build_number,
-                     pp.slug, pp.name, pp.flow_data"#,
+            RETURNING bj.id, bj.project_id, bj.build_number,
+                      pp.slug, pp.flow_data"#,
     )
     .fetch_optional(pool)
     .await
@@ -103,7 +100,6 @@ async fn process_next_build(
         project_id: row.project_id,
         build_number: row.build_number,
         project_slug: row.project_slug,
-        project_name: row.project_name,
         flow_data: row.flow_data,
     };
 
