@@ -134,9 +134,15 @@ export const useStudioStore = create<StudioState>((set, get) => ({
         initialValues[param.id] = param.default_value;
       }
     }
+    const nodeType =
+      def.node_id === "data.format-text"
+        ? "formatText"
+        : validTypes.includes(def.category)
+          ? def.category
+          : "default";
     const node: StudioNode = {
       id: `${def.node_id}-${Date.now()}`,
-      type: validTypes.includes(def.category) ? def.category : "default",
+      type: nodeType,
       position,
       data: {
         definition: def,
@@ -164,16 +170,34 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   setSelectedNode: (node) => set({ selectedNode: node }),
 
   updateNodeValue: (nodeId, key, value) => {
-    set({
-      nodes: get().nodes.map((n) => {
-        if (n.id !== nodeId) return n;
-        return {
-          ...n,
-          data: { ...n.data, values: { ...n.data.values, [key]: value } },
-        };
-      }),
-      isDirty: true,
+    const node = get().nodes.find((n) => n.id === nodeId);
+    const isFormatTextTemplate =
+      node?.data.definition.node_id === "data.format-text" && key === "template";
+
+    const newNodes = get().nodes.map((n) => {
+      if (n.id !== nodeId) return n;
+      return {
+        ...n,
+        data: { ...n.data, values: { ...n.data.values, [key]: value } },
+      };
     });
+
+    let newEdges = get().edges;
+    if (isFormatTextTemplate) {
+      const template = typeof value === "string" ? value : "";
+      const slots = new Set<string>();
+      const re = /(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g;
+      for (const m of template.matchAll(re)) {
+        if (m[1]) slots.add(m[1]);
+      }
+      newEdges = newEdges.filter((e) => {
+        if (e.target !== nodeId) return true;
+        const handle = typeof e.targetHandle === "string" ? e.targetHandle : "";
+        return slots.has(handle);
+      });
+    }
+
+    set({ nodes: newNodes, edges: newEdges, isDirty: true });
   },
 
   setProjectId: (id) => set({ projectId: id }),

@@ -320,4 +320,43 @@ export const DEFAULT_NODES: StudioNodeDefinition[] = [
     parameters: [],
     outputs: [{ id: "player", label: "Joueur", output_type: "player" }],
   },
+  {
+    node_id: "data.player-name",
+    category: "data",
+    label: "Player Name",
+    color: "#22c55e",
+    description: "Extrait le nom d'un joueur",
+    parameters: [
+      { id: "player", label: "Joueur", param_type: "player", required: true },
+    ],
+    outputs: [{ id: "value", label: "Nom", output_type: "string" }],
+  },
+  {
+    node_id: "data.player-uuid",
+    category: "data",
+    label: "Player UUID",
+    color: "#22c55e",
+    description: "Extrait l'UUID d'un joueur",
+    parameters: [
+      { id: "player", label: "Joueur", param_type: "player", required: true },
+    ],
+    outputs: [{ id: "value", label: "UUID", output_type: "string" }],
+  },
+  {
+    node_id: "data.format-text",
+    category: "data",
+    label: "Format Text",
+    color: "#22c55e",
+    description: "Construit une phrase avec des variables. Tapez {nom} pour créer un pin.",
+    parameters: [
+      {
+        id: "template",
+        label: "Template",
+        param_type: "string",
+        required: true,
+        default_value: "Bienvenue {nom} !",
+      },
+    ],
+    outputs: [{ id: "value", label: "Texte", output_type: "string" }],
+  },
 ];

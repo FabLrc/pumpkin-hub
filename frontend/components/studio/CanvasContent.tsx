@@ -20,6 +20,7 @@ import {
   DataNode,
   MathNode,
   DefaultNode,
+  FormatTextNode,
 } from "./NodeComponents";
 
 const EXEC_HANDLES = new Set(["exec", "exec-in", "true", "false"]);
@@ -34,6 +35,7 @@ const nodeTypes: NodeTypes = {
   logic: LogicNode,
   data: DataNode,
   math: MathNode,
+  formatText: FormatTextNode,
   default: DefaultNode,
 };
 
