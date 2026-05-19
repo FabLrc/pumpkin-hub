@@ -405,16 +405,6 @@ fn generate_statement(
                 "    let _ = {player}.set_gamemode(match {gm} {{\"survival\" => common::GameMode::Survival,\"creative\" => common::GameMode::Creative,\"adventure\" => common::GameMode::Adventure,\"spectator\" => common::GameMode::Spectator,_ => common::GameMode::Survival}});"
             )
         }
-        "action.spawn-particle" => {
-            let particle = resolve_value(node, "particle", edges_by_source, node_map, scope);
-            let x = resolve_value(node, "x", edges_by_source, node_map, scope);
-            let y = resolve_value(node, "y", edges_by_source, node_map, scope);
-            let z = resolve_value(node, "z", edges_by_source, node_map, scope);
-            format!(
-                "    let _part_{id} = {particle};\n    let _pos_{id} = ({x} as f64, {y} as f64, {z} as f64);\n    let _world_{id} = /* TODO: obtain world reference */;\n    let _ = _world_{id}.spawn_particle(&_part_{id}, _pos_{id}, (0.0, 0.0, 0.0), 0.0, 1);",
-                id = node.id.replace('-', "_")
-            )
-        }
         "logic.and" | "logic.or" => {
             let a = resolve_value(node, "a", edges_by_source, node_map, scope);
             let b = resolve_value(node, "b", edges_by_source, node_map, scope);
@@ -528,17 +518,32 @@ fn resolve_value(
         }
     }
     if let Some(val) = node.data.values.get(param_id) {
-        if let Some(s) = val.as_str() {
+        if val.is_null() {
+            // fall through to type-appropriate default
+        } else if let Some(s) = val.as_str() {
             return apply_template(s, scope);
-        }
-        if let Some(n) = val.as_f64() {
+        } else if let Some(n) = val.as_f64() {
             return n.to_string();
-        }
-        if let Some(b) = val.as_bool() {
+        } else if let Some(b) = val.as_bool() {
             return b.to_string();
         }
     }
-    "true".to_string()
+    // Return a type-appropriate default based on the parameter definition
+    if let Some(param) = node
+        .data
+        .definition
+        .parameters
+        .iter()
+        .find(|p| p.id == param_id)
+    {
+        match param.param_type.as_deref() {
+            Some("string") | Some("select") => return "\"\"".to_string(),
+            Some("number") => return "0".to_string(),
+            Some("boolean") => return "false".to_string(),
+            _ => return "false".to_string(),
+        }
+    }
+    "false".to_string()
 }
 
 /// Replace `{variable}` patterns in a string with Rust expressions from scope.
@@ -664,9 +669,9 @@ fn resolve_format_text(
                     continue;
                 }
                 let has_edge = edges_by_source.iter().any(|(_, edges)| {
-                    edges.iter().any(|e| {
-                        e.target == node.id && e.target_handle.as_deref() == Some(&name)
-                    })
+                    edges
+                        .iter()
+                        .any(|e| e.target == node.id && e.target_handle.as_deref() == Some(&name))
                 });
                 let expr = if has_edge {
                     resolve_value(node, &name, edges_by_source, node_map, scope)
@@ -1210,7 +1215,9 @@ mod tests {
 
         let result = generate_rust_source("test-plugin", &flow).unwrap();
         assert!(
-            result.contains("format!(\"{} ({}) a rejoint\", _data.player.get_name(), _data.player.get_id())"),
+            result.contains(
+                "format!(\"{} ({}) a rejoint\", _data.player.get_name(), _data.player.get_id())"
+            ),
             "should emit slots in template order with correct expressions: got\n{result}"
         );
     }

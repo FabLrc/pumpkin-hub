@@ -1,31 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { useCurrentUser } from "@/lib/hooks";
 import { useStudioStore } from "./useStudioStore";
 
 interface StudioLayoutProps {
-  children?: React.ReactNode;
+  children?: ReactNode;
   editorMode?: boolean;
 }
 
 export function StudioLayout({ children, editorMode = false }: StudioLayoutProps) {
   const isTutorialActive = useStudioStore((s) => s.isTutorialActive);
-  const [showGuestBanner, setShowGuestBanner] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/auth/me`,
-          { credentials: "include" },
-        );
-        setShowGuestBanner(!res.ok);
-      } catch {
-        setShowGuestBanner(true);
-      }
-    };
-    checkAuth();
-  }, []);
+  const { data: user, isLoading } = useCurrentUser();
+  const showGuestBanner = !isLoading && !user;
 
   return (
     <div className="flex flex-col h-screen bg-[#0f0f1a]">

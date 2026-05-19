@@ -4,23 +4,9 @@ import { useMemo } from "react";
 import { type NodeProps, Handle, Position } from "@xyflow/react";
 import type { Node } from "@xyflow/react";
 import type { StudioNodeData } from "@/lib/types";
+import { parseSlots } from "../utils";
 
 type FormatTextNodeProps = NodeProps<Node<StudioNodeData>>;
-
-const SLOT_RE = /(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g;
-
-export function parseSlots(template: string): string[] {
-  const seen = new Set<string>();
-  const slots: string[] = [];
-  for (const m of template.matchAll(SLOT_RE)) {
-    const name = m[1];
-    if (name && !seen.has(name)) {
-      seen.add(name);
-      slots.push(name);
-    }
-  }
-  return slots;
-}
 
 export function FormatTextNode({ data, selected }: FormatTextNodeProps) {
   const template = (data.values.template as string) ?? "";

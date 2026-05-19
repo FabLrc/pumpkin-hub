@@ -66,9 +66,15 @@ export function CanvasContent() {
     const targetParam = targetNode.data.definition.parameters.find(
       (p) => p.id === connection.targetHandle,
     );
-    if (!sourceOutput || !targetParam) return true;
+    if (!sourceOutput || !targetParam) return false;
+
+    const alreadyConnected = edges.some(
+      (e) => e.target === connection.target && e.targetHandle === connection.targetHandle,
+    );
+    if (alreadyConnected) return false;
+
     return isTypeCompatible(sourceOutput.output_type, targetParam.param_type);
-  }, [nodes]);
+  }, [nodes, edges]);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: unknown) => {

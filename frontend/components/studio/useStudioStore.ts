@@ -14,6 +14,7 @@ import {
 import type { CSSProperties } from "react";
 
 import type { StudioNodeDefinition, StudioNodeData } from "@/lib/types";
+import { parseSlots } from "./utils";
 
 const HANDLE_COLORS: Record<string, string> = {
   player: "#0000FF",
@@ -114,7 +115,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const isExec = isExecHandle(connection.sourceHandle) && isExecHandle(connection.targetHandle);
     const edge: Edge = {
-      id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
+      id: crypto.randomUUID(),
       source: connection.source,
       target: connection.target,
       sourceHandle: connection.sourceHandle || null,
@@ -141,7 +142,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
           ? def.category
           : "default";
     const node: StudioNode = {
-      id: `${def.node_id}-${Date.now()}`,
+      id: crypto.randomUUID(),
       type: nodeType,
       position,
       data: {
@@ -185,15 +186,11 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     let newEdges = get().edges;
     if (isFormatTextTemplate) {
       const template = typeof value === "string" ? value : "";
-      const slots = new Set<string>();
-      const re = /(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g;
-      for (const m of template.matchAll(re)) {
-        if (m[1]) slots.add(m[1]);
-      }
+      const activeSlots = new Set(parseSlots(template));
       newEdges = newEdges.filter((e) => {
         if (e.target !== nodeId) return true;
         const handle = typeof e.targetHandle === "string" ? e.targetHandle : "";
-        return slots.has(handle);
+        return activeSlots.has(handle);
       });
     }
 

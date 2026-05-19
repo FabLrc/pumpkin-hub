@@ -135,21 +135,6 @@ export const DEFAULT_NODES: StudioNodeDefinition[] = [
     ],
     outputs: [],
   },
-  {
-    node_id: "action.spawn-particle",
-    category: "action",
-    label: "Spawn Particle",
-    color: "#3b82f6",
-    description: "Fait apparaître des particules",
-    parameters: [
-      { id: "particle", label: "Particle", param_type: "string", required: true },
-      { id: "x", label: "X", param_type: "number", required: true, default_value: 0 },
-      { id: "y", label: "Y", param_type: "number", required: true, default_value: 64 },
-      { id: "z", label: "Z", param_type: "number", required: true, default_value: 0 },
-    ],
-    outputs: [],
-  },
-
   // ── Logic (purple) ──────────────────────────────────────────────────
   {
     node_id: "logic.if",
