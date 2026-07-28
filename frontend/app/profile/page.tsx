@@ -16,6 +16,7 @@ import { Navbar, Footer } from "@/components/layout";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks";
 import { updateProfile, uploadAvatar, getAuthMePath, parseApiError } from "@/lib/api";
+import { isSafeImageUrl } from "@/lib/validation";
 import { mutate } from "swr";
 
 const DISPLAY_NAME_MAX = 100;
@@ -96,6 +97,7 @@ function AvatarSection({
   }
 
   const displayedImage = preview ?? currentAvatarUrl;
+  const safeDisplayedImage = isSafeImageUrl(displayedImage) ? displayedImage : null;
 
   return (
     <div className="border border-border-default bg-bg-elevated p-6">
@@ -106,10 +108,10 @@ function AvatarSection({
       <div className="flex items-start gap-6">
         {/* Current / preview */}
         <div className="shrink-0">
-          {displayedImage ? (
+          {safeDisplayedImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={displayedImage}
+              src={safeDisplayedImage}
               alt="Avatar preview"
               className="w-20 h-20 object-cover border border-border-default"
             />
