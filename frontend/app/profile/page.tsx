@@ -16,6 +16,7 @@ import { Navbar, Footer } from "@/components/layout";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks";
 import { updateProfile, uploadAvatar, getAuthMePath, parseApiError } from "@/lib/api";
+import { isSafeImageUrl } from "@/lib/validation";
 import { mutate } from "swr";
 
 const DISPLAY_NAME_MAX = 100;
@@ -39,6 +40,7 @@ function AvatarSection({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -49,6 +51,8 @@ function AvatarSection({
     const file = e.target.files?.[0] ?? null;
 
     if (!file) {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
       setSelectedFile(null);
       setPreview(null);
       return;
@@ -68,8 +72,11 @@ function AvatarSection({
       return;
     }
 
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreviewUrl(objectUrl);
     setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
+    setPreview(objectUrl);
   }
 
   async function handleUpload() {
@@ -81,6 +88,8 @@ function AvatarSection({
       await uploadAvatar(selectedFile);
       await mutate(getAuthMePath());
       setSuccess(true);
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
       setSelectedFile(null);
       setPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -95,7 +104,15 @@ function AvatarSection({
     }
   }
 
-  const displayedImage = preview ?? currentAvatarUrl;
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
+
+  const trustedPreview = preview && preview === localPreviewUrl ? preview : null;
+  const displayedImage = trustedPreview ?? currentAvatarUrl;
+  const safeDisplayedImage = isSafeImageUrl(displayedImage) ? displayedImage : null;
 
   return (
     <div className="border border-border-default bg-bg-elevated p-6">
@@ -106,10 +123,10 @@ function AvatarSection({
       <div className="flex items-start gap-6">
         {/* Current / preview */}
         <div className="shrink-0">
-          {displayedImage ? (
+          {safeDisplayedImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={displayedImage}
+              src={safeDisplayedImage}
               alt="Avatar preview"
               className="w-20 h-20 object-cover border border-border-default"
             />
