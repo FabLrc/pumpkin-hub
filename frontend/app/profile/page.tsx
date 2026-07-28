@@ -40,6 +40,7 @@ function AvatarSection({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -50,6 +51,8 @@ function AvatarSection({
     const file = e.target.files?.[0] ?? null;
 
     if (!file) {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
       setSelectedFile(null);
       setPreview(null);
       return;
@@ -69,8 +72,11 @@ function AvatarSection({
       return;
     }
 
+    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreviewUrl(objectUrl);
     setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
+    setPreview(objectUrl);
   }
 
   async function handleUpload() {
@@ -82,6 +88,8 @@ function AvatarSection({
       await uploadAvatar(selectedFile);
       await mutate(getAuthMePath());
       setSuccess(true);
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
       setSelectedFile(null);
       setPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -96,7 +104,14 @@ function AvatarSection({
     }
   }
 
-  const displayedImage = preview ?? currentAvatarUrl;
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
+
+  const trustedPreview = preview && preview === localPreviewUrl ? preview : null;
+  const displayedImage = trustedPreview ?? currentAvatarUrl;
   const safeDisplayedImage = isSafeImageUrl(displayedImage) ? displayedImage : null;
 
   return (
