@@ -3,13 +3,15 @@ name: Intégration Continue (CI)
 # ── Branching strategy ─────────────────────────────────────────────────────
 #
 # develop  = branche de travail — tout push ou PR déclenche le CI complet.
-# master   = branche de production — reçoit uniquement des PR depuis develop.
+# master   = branche de production — reçoit les PR depuis develop ainsi que
+#            les PR Dependabot (qui ciblent toujours la branche par défaut).
 #            Le push sur master (merge d'un PR) relance le CI ; l'analyse Sonar
 #            est exécutée uniquement sur cette branche.
 #
 # La protection de branche sur master interdit les push directs et exige
 # que les status checks « Validation du Frontend » et « Validation de l'API
-# Rust » soient au vert avant le merge.
+# Rust » soient au vert avant le merge — d'où le trigger pull_request sur
+# develop ET master ci-dessous.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -26,6 +28,7 @@ on:
   pull_request:
     branches:
       - develop
+      - master
     paths:
       - 'frontend/**'
       - 'api/**'
