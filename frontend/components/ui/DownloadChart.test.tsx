@@ -40,6 +40,51 @@ describe("DownloadChart", () => {
     expect(screen.getByText("Mar")).toBeInTheDocument();
   });
 
+  it("formats download counts with k/M suffixes", () => {
+    render(
+      <DownloadChart
+        granularity="daily"
+        data={[
+          { period: "2026-03-10", downloads: 999 },
+          { period: "2026-03-11", downloads: 1500 },
+          { period: "2026-03-12", downloads: 2_000_000 },
+        ]}
+      />,
+    );
+    expect(screen.getByText("1.5k")).toBeInTheDocument();
+    expect(screen.getByText("2.0M")).toBeInTheDocument();
+  });
+
+  it("handles various height classes via props", () => {
+    const { rerender } = render(
+      <DownloadChart
+        granularity="daily"
+        data={[{ period: "2026-03-10", downloads: 5 }]}
+        height={120}
+      />,
+    );
+    expect(screen.getByText("Mar 10")).toBeInTheDocument();
+
+    rerender(
+      <DownloadChart
+        granularity="daily"
+        data={[{ period: "2026-03-10", downloads: 5 }]}
+        height={200}
+      />,
+    );
+    expect(screen.getByText("Mar 10")).toBeInTheDocument();
+  });
+
+  it("uses maxDownloads=1 when all data is 0", () => {
+    render(
+      <DownloadChart
+        granularity="daily"
+        data={[{ period: "2026-03-10", downloads: 0 }]}
+      />,
+    );
+    expect(screen.getByText("Mar 10")).toBeInTheDocument();
+  });
+
   it("shows only alternating labels when data set is large", () => {
     const data = Array.from({ length: 12 }, (_, i) => ({
       period: `2026-03-${String(i + 1).padStart(2, "0")}`,

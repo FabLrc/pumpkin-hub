@@ -1,19 +1,36 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { FeaturesSection } from "./FeaturesSection";
 
+beforeAll(() => {
+  if (!("IntersectionObserver" in globalThis)) {
+    class MockIO {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+      root = null;
+      rootMargin = "";
+      thresholds = [];
+    }
+    (globalThis as unknown as { IntersectionObserver: typeof MockIO }).IntersectionObserver = MockIO;
+  }
+});
+
 describe("FeaturesSection", () => {
-  it("renders the 'Why Pumpkin Hub' heading", () => {
+  it("renders the 'Why Pumpkin Hub' eyebrow", () => {
     render(<FeaturesSection />);
     expect(screen.getByText("Why Pumpkin Hub")).toBeInTheDocument();
   });
 
-  it("renders the 'Powered by Pumpkin' sub-heading", () => {
+  it("renders the 'Powered by Pumpkin' heading", () => {
     render(<FeaturesSection />);
     expect(screen.getByText("Powered by Pumpkin")).toBeInTheDocument();
   });
 
-  it("renders the 'Built for Server Admins' sub-heading", () => {
+  it("renders the 'Built for Server Admins' heading", () => {
     render(<FeaturesSection />);
     expect(screen.getByText("Built for Server Admins")).toBeInTheDocument();
   });
@@ -21,20 +38,20 @@ describe("FeaturesSection", () => {
   it("shows Pumpkin performance stats", () => {
     render(<FeaturesSection />);
     expect(screen.getAllByText("~5ms").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("~100MB").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/~100MB/).length).toBeGreaterThan(0);
   });
 
-  it("renders comparison table with metrics", () => {
+  it("renders comparison metrics across the three engines", () => {
     render(<FeaturesSection />);
     expect(screen.getAllByText("Pumpkin").length).toBeGreaterThan(0);
-    expect(screen.getByText("Paper")).toBeInTheDocument();
-    expect(screen.getByText("Vanilla")).toBeInTheDocument();
+    expect(screen.getAllByText("Paper").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Vanilla").length).toBeGreaterThan(0);
   });
 
-  it("renders all 3 admin feature cards", () => {
+  it("renders all 3 admin workflow steps", () => {
     render(<FeaturesSection />);
-    expect(screen.getByText("Server Builder")).toBeInTheDocument();
-    expect(screen.getByText("GitHub Auto-Publishing")).toBeInTheDocument();
-    expect(screen.getByText("WASM Everywhere")).toBeInTheDocument();
+    expect(screen.getAllByText("Server Builder").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("GitHub Auto-Publishing").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("WASM Everywhere").length).toBeGreaterThan(0);
   });
 });
