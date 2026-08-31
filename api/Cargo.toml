@@ -79,7 +79,7 @@ aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-credential-types = "1"
 
 # Full-text search engine
-meilisearch-sdk = "0.31"
+meilisearch-sdk = { version = "0.31", default-features = false, features = ["reqwest", "tls", "jwt_rust_crypto"] }
 
 # SHA-256 checksum generation
 sha2 = "0.10"
