@@ -21,10 +21,15 @@ impl EmailService {
     ) -> Result<Self, lettre::transport::smtp::Error> {
         let credentials = Credentials::new(config.username.clone(), config.password.clone());
 
-        let transport = AsyncSmtpTransport::<Tokio1Executor>::relay(&config.host)?
-            .port(config.port)
-            .credentials(credentials)
-            .build();
+        // SMTPS uses implicit TLS on 465; submission ports such as 587 use STARTTLS.
+        let transport = if config.port == 465 {
+            AsyncSmtpTransport::<Tokio1Executor>::relay(&config.host)?
+        } else {
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&config.host)?
+        }
+        .port(config.port)
+        .credentials(credentials)
+        .build();
 
         Ok(Self {
             transport,

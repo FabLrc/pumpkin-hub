@@ -14,7 +14,7 @@ export function Footer() {
               className="w-5 h-5 object-cover"
             />
             <span className="font-mono text-xs text-text-dim">
-              Pumpkin Hub &copy; 2025 — Community-driven. Open source.
+              Pumpkin Hub &copy; 2026 — Community-driven. Open source.
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-6 font-mono text-xs text-text-dim">

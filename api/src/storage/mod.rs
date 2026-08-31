@@ -149,8 +149,10 @@ impl ObjectStorage {
         key: &str,
         body: Vec<u8>,
         content_type: &str,
-    ) -> Result<(), aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::put_object::PutObjectError>>
-    {
+    ) -> Result<
+        (),
+        Box<aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::put_object::PutObjectError>>,
+    > {
         self.client
             .put_object()
             .bucket(&self.bucket)
@@ -158,7 +160,8 @@ impl ObjectStorage {
             .body(ByteStream::from(body))
             .content_type(content_type)
             .send()
-            .await?;
+            .await
+            .map_err(Box::new)?;
         Ok(())
     }
 
@@ -226,14 +229,15 @@ impl ObjectStorage {
         key: &str,
     ) -> Result<
         (),
-        aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::delete_object::DeleteObjectError>,
+        Box<aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::delete_object::DeleteObjectError>>,
     > {
         self.client
             .delete_object()
             .bucket(&self.bucket)
             .key(key)
             .send()
-            .await?;
+            .await
+            .map_err(Box::new)?;
         Ok(())
     }
 

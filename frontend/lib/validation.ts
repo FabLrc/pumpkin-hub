@@ -99,6 +99,16 @@ export function validateOptionalUrl(
   return null;
 }
 
+/** Restricts rendered image sources to expected schemes (blocks javascript:/data: injection). */
+export function isSafeImageUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return (
+    value.startsWith("https://") ||
+    value.startsWith("http://") ||
+    value.startsWith("blob:")
+  );
+}
+
 export function validateCategoryIds(ids: string[]): string | null {
   if (ids.length > PLUGIN_RULES.MAX_CATEGORIES) {
     return `You can select at most ${PLUGIN_RULES.MAX_CATEGORIES} categories`;
