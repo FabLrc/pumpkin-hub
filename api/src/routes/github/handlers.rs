@@ -40,6 +40,78 @@ fn require_ownership(auth: &AuthUser, author_id: Uuid) -> Result<(), AppError> {
     Err(AppError::Forbidden)
 }
 
+fn installation_belongs_to_user(
+    installations: &[crate::github::client::AppInstallation],
+    installation_id: i64,
+    github_user_id: i64,
+) -> bool {
+    installations.iter().any(|installation| {
+        installation.id == installation_id && installation.account.id == github_user_id
+    })
+}
+
+async fn require_installation_access(
+    pool: &PgPool,
+    client: &GitHubAppClient,
+    user_id: Uuid,
+    installation_id: i64,
+) -> Result<(), AppError> {
+    let github_provider_id: Option<String> = sqlx::query_scalar(
+        "SELECT provider_id FROM auth_providers WHERE user_id = $1 AND provider = 'github'",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    let github_user_id: i64 = github_provider_id
+        .ok_or(AppError::Forbidden)?
+        .parse()
+        .map_err(|_| {
+            AppError::internal(std::io::Error::other(
+                "Corrupted GitHub provider_id in auth_providers",
+            ))
+        })?;
+
+    let installations = client.list_app_installations().await.map_err(|error| {
+        AppError::internal(std::io::Error::other(format!(
+            "Failed to verify GitHub App installation ownership: {error}"
+        )))
+    })?;
+
+    if installation_belongs_to_user(&installations, installation_id, github_user_id) {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden)
+    }
+}
+
+#[cfg(test)]
+mod installation_access_tests {
+    use super::*;
+    use crate::github::client::{AppInstallation, AppInstallationAccount};
+
+    fn installation(id: i64, account_id: i64) -> AppInstallation {
+        AppInstallation {
+            id,
+            account: AppInstallationAccount {
+                id: account_id,
+                login: "owner".to_string(),
+                account_type: "User".to_string(),
+            },
+        }
+    }
+
+    #[test]
+    fn installation_requires_matching_id_and_github_account() {
+        let installations = vec![installation(10, 20)];
+
+        assert!(installation_belongs_to_user(&installations, 10, 20));
+        assert!(!installation_belongs_to_user(&installations, 11, 20));
+        assert!(!installation_belongs_to_user(&installations, 10, 21));
+    }
+}
+
 fn build_link_response(row: GitHubInstallationRow) -> GitHubLinkResponse {
     GitHubLinkResponse {
         id: row.id,
@@ -96,6 +168,7 @@ pub async fn link_github(
 
     // Verify that the installation has access to the repository
     let client = GitHubAppClient::new(github_app_config);
+    require_installation_access(pool, &client, auth.user_id, payload.installation_id).await?;
     let repo = client
         .get_repository(
             payload.installation_id,
@@ -224,7 +297,7 @@ pub async fn unlink_github(
 /// Requires authentication — the user must be logged in to use this endpoint.
 pub async fn list_installation_repos(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(installation_id): Path<i64>,
 ) -> Result<Json<InstallationRepositoriesResponse>, AppError> {
     let github_app_config = state.config.github_app.as_ref().ok_or_else(|| {
@@ -234,6 +307,7 @@ pub async fn list_installation_repos(
     })?;
 
     let client = GitHubAppClient::new(github_app_config);
+    require_installation_access(&state.db, &client, auth.user_id, installation_id).await?;
     let repos = client
         .list_installation_repositories(installation_id)
         .await
@@ -380,6 +454,8 @@ pub async fn publish_plugin_from_github(
     })?;
 
     let client = GitHubAppClient::new(github_app_config);
+    let pool = &state.db;
+    require_installation_access(pool, &client, auth.user_id, payload.installation_id).await?;
 
     // Verify access and fetch repository metadata
     let repo = client
@@ -397,7 +473,6 @@ pub async fn publish_plugin_from_github(
         })?;
 
     // Check the repository is not already linked to another plugin
-    let pool = &state.db;
     let existing_link: Option<Uuid> = sqlx::query_scalar(
         "SELECT plugin_id FROM github_installations
          WHERE repository_owner = $1 AND repository_name = $2",
