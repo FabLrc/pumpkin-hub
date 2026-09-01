@@ -34,7 +34,7 @@ async fn fetch_plugin_id_and_author(pool: &PgPool, slug: &str) -> Result<(Uuid, 
 }
 
 fn require_ownership(auth: &AuthUser, author_id: Uuid) -> Result<(), AppError> {
-    if auth.user_id == author_id || auth.role == "admin" {
+    if auth.user_id == author_id || (auth.api_key_id.is_none() && auth.role == "admin") {
         return Ok(());
     }
     Err(AppError::Forbidden)

@@ -40,6 +40,7 @@ pub async fn create_api_key(
     State(state): State<AppState>,
     Json(body): Json<CreateApiKeyRequest>,
 ) -> Result<Json<CreateApiKeyResponse>, AppError> {
+    auth.require_session()?;
     body.validate().map_err(AppError::UnprocessableEntity)?;
 
     let pool = &state.db;
@@ -103,6 +104,7 @@ pub async fn list_api_keys(
     auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ApiKeySummary>>, AppError> {
+    auth.require_session()?;
     let rows = sqlx::query_as::<
         _,
         (
@@ -153,6 +155,7 @@ pub async fn revoke_api_key(
     State(state): State<AppState>,
     Path(key_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    auth.require_session()?;
     let result = sqlx::query("DELETE FROM api_keys WHERE id = $1 AND user_id = $2")
         .bind(key_id)
         .bind(auth.user_id)

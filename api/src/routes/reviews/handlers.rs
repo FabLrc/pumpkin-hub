@@ -323,7 +323,7 @@ pub async fn delete_review(
     let plugin_author_id = fetch_plugin_author_id(pool, plugin_id).await?;
     let is_owner = review_author_id == auth.user_id;
     let is_plugin_author = plugin_author_id == auth.user_id;
-    let is_staff = auth.role == "admin" || auth.role == "moderator";
+    let is_staff = auth.require_staff().is_ok();
 
     if !is_owner && !is_plugin_author && !is_staff {
         return Err(AppError::Forbidden);
@@ -356,7 +356,7 @@ pub async fn toggle_review_visibility(
 
     let plugin_author_id = fetch_plugin_author_id(pool, plugin_id).await?;
     let is_plugin_author = plugin_author_id == auth.user_id;
-    let is_staff = auth.role == "admin" || auth.role == "moderator";
+    let is_staff = auth.require_staff().is_ok();
 
     if !is_plugin_author && !is_staff {
         return Err(AppError::Forbidden);

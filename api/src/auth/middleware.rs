@@ -40,12 +40,19 @@ pub struct AuthUser {
 }
 
 impl AuthUser {
+    /// Requires authentication through a user session rather than an API key.
+    pub fn require_session(&self) -> Result<(), AppError> {
+        if self.api_key_id.is_some() {
+            Err(AppError::Forbidden)
+        } else {
+            Ok(())
+        }
+    }
+
     /// Returns `Ok(())` if the user has the `admin` or `moderator` role.
     /// API key authentication is **not** allowed for staff actions.
     pub fn require_staff(&self) -> Result<(), AppError> {
-        if self.api_key_id.is_some() {
-            return Err(AppError::Forbidden);
-        }
+        self.require_session()?;
         if self.role == "admin" || self.role == "moderator" {
             Ok(())
         } else {
@@ -56,9 +63,7 @@ impl AuthUser {
     /// Returns `Ok(())` if the user has the `admin` role.
     /// API key authentication is **not** allowed for admin actions.
     pub fn require_admin(&self) -> Result<(), AppError> {
-        if self.api_key_id.is_some() {
-            return Err(AppError::Forbidden);
-        }
+        self.require_session()?;
         if self.role == "admin" {
             Ok(())
         } else {

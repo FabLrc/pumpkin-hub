@@ -218,7 +218,7 @@ async fn replace_plugin_categories(
 
 /// Checks whether the authenticated user is allowed to modify this plugin.
 pub(crate) fn require_ownership(auth: &AuthUser, plugin_author_id: Uuid) -> Result<(), AppError> {
-    if auth.user_id == plugin_author_id || auth.role == "admin" {
+    if auth.user_id == plugin_author_id || (auth.api_key_id.is_none() && auth.role == "admin") {
         return Ok(());
     }
     Err(AppError::Forbidden)
@@ -756,8 +756,9 @@ pub async fn delete_plugin(
     let row = fetch_plugin_by_slug(pool, &slug).await?;
 
     // Owners, admins and moderators can soft-delete
-    let is_allowed =
-        auth.user_id == row.author_id || auth.role == "admin" || auth.role == "moderator";
+    let is_staff_session =
+        auth.api_key_id.is_none() && (auth.role == "admin" || auth.role == "moderator");
+    let is_allowed = auth.user_id == row.author_id || is_staff_session;
     if !is_allowed {
         return Err(AppError::Forbidden);
     }
@@ -1586,5 +1587,14 @@ mod tests {
         // require_ownership only allows owner or admin, not moderator
         let result = require_ownership(&auth, other_author_id);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn admin_api_key_is_not_allowed_to_modify_another_users_plugin() {
+        let mut auth = make_auth(Uuid::new_v4(), "admin");
+        auth.api_key_id = Some(Uuid::new_v4());
+        auth.api_key_permissions = Some(vec!["publish".to_string()]);
+
+        assert!(require_ownership(&auth, Uuid::new_v4()).is_err());
     }
 }
