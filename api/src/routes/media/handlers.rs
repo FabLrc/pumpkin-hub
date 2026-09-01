@@ -295,20 +295,21 @@ pub async fn update_media(
 ) -> Result<Json<MediaResponse>, AppError> {
     body.validate()?;
     let pool = &state.db;
-    let (_plugin_id, author_id, _) = fetch_plugin_info(pool, &slug).await?;
+    let (plugin_id, author_id, _) = fetch_plugin_info(pool, &slug).await?;
     require_ownership(&auth, author_id)?;
 
     let row: MediaRow = sqlx::query_as(
         "UPDATE plugin_media
          SET caption = COALESCE($1, caption),
              sort_order = COALESCE($2, sort_order)
-         WHERE id = $3
+         WHERE id = $3 AND plugin_id = $4
          RETURNING id, media_type, file_name, file_size, content_type,
                    storage_key, thumbnail_key, caption, sort_order, uploaded_at",
     )
     .bind(&body.caption)
     .bind(body.sort_order)
     .bind(media_id)
+    .bind(plugin_id)
     .fetch_optional(pool)
     .await
     .map_err(AppError::internal)?
@@ -368,7 +369,7 @@ pub async fn delete_media(
     Path((slug, media_id)): Path<(String, Uuid)>,
 ) -> Result<StatusCode, AppError> {
     let pool = &state.db;
-    let (_plugin_id, author_id, _) = fetch_plugin_info(pool, &slug).await?;
+    let (plugin_id, author_id, _) = fetch_plugin_info(pool, &slug).await?;
     require_ownership(&auth, author_id)?;
 
     // Fetch storage keys before deleting
@@ -379,10 +380,11 @@ pub async fn delete_media(
     }
 
     let keys: StorageKeys = sqlx::query_as(
-        "DELETE FROM plugin_media WHERE id = $1
+        "DELETE FROM plugin_media WHERE id = $1 AND plugin_id = $2
          RETURNING storage_key, thumbnail_key",
     )
     .bind(media_id)
+    .bind(plugin_id)
     .fetch_optional(pool)
     .await
     .map_err(AppError::internal)?
