@@ -73,7 +73,10 @@ pub fn build_app(
     // Rate limiters
     let ip_rate_limiter = rate_limit::build_ip_rate_limiter(&config.rate_limit);
     let api_key_rate_limiters = ApiKeyRateLimiters::new();
-    let auth_governor = rate_limit::build_auth_governor(&config.rate_limit);
+    let auth_governor = rate_limit::build_auth_governor(
+        &config.rate_limit,
+        config.server.trusted_proxy_cidrs.clone(),
+    );
 
     let state = AppState::new(
         config.clone(),

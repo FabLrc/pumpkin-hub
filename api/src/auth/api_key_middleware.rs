@@ -1,16 +1,17 @@
 use axum::{
-    extract::{ConnectInfo, Request, State},
+    extract::{Request, State},
     http::{Method, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
     Json,
 };
 use serde_json::json;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::IpAddr;
 
 use crate::{
     auth::middleware::{extract_api_key_from_header_value, resolve_api_key, API_KEY_HEADER},
     error::AppError,
+    rate_limit::client_ip,
     state::AppState,
 };
 
@@ -27,12 +28,7 @@ pub async fn api_key_middleware(
     let method = request.method().clone();
     let path = request.uri().path().to_string();
 
-    // Extract caller IP (same fallback as PeerIpExtractor)
-    let ip = request
-        .extensions()
-        .get::<ConnectInfo<SocketAddr>>()
-        .map(|addr| addr.ip())
-        .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
+    let ip = client_ip(&request, &state.config.server.trusted_proxy_cidrs);
 
     // A supplied API key is authoritative: malformed or invalid credentials must
     // not silently fall back to JWT authentication.

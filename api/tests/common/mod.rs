@@ -27,6 +27,7 @@ pub async fn build_test_app() -> (Router, PgPool) {
             api_public_url: "http://localhost:8080".to_string(),
             secure_cookies: false,
             cookie_domain: None,
+            trusted_proxy_cidrs: Vec::new(),
         },
         database_url: database_url.clone(),
         meilisearch: MeilisearchConfig {

@@ -43,6 +43,8 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - COOKIE_SECURE=true
       - COOKIE_DOMAIN=${COOKIE_DOMAIN}
+      # Set to Traefik's exact Docker subnet in Coolify; never trust a broad private range.
+      - TRUSTED_PROXY_CIDRS=${TRUSTED_PROXY_CIDRS}
 
       # -- Base de données --
       - DATABASE_URL=postgres://${POSTGRES_USER:-pumpkin}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pumpkin_hub}

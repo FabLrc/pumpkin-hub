@@ -1,4 +1,6 @@
 use axum::extract::ConnectInfo;
+use axum::http::{header, HeaderMap, Request};
+use ipnet::IpNet;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::num::NonZeroU32;
@@ -11,16 +13,20 @@ use tower_governor::{
 
 use crate::config::RateLimitConfig;
 
-/// IP key extractor that gracefully falls back to `127.0.0.1` when `ConnectInfo`
-/// is absent from request extensions.
-///
-/// In production, `ConnectInfo<SocketAddr>` is injected by
-/// `Router::into_make_service_with_connect_info`, so every real request carries
-/// the caller's IP.  In integration tests, `tower::ServiceExt::oneshot` skips
-/// that plumbing entirely; without a fallback the governor returns HTTP 500 for
-/// every call.
-#[derive(Clone, Debug, Default)]
-pub struct PeerIpExtractor;
+/// IP key extractor that accepts forwarded client IP headers only from configured
+/// reverse proxy CIDRs.
+#[derive(Clone, Debug)]
+pub struct PeerIpExtractor {
+    trusted_proxy_cidrs: Vec<IpNet>,
+}
+
+impl PeerIpExtractor {
+    pub fn new(trusted_proxy_cidrs: Vec<IpNet>) -> Self {
+        Self {
+            trusted_proxy_cidrs,
+        }
+    }
+}
 
 impl KeyExtractor for PeerIpExtractor {
     type Key = IpAddr;
@@ -30,12 +36,82 @@ impl KeyExtractor for PeerIpExtractor {
     }
 
     fn extract<T>(&self, req: &axum::http::Request<T>) -> Result<IpAddr, GovernorError> {
-        Ok(req
-            .extensions()
-            .get::<ConnectInfo<SocketAddr>>()
-            .map(|addr| addr.ip())
-            .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST)))
+        Ok(client_ip(req, &self.trusted_proxy_cidrs))
     }
+}
+
+/// Returns the address used for rate limiting. Forwarded headers are ignored
+/// unless the direct peer belongs to a configured trusted proxy CIDR.
+pub fn client_ip<T>(request: &Request<T>, trusted_proxy_cidrs: &[IpNet]) -> IpAddr {
+    let peer_ip = request
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|addr| addr.ip())
+        .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
+
+    if !is_trusted_proxy(peer_ip, trusted_proxy_cidrs) {
+        return peer_ip;
+    }
+
+    forwarded_client_ip(request.headers(), trusted_proxy_cidrs).unwrap_or(peer_ip)
+}
+
+fn is_trusted_proxy(ip: IpAddr, trusted_proxy_cidrs: &[IpNet]) -> bool {
+    trusted_proxy_cidrs.iter().any(|cidr| cidr.contains(&ip))
+}
+
+fn forwarded_client_ip(headers: &HeaderMap, trusted_proxy_cidrs: &[IpNet]) -> Option<IpAddr> {
+    let forwarded = header_ips(headers, header::FORWARDED, parse_forwarded_for);
+    let x_forwarded_for = header_ips(headers, "x-forwarded-for", parse_ip_address);
+
+    rightmost_untrusted(forwarded, trusted_proxy_cidrs)
+        .or_else(|| rightmost_untrusted(x_forwarded_for, trusted_proxy_cidrs))
+}
+
+fn header_ips(
+    headers: &HeaderMap,
+    name: impl axum::http::header::AsHeaderName,
+    parse: fn(&str) -> Option<IpAddr>,
+) -> Vec<IpAddr> {
+    headers
+        .get_all(name)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split(','))
+        .filter_map(parse)
+        .collect()
+}
+
+fn parse_forwarded_for(entry: &str) -> Option<IpAddr> {
+    entry.split(';').find_map(|parameter| {
+        let (name, value) = parameter.trim().split_once('=')?;
+        name.eq_ignore_ascii_case("for")
+            .then(|| parse_ip_address(value))
+            .flatten()
+    })
+}
+
+fn parse_ip_address(value: &str) -> Option<IpAddr> {
+    let value = value.trim().trim_matches('"');
+    if value.eq_ignore_ascii_case("unknown") || value.starts_with('_') {
+        return None;
+    }
+
+    if let Some(bracketed) = value.strip_prefix('[') {
+        let (address, _) = bracketed.split_once(']')?;
+        return address.parse().ok();
+    }
+
+    value
+        .parse()
+        .ok()
+        .or_else(|| value.parse::<SocketAddr>().ok().map(|address| address.ip()))
+}
+
+fn rightmost_untrusted(ips: Vec<IpAddr>, trusted_proxy_cidrs: &[IpNet]) -> Option<IpAddr> {
+    ips.into_iter()
+        .rev()
+        .find(|ip| !is_trusted_proxy(*ip, trusted_proxy_cidrs))
 }
 
 /// Concrete governor config type with rate-limit headers enabled.
@@ -44,9 +120,12 @@ pub type AppGovernorConfig =
 
 /// Builds the general (relaxed) rate limiter configuration.
 /// Default: 30 requests burst, 1 replenished per second → sustained traffic.
-pub fn build_general_governor(config: &RateLimitConfig) -> AppGovernorConfig {
+pub fn build_general_governor(
+    config: &RateLimitConfig,
+    trusted_proxy_cidrs: Vec<IpNet>,
+) -> AppGovernorConfig {
     GovernorConfigBuilder::default()
-        .key_extractor(PeerIpExtractor)
+        .key_extractor(PeerIpExtractor::new(trusted_proxy_cidrs))
         .per_second(config.general_per_second)
         .burst_size(config.general_burst_size)
         .use_headers()
@@ -56,9 +135,12 @@ pub fn build_general_governor(config: &RateLimitConfig) -> AppGovernorConfig {
 
 /// Builds the auth (strict) rate limiter configuration.
 /// Default: 5 requests burst, 1 replenished per 4 seconds → prevents brute-force.
-pub fn build_auth_governor(config: &RateLimitConfig) -> AppGovernorConfig {
+pub fn build_auth_governor(
+    config: &RateLimitConfig,
+    trusted_proxy_cidrs: Vec<IpNet>,
+) -> AppGovernorConfig {
     GovernorConfigBuilder::default()
-        .key_extractor(PeerIpExtractor)
+        .key_extractor(PeerIpExtractor::new(trusted_proxy_cidrs))
         .per_second(config.auth_per_second)
         .burst_size(config.auth_burst_size)
         .use_headers()
@@ -168,4 +250,68 @@ fn check_limiter(limiter: &DirectRateLimiter) -> Result<(), u64> {
         ));
         wait.as_secs().saturating_add(1)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+
+    fn trusted_proxies() -> Vec<IpNet> {
+        vec![
+            "172.20.0.0/16".parse().unwrap(),
+            "203.0.113.0/24".parse().unwrap(),
+        ]
+    }
+
+    fn request(peer: &str) -> Request<Body> {
+        let mut request = Request::new(Body::empty());
+        request
+            .extensions_mut()
+            .insert(ConnectInfo(peer.parse::<SocketAddr>().unwrap()));
+        request
+    }
+
+    #[test]
+    fn untrusted_peers_cannot_spoof_forwarded_addresses() {
+        let mut request = request("198.51.100.10:443");
+        request
+            .headers_mut()
+            .insert("x-forwarded-for", "192.0.2.1".parse().unwrap());
+
+        assert_eq!(
+            client_ip(&request, &trusted_proxies()),
+            "198.51.100.10".parse::<IpAddr>().unwrap()
+        );
+    }
+
+    #[test]
+    fn trusted_proxies_use_the_rightmost_untrusted_forwarded_address() {
+        let mut request = request("172.20.0.5:443");
+        request.headers_mut().insert(
+            "x-forwarded-for",
+            "198.51.100.10, 203.0.113.7".parse().unwrap(),
+        );
+
+        assert_eq!(
+            client_ip(&request, &trusted_proxies()),
+            "198.51.100.10".parse::<IpAddr>().unwrap()
+        );
+    }
+
+    #[test]
+    fn trusted_proxies_support_standard_forwarded_headers() {
+        let mut request = request("172.20.0.5:443");
+        request.headers_mut().insert(
+            header::FORWARDED,
+            "for=198.51.100.10;proto=https, for=203.0.113.7"
+                .parse()
+                .unwrap(),
+        );
+
+        assert_eq!(
+            client_ip(&request, &trusted_proxies()),
+            "198.51.100.10".parse::<IpAddr>().unwrap()
+        );
+    }
 }

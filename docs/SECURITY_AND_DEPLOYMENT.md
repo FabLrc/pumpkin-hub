@@ -149,6 +149,9 @@ COOKIE_SECURE=true
 COOKIE_DOMAIN=.yourdomain.com  # shared cookies across subdomains
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8080
+# CIDR Docker exact du proxy Traefik/Coolify, par ex. 172.20.0.0/16.
+# Ne jamais utiliser 10.0.0.0/8, 172.16.0.0/12 ou 192.168.0.0/16 ici.
+TRUSTED_PROXY_CIDRS=172.20.0.0/16
 
 # Email (optional for beta)
 SMTP_HOST=smtp.your-provider.com
@@ -157,6 +160,12 @@ SMTP_USERNAME=your-email@domain.com
 SMTP_PASSWORD=your-password
 SMTP_FROM_ADDRESS=noreply@yourdomain.com
 ```
+
+`TRUSTED_PROXY_CIDRS` autorise l'API à accepter `Forwarded` et
+`X-Forwarded-For` pour les limites de débit. Déterminez le sous-réseau exact du
+réseau Docker auquel Traefik est connecté avec `docker network inspect`, puis
+configurez-le dans Coolify. Sans cette variable, l'API ignore les en-têtes
+transférés afin d'empêcher leur usurpation.
 
 **Frontend (Next.js)**:
 ```env
@@ -333,4 +342,3 @@ docker compose up -d
 - [Architecture](./architecture.html) — High-level system design
 - [API Reference](./api.html) — Endpoint documentation
 - Main [README](../README.md) — Quick start and features
-

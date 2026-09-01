@@ -1,5 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
+use ipnet::IpNet;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -35,6 +36,8 @@ pub struct ServerConfig {
     /// Set this when the frontend and API are on different subdomains so the
     /// auth cookie is accessible to the Next.js upload proxy.
     pub cookie_domain: Option<String>,
+    /// CIDRs of reverse proxies allowed to provide client IP forwarding headers.
+    pub trusted_proxy_cidrs: Vec<IpNet>,
 }
 
 #[derive(Debug, Clone)]
@@ -145,6 +148,7 @@ impl Config {
         let cookie_domain = std::env::var("COOKIE_DOMAIN")
             .ok()
             .filter(|s| !s.is_empty());
+        let trusted_proxy_cidrs = parse_trusted_proxy_cidrs()?;
 
         let database_url = require_env("DATABASE_URL")?;
         let meilisearch_url = require_env("MEILISEARCH_URL")?;
@@ -204,6 +208,7 @@ impl Config {
                 api_public_url,
                 secure_cookies,
                 cookie_domain,
+                trusted_proxy_cidrs,
             },
             database_url,
             meilisearch: MeilisearchConfig {
@@ -249,6 +254,7 @@ impl Default for Config {
                 api_public_url: "http://localhost:8080".to_string(),
                 secure_cookies: false,
                 cookie_domain: None,
+                trusted_proxy_cidrs: Vec::new(),
             },
             database_url: String::new(),
             meilisearch: MeilisearchConfig {
@@ -331,6 +337,24 @@ where
         }),
         Err(_) => Ok(default),
     }
+}
+
+fn parse_trusted_proxy_cidrs() -> Result<Vec<IpNet>, ConfigError> {
+    let raw = match std::env::var("TRUSTED_PROXY_CIDRS") {
+        Ok(value) if !value.trim().is_empty() => value,
+        _ => return Ok(Vec::new()),
+    };
+
+    raw.split(',')
+        .map(str::trim)
+        .filter(|cidr| !cidr.is_empty())
+        .map(|cidr| {
+            cidr.parse().map_err(|error| ConfigError::InvalidValue {
+                key: "TRUSTED_PROXY_CIDRS".to_string(),
+                reason: format!("'{cidr}' is not a valid CIDR: {error}"),
+            })
+        })
+        .collect()
 }
 
 /// Loads optional GitHub App config. Returns `None` if `GITHUB_APP_ID` is not set.
