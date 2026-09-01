@@ -10,6 +10,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use crate::{
     auth::middleware::{extract_api_key_from_header_value, resolve_api_key, API_KEY_HEADER},
+    error::AppError,
     state::AppState,
 };
 
@@ -33,15 +34,19 @@ pub async fn api_key_middleware(
         .map(|addr| addr.ip())
         .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
 
-    // Try API key authentication
-    let api_key_value = request
-        .headers()
-        .get(API_KEY_HEADER)
-        .and_then(|v| v.to_str().ok())
-        .and_then(extract_api_key_from_header_value);
+    // A supplied API key is authoritative: malformed or invalid credentials must
+    // not silently fall back to JWT authentication.
+    if let Some(header) = request.headers().get(API_KEY_HEADER) {
+        let raw_key = header
+            .to_str()
+            .ok()
+            .and_then(extract_api_key_from_header_value);
 
-    if let Some(raw_key) = api_key_value {
-        return handle_api_key_request(raw_key, request, next, &state, &method, &path).await;
+        let Some(raw_key) = raw_key else {
+            return reject_invalid_api_key(&state, ip);
+        };
+
+        return handle_api_key_request(raw_key, request, next, &state, &method, &path, ip).await;
     }
 
     // No API key — apply global IP-based rate limiting
@@ -61,6 +66,7 @@ async fn handle_api_key_request(
     state: &AppState,
     method: &Method,
     path: &str,
+    ip: IpAddr,
 ) -> Response {
     match resolve_api_key(&raw_key, state).await {
         Ok(ctx) => {
@@ -86,11 +92,8 @@ async fn handle_api_key_request(
 
             response
         }
-        Err(_) => {
-            // Invalid API key — let the request through.
-            // If the handler requires auth, AuthUser will return 401.
-            next.run(request).await
-        }
+        Err(AppError::Unauthorized) => reject_invalid_api_key(state, ip),
+        Err(error) => error.into_response(),
     }
 }
 
@@ -108,6 +111,14 @@ fn check_ip_rate_limit(state: &AppState, ip: IpAddr) -> Result<(), Box<Response>
             let retry_after = wait.as_secs().saturating_add(1);
             Box::new(build_rate_limit_response(retry_after))
         })
+}
+
+fn reject_invalid_api_key(state: &AppState, ip: IpAddr) -> Response {
+    if let Err(response) = check_ip_rate_limit(state, ip) {
+        return *response;
+    }
+
+    AppError::Unauthorized.into_response()
 }
 
 fn check_api_key_rate_limit(

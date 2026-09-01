@@ -90,3 +90,41 @@ async fn api_keys_cannot_manage_keys_or_inherit_admin_access() {
 
     common::cleanup_test_data(&pool, &[admin_id, victim_id]).await;
 }
+
+#[tokio::test]
+async fn supplied_invalid_api_keys_are_rejected_without_jwt_fallback() {
+    let (app, pool) = common::build_test_app().await;
+    let suffix = Uuid::new_v4().simple().to_string();
+    let username = format!("invalid-key-{}", &suffix[..8]);
+    let (user_id, token) = common::create_test_user(&pool, &username).await;
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/auth/me")
+                .header("Authorization", format!("Bearer {token}"))
+                .header("X-API-Key", "phub_this-key-does-not-exist")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    let malformed_response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/health")
+                .header("X-API-Key", "malformed")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(malformed_response.status(), StatusCode::UNAUTHORIZED);
+
+    common::cleanup_test_data(&pool, &[user_id]).await;
+}
