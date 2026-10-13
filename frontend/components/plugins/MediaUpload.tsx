@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, Loader2, ImagePlus, Film } from "lucide-react";
 import { uploadMedia, getMediaPath } from "@/lib/api";
+import { isSafeImageUrl } from "@/lib/validation";
 import { mutate } from "swr";
 
 interface MediaUploadProps {
@@ -112,7 +113,7 @@ export function MediaUpload({ pluginSlug }: MediaUploadProps) {
         <div className="space-y-3">
           {/* Preview */}
           <div className="relative inline-block">
-            {previewUrl ? (
+            {previewUrl && isSafeImageUrl(previewUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element -- blob URL preview from local file selection
               <img
                 src={previewUrl}
