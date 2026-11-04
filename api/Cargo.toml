@@ -101,7 +101,7 @@ hmac = "0.12"
 base64 = "0.22"
 
 # ZIP archive creation (server-config download bundles)
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 # Combinators for running async futures concurrently (e.g. try_join_all)
 futures = "0.3"
